@@ -1,0 +1,76 @@
+import type { BasicStatus, PermissionType } from "./enum";
+
+export interface UserToken {
+	accessToken?: string;
+	refreshToken?: string;
+}
+
+export interface UserInfo {
+	id: string;
+	email: string;
+	username: string;
+	password?: string;
+	avatar?: string;
+	role?: Role;
+	status?: BasicStatus;
+	permissions?: Permission[];
+}
+
+export interface Organization {
+	id: string;
+	name: string;
+	status: "enable" | "disable";
+	desc?: string;
+	order?: number;
+	children?: Organization[];
+}
+
+export interface Application {
+	id: string;
+	name: string;
+	description?: string;
+	ChatModelId: string;
+	ChatModelName: string;
+	Icon?: string;
+  embeddingModelID: string;
+	embeddingModelName: string;
+	rerankModelID?: string;
+	rerankModelName?: string;
+	status: string
+	statusId: string
+	type: string;
+	Creator: string;
+	creationTime: Date;
+	modifier: string;
+	modificationTime: Date;
+	relevance: number;
+	prompt?: string;
+}
+
+export interface Permission {
+	id: string;
+	parentId: string;
+	name: string;
+	label: string;
+	type: PermissionType;
+	route: string;
+	status?: BasicStatus;
+	order?: number;
+	icon?: string;
+	component?: string;
+	hide?: boolean;
+	hideTab?: boolean;
+	frameSrc?: URL;
+	newFeature?: boolean;
+	children?: Permission[];
+}
+
+export interface Role {
+	id: string;
+	name: string;
+	label: string;
+	status: BasicStatus;
+	order?: number;
+	desc?: string;
+	permission?: Permission[];
+}
