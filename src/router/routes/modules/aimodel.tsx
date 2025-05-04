@@ -5,25 +5,25 @@ import { CircleLoading } from "@/components/loading";
 
 import type { AppRouteObject } from "#/router";
 
-const Application = lazy(() => import("@/pages/application"));
+const AIModel = lazy(() => import("@/pages/aimodel"));
 
 function Wrapper({ children }: any) {
 	return <Suspense fallback={<CircleLoading />}>{children}</Suspense>;
 }
-const applicaiton: AppRouteObject[] = [
+const aimodel: AppRouteObject[] = [
 	{
-		path: "application",
+		path: "aimodel",
 		element: (
 			<Wrapper>
-				<Application />
+				<AIModel />
 			</Wrapper>
 		),
 		meta: {
-			label: "application",
+			label: "AIModel",
 			icon: <Iconify icon="solar:calendar-bold-duotone" size={24} />,
-			key: "/application",
+			key: "/aimodel",
 		},
 	},
 ];
 
-export default applicaiton;
+export default aimodel;

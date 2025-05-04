@@ -32,12 +32,12 @@ export interface Application {
 	ChatModelId: string;
 	ChatModelName: string;
 	Icon?: string;
-  embeddingModelID: string;
+	embeddingModelID: string;
 	embeddingModelName: string;
 	rerankModelID?: string;
 	rerankModelName?: string;
-	status: string
-	statusId: string
+	status: string;
+	statusId: string;
 	type: string;
 	Creator: string;
 	creationTime: Date;
@@ -45,6 +45,20 @@ export interface Application {
 	modificationTime: Date;
 	relevance: number;
 	prompt?: string;
+}
+
+export interface AIModel {
+	id: string;
+	provider: string;
+	aiTypeId: string;
+	aiModelTypeName: string;
+	aiModelTypeId: string;
+	isConfigured: boolean;
+	endPoint: string;
+	modelName: string;
+	modelKey: string;
+	modelDescription?: string;
+	creationTime: string;
 }
 
 export interface Permission {

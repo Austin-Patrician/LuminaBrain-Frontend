@@ -6,6 +6,7 @@ import userStore from "@/store/userStore";
 import { toast } from "sonner";
 import type { Result } from "#/api";
 import { ResultEnum } from "#/enum";
+import { da } from "@faker-js/faker";
 
 // 创建 axios 实例
 const axiosInstance = axios.create({
@@ -34,10 +35,12 @@ axiosInstance.interceptors.response.use(
 
 		const { status, data, message } = res.data;
 		// 业务请求成功
-		const hasSuccess = data && Reflect.has(res.data, "status") && status === ResultEnum.SUCCESS;
-		if (hasSuccess) {
-			return data;
-		}
+		// const hasSuccess = data && Reflect.has(res.data, "status") && status === ResultEnum.SUCCESS;
+		// if (hasSuccess) {
+		// 	return data;
+		// }
+		console.log(data);
+		return data;
 
 		// 业务请求错误
 		throw new Error(message || t("sys.api.apiRequestFailed"));
