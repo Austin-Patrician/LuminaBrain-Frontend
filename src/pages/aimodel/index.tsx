@@ -79,7 +79,7 @@ const ModelManagementPage: React.FC = () => {
   });
 
   // 根据 isConfigured 过滤模型
-	const models: AIModel[] = (data && "data" in data ? data.data : []) || [];
+  const models: AIModel[] = data || [];
   const configuredModels = models.filter((model) => model.isConfigured);
   const availableModels = models.filter((model) => !model.isConfigured);
 
