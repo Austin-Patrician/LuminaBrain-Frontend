@@ -1,6 +1,7 @@
-import { Button, Form, Input, Modal, Radio, Steps, type FormInstance, Select } from "antd";
+import { Button, Form, Input, Modal, Radio, Steps, type FormInstance, Select, ConfigProvider } from "antd";
 import { useState, useEffect } from "react";
 import type { Application } from "#/entity";
+import styles from './index.module.scss'
 
 type StepFormModalProps = {
 	title: string;
@@ -147,29 +148,38 @@ export default function StepFormModal({ title, open, formValue, onOk, onCancel, 
 	);
 
 	return (
-		<Modal
-			title={title}
-			open={open}
-			onCancel={handleCancel}
-			footer={renderFooter()}
-			width={1400}
-			centered
-			className="step-form-modal"
-		>
-			<div className="mb-8 mt-4 px-8">
-				<Steps current={currentStep} items={steps} />
-			</div>
+		<ConfigProvider theme={{
+			components: {
+				Steps: {
 
-			<Form
-				initialValues={formValue}
-				form={form}
-				labelCol={{ span: 3 }}
-				wrapperCol={{ span: 20 }}
-				layout="horizontal"
-				className="px-8"
+				},
+			},
+		}}>
+			<Modal
+				title={title}
+				open={open}
+				onCancel={handleCancel}
+				footer={renderFooter()}
+				width={1200}
+				className={styles.StepModal}
+				centered
 			>
-				{currentStep === 0 ? ApplicationSettingsForm : AdvancedSettingsForm}
-			</Form>
-		</Modal>
+				<div className="mb-8 mt-4 px-[20%]">
+					<Steps current={currentStep} items={steps} />
+				</div>
+
+				<Form
+					initialValues={formValue}
+					form={form}
+					labelCol={{ span: 3 }}
+					wrapperCol={{ span: 20 }}
+					layout="horizontal"
+					className="px-8"
+				>
+					{currentStep === 0 ? ApplicationSettingsForm : AdvancedSettingsForm}
+				</Form>
+			</Modal>
+		</ConfigProvider>
+
 	);
 }
