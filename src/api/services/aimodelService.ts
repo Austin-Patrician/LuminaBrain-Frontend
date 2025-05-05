@@ -92,10 +92,7 @@ export const aimodelService = {
 		//     });
 		//   }, 500); // 添加500ms延迟模拟网络请求
 		// });
-		return apiClient.get<{
-			success: boolean;
-			data: AIModel[];
-		}>({
+		return apiClient.get<AIModel[]>({
 			url: AIModelApi.GetModels,
 		});
 	},
@@ -113,12 +110,25 @@ export const aimodelService = {
 
 	// 分享模型
 	shareModel: (modelId: string) => {
-		return apiClient.post<{
-			success: boolean;
-			data: { shareUrl: string };
-		}>({
-			url: AIModelApi.ShareModel,
-			data: { modelId },
+		// Mock data for testing the invitation UI
+		return new Promise((resolve) => {
+			setTimeout(() => {
+				resolve({
+					success: true,
+					data: {
+						shareUrl: `https://lumina-brain.app/share/model/${modelId}?token=mock-token-${Date.now()}`
+					}
+				});
+			}, 300); // Small delay to simulate API call
 		});
+		
+		// Uncomment below and comment out the mock above when ready to use the real API
+		// return apiClient.post<{
+		//	success: boolean;
+		//	data: { shareUrl: string };
+		// }>({
+		//	url: AIModelApi.ShareModel,
+		//	data: { modelId },
+		// });
 	},
 };
