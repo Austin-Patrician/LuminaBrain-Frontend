@@ -14,6 +14,7 @@ import {
   Row,
   Col,
   message,
+  ConfigProvider
 } from "antd";
 import {
   EditOutlined,
@@ -55,6 +56,90 @@ const MODEL_TYPE_ICONS = {
   Image: <ApiOutlined />,
   Type: <ApiOutlined />,
 };
+
+const AIModelCard = ({ model, onAdd }: { model: AIModel; onAdd: () => void }) => (
+  <ConfigProvider theme={{
+    components: {
+      Card: {
+        bodyPadding: 16
+      },
+      Divider: {
+        marginLG: 8
+      },
+      Button: {
+        defaultBg: '#1890ff',
+        colorText: 'white',
+        defaultBorderColor: '#1890ff',
+      },
+      Tag: {
+        fontSize: 12
+      }
+    },
+  }}>
+    <Col key={model.id} xs={24} sm={12} md={8} lg={8} xl={6} className="mb-4">
+      <Card
+        hoverable
+        className=" flex flex-col rounded-lg bg-[#fff] shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-all duration-300"
+        classNames={{
+          body: 'flex-1',
+          cover: 'h-1/2'
+        }}
+        styles={{
+          body: {
+            paddingTop: 4
+          }
+        }}
+        cover={
+
+          <div
+            style={{ backgroundColor: MODEL_TYPE_COLORS[model.aiModelTypeName as keyof typeof MODEL_TYPE_COLORS] + "15" }}
+            className=" w-fit p-2 rounded-full"
+          >
+            <LLMIcon provider={model.provider} size={60} />
+          </div>}
+      >
+        <div className="w-full h-full flex flex-col">
+          <Space className="w-full" direction="vertical" size={8}>
+            <div className="flex flex-row">
+              <Text strong className="text-base flex-1" ellipsis={{ tooltip: model.modelName }}>
+                {model.modelName}
+              </Text>
+              <div>
+                <Tag color={MODEL_TYPE_COLORS[model.aiModelTypeName as keyof typeof MODEL_TYPE_COLORS]}>
+                  {MODEL_TYPE_ICONS[model.aiModelTypeName as keyof typeof MODEL_TYPE_ICONS]} {model.aiModelTypeName}
+                </Tag>
+              </div>
+            </div>
+
+
+            {/* 模型描述 - 字体更小 */}
+            <div className="flex-1">
+              <Text type="secondary" style={{ fontSize: '12px' }} ellipsis={{ tooltip: model.modelDescription }}>
+                {model.modelDescription || "暂无描述"}
+              </Text>
+            </div>
+          </Space>
+
+
+          {/* 添加分割线 */}
+          <Divider />
+
+          {/* 添加按钮 */}
+          <div className="">
+            <Button
+              icon={<PlusOutlined />}
+              className="w-full"
+              onClick={onAdd}
+            >
+              添加模型
+            </Button>
+          </div>
+        </div>
+
+      </Card>
+    </Col>
+  </ConfigProvider >
+)
 
 const ModelManagementPage: React.FC = () => {
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
@@ -188,93 +273,6 @@ const ModelManagementPage: React.FC = () => {
     </Card>
   );
 
-  // 渲染待添加的模型卡片 - 图标更大更突出
-  const renderAvailableModelCard = (model: AIModel) => (
-    <Col key={model.id} xs={24} sm={12} md={8} lg={8} xl={6} style={{ marginBottom: 16 }}>
-      <Card
-        hoverable
-        style={{
-          height: 250,
-          display: "flex",
-          flexDirection: "column",
-          borderRadius: "8px",
-          backgroundColor: "#ffffff",
-          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-          border: "1px solid #e8e8e8",
-          overflow: "hidden",
-          transition: "all 0.3s ease",
-        }}
-        bodyStyle={{
-          padding: "16px",
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        {/* 顶部图标和类型信息 */}
-        <Row align="middle" style={{ marginBottom: 12 }}>
-          <Col span={8}>
-            <div
-              style={{
-                fontSize: 60, // 增加图标大小
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "flex-start",
-                height: 80, // 固定高度以保持一致
-                width: 80, // 固定宽度
-                backgroundColor: MODEL_TYPE_COLORS[model.aiModelTypeName as keyof typeof MODEL_TYPE_COLORS] + "15", // 带透明度的背景
-                borderRadius: "12px", // 圆角边框
-                padding: "8px",
-                boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
-                border: `1px solid ${MODEL_TYPE_COLORS[model.aiModelTypeName as keyof typeof MODEL_TYPE_COLORS] + "30"}`,
-              }}
-            >
-              <LLMIcon provider={model.provider} size={60} />
-            </div>
-          </Col>
-          <Col span={16} style={{ textAlign: "right" }}>
-            <Tag color={MODEL_TYPE_COLORS[model.aiModelTypeName as keyof typeof MODEL_TYPE_COLORS]} style={{ fontSize: "12px" }}>
-              {MODEL_TYPE_ICONS[model.aiModelTypeName as keyof typeof MODEL_TYPE_ICONS]} {model.aiModelTypeName}
-            </Tag>
-          </Col>
-        </Row>
-
-        {/* 模型名称 */}
-        <div style={{ marginBottom: 8 }}>
-          <Text strong style={{ fontSize: "16px" }}>
-            {model.modelName}
-          </Text>
-        </div>
-
-        {/* 模型描述 - 字体更小 */}
-        <div style={{ flex: 1 }}>
-          <Text type="secondary" style={{ fontSize: "12px" }} ellipsis={{ tooltip: model.modelDescription }}>
-            {model.modelDescription || "暂无描述"}
-          </Text>
-        </div>
-
-        {/* 添加分割线 */}
-        <Divider style={{ margin: "12px 0 8px 0" }} />
-
-        {/* 添加按钮 */}
-        <div style={{ textAlign: "center" }}>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            block
-            style={{
-              backgroundColor: "#1890ff",
-              borderColor: "#1890ff",
-            }}
-            onClick={() => handleAddModel(model)}
-          >
-            添加模型
-          </Button>
-        </div>
-      </Card>
-    </Col>
-  );
-
   return (
     <div style={{ padding: "20px" }}>
       <Title level={2}>AI 模型管理</Title>
@@ -309,7 +307,7 @@ const ModelManagementPage: React.FC = () => {
                 加载中...
               </Col>
             ) : (
-              availableModels.map((model: AIModel) => renderAvailableModelCard(model))
+              availableModels.map((model: AIModel) => <AIModelCard key={model.aiModelTypeId} model={model} onAdd={() => handleAddModel(model)} />)
             )}
             {!isLoading && availableModels.length === 0 && (
               <Col span={24} style={{ textAlign: "center", padding: "20px" }}>
