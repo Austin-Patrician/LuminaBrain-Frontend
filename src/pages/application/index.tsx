@@ -107,7 +107,7 @@ export default function ApplicationPage() {
 	console.log("API返回的数据:", data);
 
 	// 正确访问嵌套数据结构
-	const applications = data?.data || [];
+	const applications: Application[] = data?.data || [];
 	const totalCount = data?.total || 0;
 
 	// Mutations for create, update, delete
@@ -263,7 +263,7 @@ export default function ApplicationPage() {
 				loading={isLoading}
 			>
 				<Row gutter={[24, 24]}>
-					{applications.map((app) => (
+					{applications.map((app: Application) => (
 						<Col xs={24} sm={24} md={12} xl={8} key={app.id}>
 							<Card hoverable className="h-full flex flex-col">
 								<div className="mb-3 flex items-center justify-between">
@@ -282,7 +282,7 @@ export default function ApplicationPage() {
 
 								{/* 模型信息展示 - 无前缀标签，只显示值 */}
 								<div className="mb-4 flex flex-wrap gap-2">
-									{app.chatModelName && <Tag color={MODEL_TAG_COLORS.Chat}>{app.chatModelName}</Tag>}
+									{app.ChatModelName && <Tag color={MODEL_TAG_COLORS.Chat}>{app.ChatModelName}</Tag>}
 									{app.embeddingModelName && <Tag color={MODEL_TAG_COLORS.Embedding}>{app.embeddingModelName}</Tag>}
 									{app.rerankModelName && <Tag color={MODEL_TAG_COLORS.Rerank}>{app.rerankModelName}</Tag>}
 									{app.imageModelName && <Tag color={MODEL_TAG_COLORS.Image}>{app.imageModelName}</Tag>}
