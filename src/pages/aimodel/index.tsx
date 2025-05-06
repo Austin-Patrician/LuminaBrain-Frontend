@@ -29,7 +29,6 @@ import { aimodelService } from "@/api/services/aimodelService";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { AIModel } from "#/entity";
 import LLMIcon from "@/components/icon/llmIcon";
-import { motion } from "framer-motion";
 
 const { Panel } = Collapse;
 const { Title, Text } = Typography;
@@ -187,16 +186,25 @@ const ModelManagementPage: React.FC = () => {
 
   // 处理分享
   const handleShare = (model: AIModel) => {
+    // Set the current model first
+    setCurrentModel(model);
+
+    // Call the service
     aimodelService
       .shareModel(model.id)
-      .then((response) => {
+      .then((response: any) => {
+        // Check response structure and set share URL
         if (response.success) {
-          setCurrentModel(model);
           setShareUrl(response.data.shareUrl);
+          // Make sure to show the modal after state is set
           setShareModalVisible(true);
+          console.log("Opening share modal with URL:", response.data.shareUrl);
+        } else {
+          message.error("生成分享链接失败: 无效响应");
         }
       })
-      .catch(() => {
+      .catch((error) => {
+        console.error("Share model error:", error);
         message.error("生成分享链接失败");
       });
   };
@@ -346,144 +354,101 @@ const ModelManagementPage: React.FC = () => {
         destroyOnClose
         className="share-invitation-modal"
         bodyStyle={{ padding: 0 }}
+        style={{ background: 'transparent' }}
+        modalRender={(node) => (
+          <div className="modal-wrapper">{node}</div>
+        )}
       >
         <div style={{
           position: 'relative',
           background: 'linear-gradient(135deg, #1a365d 0%, #3490dc 100%)',
           borderRadius: '12px',
           overflow: 'hidden',
-          padding: '30px',
+          padding: 0,
           color: 'white',
-          minHeight: '400px'
+          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.2)',
         }}>
-          {/* 动态背景效果 */}
-          <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', overflow: 'hidden' }}>
-            {[...Array(5)].map((_, i) => (
-              <motion.div
-                key={i}
-                style={{
-                  position: 'absolute',
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  borderRadius: '50%',
-                }}
-                animate={{
-                  x: [Math.random() * 400, Math.random() * 400],
-                  y: [Math.random() * 400, Math.random() * 400],
-                  scale: [Math.random() * 0.5 + 0.5, Math.random() * 0.5 + 1],
-                  opacity: [0.3, 0.7, 0.3],
-                }}
-                transition={{
-                  duration: Math.random() * 10 + 10,
-                  repeat: Infinity,
-                  repeatType: 'reverse',
-                }}
-              />
-            ))}
-          </div>
+          {/* 简化的背景 */}
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            background: 'radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.1) 0%, transparent 20%), radial-gradient(circle at 70% 60%, rgba(255, 255, 255, 0.08) 0%, transparent 20%)'
+          }} />
 
-          {/* LuminaBrain 标志 */}
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            style={{ marginBottom: '20px' }}
-          >
-            <Text style={{ color: 'white', fontSize: '18px', fontWeight: 'bold' }}>
-              LuminaBrain
-            </Text>
-          </motion.div>
+          {/* 内容区域 - 添加内边距 */}
+          <div style={{ padding: '30px' }}>
+            {/* LuminaBrain 标志 */}
+            <div style={{ position: 'relative', marginBottom: '20px' }}>
+              <Text style={{ color: 'white', fontSize: '18px', fontWeight: 'bold' }}>
+                LuminaBrain
+              </Text>
+            </div>
 
-          {/* 邀请标题 */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3, duration: 1 }}
-            style={{ textAlign: 'center', marginBottom: '30px' }}
-          >
-            <Text style={{ color: 'white', fontSize: '24px', fontWeight: 'bold', display: 'block' }}>
-              模型分享邀请
-            </Text>
-          </motion.div>
+            {/* 邀请标题 */}
+            <div style={{ position: 'relative', textAlign: 'center', marginBottom: '30px' }}>
+              <Text style={{ color: 'white', fontSize: '24px', fontWeight: 'bold', display: 'block' }}>
+                模型分享邀请
+              </Text>
+            </div>
 
-          {/* 模型图标动画 */}
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{
-              type: "spring",
-              stiffness: 260,
-              damping: 20,
-              delay: 0.5
-            }}
-            style={{
+            {/* 模型图标 */}
+            <div style={{
+              position: 'relative',
               display: 'flex',
               justifyContent: 'center',
               margin: '20px 0'
-            }}
-          >
-            <div style={{
-              background: 'rgba(255, 255, 255, 0.15)',
-              borderRadius: '50%',
-              padding: '20px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)'
             }}>
-              {currentModel && <LLMIcon provider={currentModel.provider} size={80} />}
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.15)',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)'
+              }}>
+                {currentModel && <LLMIcon provider={currentModel.provider} size={80} />}
+              </div>
             </div>
-          </motion.div>
 
-          {/* 模型名称 */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7, duration: 0.8 }}
-            style={{ textAlign: 'center', margin: '20px 0' }}
-          >
-            <Text style={{ color: 'white', fontSize: '28px', fontWeight: 'bold' }}>
-              {currentModel?.modelName}
-            </Text>
-            {currentModel?.provider && (
-              <Tag color="blue" style={{ marginLeft: 10 }}>
-                {currentModel.provider}
-              </Tag>
-            )}
-          </motion.div>
+            {/* 模型名称 */}
+            <div style={{ position: 'relative', textAlign: 'center', margin: '20px 0' }}>
+              <Text style={{ color: 'white', fontSize: '28px', fontWeight: 'bold' }}>
+                {currentModel?.modelName}
+              </Text>
+              {currentModel?.provider && (
+                <Tag color="blue" style={{ marginLeft: 10 }}>
+                  {currentModel.provider}
+                </Tag>
+              )}
+            </div>
 
-          {/* 分享链接 */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.9, duration: 0.8 }}
-            style={{ margin: '30px 0' }}
-          >
-            <Input.Group compact>
-              <Input
-                style={{ width: 'calc(100% - 40px)' }}
-                value={shareUrl}
-                readOnly
-                placeholder="分享链接"
-              />
-              <Button icon={<CopyOutlined />} onClick={handleCopyShareUrl} />
-            </Input.Group>
-          </motion.div>
+            {/* 分享链接 */}
+            <div style={{ position: 'relative', margin: '30px 0' }}>
+              <Input.Group compact>
+                <Input
+                  style={{ width: 'calc(100% - 40px)' }}
+                  value={shareUrl}
+                  readOnly
+                  placeholder="分享链接"
+                />
+                <Button icon={<CopyOutlined />} onClick={handleCopyShareUrl} />
+              </Input.Group>
+            </div>
 
-          {/* 按钮区域 */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.1, duration: 0.8 }}
-            style={{ display: 'flex', justifyContent: 'center', marginTop: '30px' }}
-          >
-            <Space>
-              <Button onClick={() => setShareModalVisible(false)}>
-                取消
-              </Button>
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
+            {/* 按钮区域 */}
+            <div style={{
+              position: 'relative',
+              display: 'flex',
+              justifyContent: 'center',
+              marginTop: '30px'
+            }}>
+              <Space>
+                <Button onClick={() => setShareModalVisible(false)}>
+                  取消
+                </Button>
                 <Button
                   type="primary"
                   onClick={handleCopyShareUrl}
@@ -495,9 +460,9 @@ const ModelManagementPage: React.FC = () => {
                 >
                   确认分享
                 </Button>
-              </motion.div>
-            </Space>
-          </motion.div>
+              </Space>
+            </div>
+          </div>
         </div>
       </Modal>
     </div>

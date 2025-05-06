@@ -53,3 +53,33 @@ html.dark {
   border-radius: 10px;
   background: var(--c-scrollbar-hover);
 }
+
+
+/* Add to your global CSS file */
+.share-invitation-modal .ant-modal-content {
+  padding: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.share-invitation-modal .ant-modal-close {
+  color: white !important;
+  top: 10px;
+  right: 10px;
+  z-index: 1000;
+}
+
+.share-invitation-modal .modal-wrapper {
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.share-invitation-modal .ant-modal-body {
+  padding: 0;
+  margin: 0;
+  line-height: 0;
+}
