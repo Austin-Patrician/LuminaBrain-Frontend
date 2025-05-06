@@ -47,18 +47,30 @@ export interface Application {
 	prompt?: string;
 }
 
+export interface AIProvider {
+	id: string;
+	providerName: string;
+	logo: string;
+	status: string;
+	tag: string;
+	isConfigured: boolean;
+	aiModels: AIModel[];
+	aIModelKey?: string;
+	endPoint?: string;
+}
+
 export interface AIModel {
 	id: string;
 	provider: string;
-	aiTypeId: string;
+	aiProviderId: string;
 	aiModelTypeName: string;
 	aiModelTypeId: string;
 	isConfigured: boolean;
-	endPoint: string;
 	modelName: string;
-	modelKey: string;
 	modelDescription?: string;
 	creationTime: string;
+	endPoint?: string;
+	modelKey?: string;
 }
 
 export interface Permission {

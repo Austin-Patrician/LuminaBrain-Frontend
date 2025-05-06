@@ -24,10 +24,11 @@ import {
   RobotOutlined,
   SettingOutlined,
   CopyOutlined,
+  CaretRightOutlined
 } from "@ant-design/icons";
 import { aimodelService } from "@/api/services/aimodelService";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import type { AIModel } from "#/entity";
+import type { AIModel, AIProvider } from "#/entity";
 import LLMIcon from "@/components/icon/llmIcon";
 
 const { Panel } = Collapse;
@@ -40,11 +41,7 @@ const MODEL_TYPE_COLORS = {
   Rerank: "purple",
   Image: "orange",
   Type: "cyan",
-};
-
-type ModelsResponse = {
-  success: boolean;
-  data: AIModel[];
+  Tts: "magenta",
 };
 
 // 模型类型图标映射
@@ -54,6 +51,7 @@ const MODEL_TYPE_ICONS = {
   Rerank: <SettingOutlined />,
   Image: <ApiOutlined />,
   Type: <ApiOutlined />,
+  Tts: <ApiOutlined />,
 };
 
 const AIModelCard = ({ model, onAdd }: { model: AIModel; onAdd: () => void }) => (
@@ -148,8 +146,18 @@ const ModelManagementPage: React.FC = () => {
   const [shareModalVisible, setShareModalVisible] = useState<boolean>(false);
   const [shareUrl, setShareUrl] = useState<string>("");
 
+  // 添加提供商模态框状态
+  const [providerModalVisible, setProviderModalVisible] = useState<boolean>(false);
+  const [currentProvider, setCurrentProvider] = useState<AIProvider | null>(null);
+  const [providerForm] = Form.useForm();
+
   // 使用 React Query 获取模型数据
-  const { data, isLoading } = useQuery<AIModel[], Error>({
+  const { data, isLoading } = useQuery<{
+    success: boolean;
+    statusCode: number;
+    message: string;
+    data: AIProvider[];
+  }>({
     queryKey: ["models"],
     queryFn: aimodelService.getModels,
   });
@@ -169,10 +177,21 @@ const ModelManagementPage: React.FC = () => {
     },
   });
 
-  // 根据 isConfigured 过滤模型
-  const models: AIModel[] = data || [];
-  const configuredModels = models.filter((model) => model.isConfigured);
-  const availableModels = models.filter((model) => !model.isConfigured);
+  // 添加展开状态管理
+  const [expandedProviders, setExpandedProviders] = useState<Record<string, boolean>>({});
+
+  // 切换展开状态
+  const toggleProviderExpand = (providerId: string) => {
+    setExpandedProviders(prev => ({
+      ...prev,
+      [providerId]: !prev[providerId]
+    }));
+  };
+
+  // 根据 isConfigured 过滤提供商
+  const providers: AIProvider[] = data || [];
+  const configuredProviders = providers.filter((provider) => provider.isConfigured);
+  const availableProviders = providers.filter((provider) => !provider.isConfigured);
 
   // 处理设置编辑
   const handleEditSettings = (model: AIModel) => {
@@ -186,19 +205,13 @@ const ModelManagementPage: React.FC = () => {
 
   // 处理分享
   const handleShare = (model: AIModel) => {
-    // Set the current model first
     setCurrentModel(model);
-
-    // Call the service
     aimodelService
       .shareModel(model.id)
       .then((response: any) => {
-        // Check response structure and set share URL
         if (response.success) {
           setShareUrl(response.data.shareUrl);
-          // Make sure to show the modal after state is set
           setShareModalVisible(true);
-          console.log("Opening share modal with URL:", response.data.shareUrl);
         } else {
           message.error("生成分享链接失败: 无效响应");
         }
@@ -225,8 +238,8 @@ const ModelManagementPage: React.FC = () => {
       if (currentModel) {
         const updatedModel = {
           ...currentModel,
-          apiUrl: values.apiUrl,
-          apiKey: values.apiKey,
+          endPoint: values.apiUrl,
+          modelKey: values.apiKey,
           isConfigured: true,
         };
         updateModelMutation.mutate(updatedModel);
@@ -241,43 +254,165 @@ const ModelManagementPage: React.FC = () => {
     setIsModalVisible(true);
   };
 
-  // 渲染已配置的模型卡片
-  const renderConfiguredModelCard = (model: AIModel) => (
+  // 处理添加提供商
+  const handleAddProvider = (provider: AIProvider) => {
+    setCurrentProvider(provider);
+    providerForm.resetFields();
+    setProviderModalVisible(true);
+  };
+
+  // 保存提供商配置
+  const handleSaveProviderSettings = () => {
+    providerForm.validateFields().then((values) => {
+      if (currentProvider) {
+        message.success(`成功添加 ${currentProvider.providerName} 提供商配置`);
+        setProviderModalVisible(false);
+        queryClient.invalidateQueries({ queryKey: ["models"] });
+      }
+    });
+  };
+
+  // 渲染提供商卡片 - 重新设计
+  const renderProviderCard = (provider: AIProvider) => (
     <Card
-      key={model.id}
+      key={provider.id}
       style={{
         marginBottom: 16,
         borderRadius: "8px",
         boxShadow: "0 2px 8px rgba(0,0,0,0.09)",
       }}
+      bodyStyle={{ padding: '16px' }}
     >
-      <Row align="middle" gutter={16}>
-        <Col span={1}>
-          <LLMIcon provider={model.provider} size={32} />
-        </Col>
-        <Col span={15}>
-          <Space direction="vertical" size={0}>
-            <Space>
-              <Text strong>{model.modelName}</Text>
-              <Tag color={MODEL_TYPE_COLORS[model.aiModelTypeName as keyof typeof MODEL_TYPE_COLORS]}>
-                {MODEL_TYPE_ICONS[model.aiModelTypeName as keyof typeof MODEL_TYPE_ICONS]} {model.aiModelTypeName}
-              </Tag>
-              {model.provider && <Tag color="default">{model.provider}</Tag>}
-            </Space>
-            {model.modelDescription && <Text type="secondary">{model.modelDescription}</Text>}
+      {/* 提供商信息和操作按钮区域 */}
+      <Row align="middle" justify="space-between" gutter={16}>
+        <Col>
+          <Space size="middle" align="center">
+            <div style={{
+              background: 'rgba(24, 144, 255, 0.1)',
+              borderRadius: '50%',
+              padding: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <LLMIcon provider={provider.providerName} size={40} />
+            </div>
+            <Text strong style={{ fontSize: '16px' }}>
+              {provider.providerName}
+            </Text>
           </Space>
         </Col>
-        <Col span={8} style={{ textAlign: "right" }}>
+        <Col>
           <Space>
-            <Button icon={<ShareAltOutlined />} onClick={() => handleShare(model)}>
+            <Button
+              icon={<ShareAltOutlined />}
+              onClick={() => message.info(`准备分享 ${provider.providerName} 提供商`)}
+            >
               分享
             </Button>
-            <Button type="primary" icon={<EditOutlined />} onClick={() => handleEditSettings(model)}>
-              编辑设置
+            <Button
+              icon={<EditOutlined />}
+              onClick={() => handleAddProvider(provider)}
+            >
+              编辑
+            </Button>
+            <Button
+              type={expandedProviders[provider.id] ? "primary" : "default"}
+              icon={expandedProviders[provider.id] ?
+                <CaretRightOutlined rotate={90} /> :
+                <CaretRightOutlined />
+              }
+              onClick={() => toggleProviderExpand(provider.id)}
+            >
+              {expandedProviders[provider.id] ? "收起模型" : "展开模型"}
             </Button>
           </Space>
         </Col>
       </Row>
+
+      {/* 模型列表部分 - 条件渲染 */}
+      {expandedProviders[provider.id] && (
+        <div style={{ marginTop: '16px' }}>
+          <Divider style={{ margin: '12px 0' }} />
+          <Row gutter={[16, 16]}>
+            {provider.aiModels.map((model: AIModel) => (
+              <Col key={model.id} xs={24} sm={12} md={8} lg={6} xl={6}>
+                <Card
+                  hoverable
+                  style={{
+                    borderRadius: '10px',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                    height: '180px'
+                  }}
+                  bodyStyle={{
+                    padding: '16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    height: '100%'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
+                    <div style={{
+                      background: MODEL_TYPE_COLORS[model.aiModelTypeName as keyof typeof MODEL_TYPE_COLORS] + '15',
+                      borderRadius: '50%',
+                      padding: '6px',
+                      marginRight: '10px'
+                    }}>
+                      {MODEL_TYPE_ICONS[model.aiModelTypeName as keyof typeof MODEL_TYPE_ICONS]}
+                    </div>
+                    <Text strong ellipsis={{ tooltip: model.modelName }}>
+                      {model.modelName}
+                    </Text>
+                    <Tag
+                      color={MODEL_TYPE_COLORS[model.aiModelTypeName as keyof typeof MODEL_TYPE_COLORS]}
+                      style={{ marginLeft: 'auto', fontSize: '10px' }}
+                    >
+                      {model.aiModelTypeName}
+                    </Tag>
+                  </div>
+
+                  <div style={{ flex: 1, overflow: 'hidden' }}>
+                    <Text type="secondary" style={{ fontSize: '12px' }} ellipsis={{ tooltip: model.modelDescription }}>
+                      {model.modelDescription || "暂无描述"}
+                    </Text>
+                  </div>
+
+                  <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between' }}>
+                    <Button
+                      size="small"
+                      icon={<ShareAltOutlined />}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleShare(model);
+                      }}
+                    >
+                      分享
+                    </Button>
+                    <Button
+                      size="small"
+                      type="primary"
+                      icon={<EditOutlined />}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEditSettings(model);
+                      }}
+                    >
+                      编辑
+                    </Button>
+                  </div>
+                </Card>
+              </Col>
+            ))}
+            {provider.aiModels.length === 0 && (
+              <Col span={24}>
+                <div style={{ textAlign: 'center', padding: '20px', color: '#999' }}>
+                  该提供商暂无已添加的模型
+                </div>
+              </Col>
+            )}
+          </Row>
+        </div>
+      )}
     </Card>
   );
 
@@ -288,7 +423,7 @@ const ModelManagementPage: React.FC = () => {
 
       <Collapse defaultActiveKey={["1"]} bordered={false}>
         <Panel
-          header={<Title level={4}>已添加的模型 ({configuredModels.length})</Title>}
+          header={<Title level={4}>已添加的提供商 ({configuredProviders.length})</Title>}
           key="1"
           style={{ backgroundColor: "#f7f7f7", borderRadius: "8px", marginBottom: "16px" }}
         >
@@ -296,30 +431,108 @@ const ModelManagementPage: React.FC = () => {
             {isLoading ? (
               <div style={{ textAlign: "center", padding: "20px" }}>加载中...</div>
             ) : (
-              configuredModels.map((model: AIModel) => renderConfiguredModelCard(model))
+              configuredProviders.map((provider: AIProvider) => renderProviderCard(provider))
             )}
-            {!isLoading && configuredModels.length === 0 && (
-              <div style={{ textAlign: "center", padding: "20px" }}>暂无已配置的模型</div>
+            {!isLoading && configuredProviders.length === 0 && (
+              <div style={{ textAlign: "center", padding: "20px" }}>暂无已配置的模型提供商</div>
             )}
           </div>
         </Panel>
 
         <Panel
-          header={<Title level={4}>待添加的模型 ({availableModels.length})</Title>}
+          header={<Title level={4}>待添加的提供商 ({availableProviders.length})</Title>}
           key="2"
           style={{ backgroundColor: "#f7f7f7", borderRadius: "8px" }}
         >
-          <Row gutter={16}>
+          <Row gutter={[16, 16]}>
             {isLoading ? (
               <Col span={24} style={{ textAlign: "center", padding: "20px" }}>
                 加载中...
               </Col>
             ) : (
-              availableModels.map((model: AIModel) => <AIModelCard key={model.aiModelTypeId} model={model} onAdd={() => handleAddModel(model)} />)
+              availableProviders.map((provider: AIProvider) => (
+                <Col key={provider.id} xs={24} sm={12} md={8} lg={6} xl={6}>
+                  <Card
+                    hoverable
+                    style={{
+                      height: '280px',
+                      borderRadius: '12px',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                    }}
+                    bodyStyle={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      height: '100%',
+                      padding: '20px'
+                    }}
+                  >
+                    {/* 图标居中显示 */}
+                    <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+                      <div style={{
+                        background: 'rgba(24, 144, 255, 0.1)',
+                        borderRadius: '50%',
+                        width: '80px',
+                        height: '80px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        margin: '0 auto'
+                      }}>
+                        <LLMIcon provider={provider.providerName} size={50} />
+                      </div>
+                    </div>
+
+                    {/* 提供商名称居中显示 */}
+                    <div style={{ textAlign: 'center', marginBottom: '12px' }}>
+                      <Text strong style={{ fontSize: '18px' }}>
+                        {provider.providerName}
+                      </Text>
+                    </div>
+
+                    {/* 标签居中显示 */}
+                    <div style={{
+                      textAlign: 'center',
+                      marginBottom: '12px',
+                      flex: 1,
+                      overflow: 'hidden'
+                    }}>
+                      <div style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        justifyContent: 'center',
+                        gap: '6px'
+                      }}>
+                        {provider.tag.split(',').map((tag, index) => (
+                          <Tag
+                            key={index}
+                            color="default"
+                            style={{ fontSize: '10px', margin: '2px' }}
+                          >
+                            {tag}
+                          </Tag>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* 分隔线 */}
+                    <Divider style={{ margin: '12px 0' }} />
+
+                    {/* 添加按钮 */}
+                    <Button
+                      icon={<PlusOutlined />}
+                      type="primary"
+                      onClick={() => handleAddProvider(provider)}
+                      block
+                    >
+                      添加提供商
+                    </Button>
+                  </Card>
+                </Col>
+              ))
             )}
-            {!isLoading && availableModels.length === 0 && (
+            {!isLoading && availableProviders.length === 0 && (
               <Col span={24} style={{ textAlign: "center", padding: "20px" }}>
-                暂无可添加的模型
+                暂无可添加的模型提供商
               </Col>
             )}
           </Row>
@@ -464,6 +677,24 @@ const ModelManagementPage: React.FC = () => {
             </div>
           </div>
         </div>
+      </Modal>
+
+      {/* 添加提供商模态框 */}
+      <Modal
+        title={currentProvider ? `配置 ${currentProvider.providerName} 提供商` : "提供商配置"}
+        open={providerModalVisible}
+        onOk={handleSaveProviderSettings}
+        onCancel={() => setProviderModalVisible(false)}
+        destroyOnClose
+      >
+        <Form form={providerForm} layout="vertical">
+          <Form.Item name="apiEndpoint" label="API 端点" rules={[{ required: true, message: "请输入API端点" }]}>
+            <Input placeholder="https://api.provider.com/v1" />
+          </Form.Item>
+          <Form.Item name="apiKey" label="API Key" rules={[{ required: true, message: "请输入API Key" }]}>
+            <Input.Password placeholder="您的API密钥" />
+          </Form.Item>
+        </Form>
       </Modal>
     </div>
   );
