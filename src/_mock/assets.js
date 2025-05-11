@@ -459,6 +459,16 @@ const OTHERS_PERMISSION = [
 		component: "/aimodel/index.tsx",
 	},
 	{
+		id: "3981225257659277",
+		parentId: "",
+		label: "sys.menu.knowledge",
+		name: "Knowledge",
+		icon: "solar:calendar-bold-duotone",
+		type: PermissionType.MENU,
+		route: "knowledge",
+		component: "/knowledge/index.tsx",
+	},
+	{
 		id: "3513985683886393",
 		parentId: "",
 		label: "sys.menu.kanban",
