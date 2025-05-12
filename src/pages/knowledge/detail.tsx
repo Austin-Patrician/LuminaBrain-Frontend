@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Button, Card, Tabs, Space, Typography, Tag, Descriptions, Empty, Table, Input, Spin } from "antd";
-import { useParams, useNavigate } from "react-router";
+import { useParams } from "@/router/hooks";
+import { useNavigate } from "react-router";
 import { useEffect, useState } from "react";
 
 import knowledgeService from "@/api/services/knowledgeService";
@@ -11,14 +12,9 @@ const { Title, Paragraph } = Typography;
 const { Search } = Input;
 const { TabPane } = Tabs;
 
-// 模型类型颜色映射
-const MODEL_TAG_COLORS = {
-  ChatModel: "blue",
-  EmbeddingModel: "green",
-};
 
 export default function KnowledgeDetail() {
-  const { id } = useParams<{ id: string }>();
+  const { id } = useParams();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("1");
   const [searchQuery, setSearchQuery] = useState("");

@@ -60,7 +60,6 @@ export interface AIProvider {
 	endPoint?: string;
 }
 
-
 export interface UpdateProviderModel {
 	id: string;
 	endpoint?: string;
@@ -109,6 +108,20 @@ export interface Role {
 	permission?: Permission[];
 }
 
+export interface KnowledgeItem {
+	id: string;
+	knowledgeId: string;
+	data: string;
+	fileId: string;
+	dataCount: number;
+	importType: string;
+	knowledgeItemStatus: string;
+	statusId: string;
+	creationTime: string;
+	enable: boolean;
+	isQA: boolean;
+}
+
 export interface Knowledge {
 	id: string;
 	name: string;
@@ -128,4 +141,5 @@ export interface Knowledge {
 	maxTokensPerLine: number;
 	overlappingTokens: number;
 	isOCR: boolean;
+	knowledgeItems?: KnowledgeItem[];
 }

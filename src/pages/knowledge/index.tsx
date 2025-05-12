@@ -16,7 +16,7 @@ import {
   Pagination,
 } from "antd";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router";
+import { usePathname, useRouter } from "@/router/hooks";
 
 import knowledgeService from "@/api/services/knowledgeService";
 import { IconButton, Iconify } from "@/components/icon";
@@ -53,7 +53,8 @@ type SearchFormFieldType = {
 };
 
 export default function Knowledge() {
-  const navigate = useNavigate();
+  const { push } = useRouter();
+  const pathname = usePathname();
   const [searchForm] = Form.useForm();
   const [form] = Form.useForm();
   const [searchParams, setSearchParams] = useState<SearchFormFieldType>({
@@ -173,7 +174,8 @@ export default function Knowledge() {
   };
 
   const onView = (knowledgeBase: Knowledge) => {
-    navigate(`/knowledge/${knowledgeBase.id}`);
+    console.log("Knowledge Base ID:", knowledgeBase.id);
+    push(`/knowledge/knowledge/${knowledgeBase.id}`);
   };
 
   const onEdit = (formValue: Knowledge) => {

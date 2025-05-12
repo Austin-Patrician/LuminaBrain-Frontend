@@ -58,12 +58,13 @@ export default function RolePage() {
 				<div className="flex w-full justify-center text-gray-500">
 					<IconButton
 						onClick={() => {
+							console.log(pathname, 'pathname')
 							push(`${pathname}/${record.id}`);
 						}}
 					>
 						<Iconify icon="mdi:card-account-details" size={18} />
 					</IconButton>
-					<IconButton onClick={() => {}}>
+					<IconButton onClick={() => { }}>
 						<Iconify icon="solar:pen-bold-duotone" size={18} />
 					</IconButton>
 					<Popconfirm title="Delete the User" okText="Yes" cancelText="No" placement="left">
@@ -80,7 +81,7 @@ export default function RolePage() {
 		<Card
 			title="User List"
 			extra={
-				<Button type="primary" onClick={() => {}}>
+				<Button type="primary" onClick={() => { }}>
 					New
 				</Button>
 			}

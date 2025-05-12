@@ -469,6 +469,16 @@ const OTHERS_PERMISSION = [
 		component: "/knowledge/index.tsx",
 	},
 	{
+		id: "0157980245365434",
+		parentId: "3981225257659277",
+		label: "sys.menu.knowledge_detail",
+		name: "Knowledge Detail",
+		type: PermissionType.MENU,
+		route: "knowledge/:id",
+		component: "/knowledge/detail.tsx",
+		hide: true,
+	},
+	{
 		id: "3513985683886393",
 		parentId: "",
 		label: "sys.menu.kanban",

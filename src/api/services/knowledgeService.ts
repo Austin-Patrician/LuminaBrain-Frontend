@@ -21,6 +21,14 @@ interface KnowledgeListResponse {
   };
 }
 
+// 新增单个知识库响应类型
+interface KnowledgeResponse {
+  success: boolean;
+  statusCode: number;
+  message: string;
+  data: Knowledge;
+}
+
 // 定义API端点
 export enum KnowledgeApi {
   PagedKnowledge = "/knowledge/paged",
@@ -85,7 +93,7 @@ const knowledgeService = {
    * 获取单个知识库详情
    */
   getKnowledge: (id: string) => {
-    return apiClient.get<Knowledge>({
+    return apiClient.get<KnowledgeResponse>({
       url: KnowledgeApi.getKnowledge.replace('{id}', id),
     });
   },
