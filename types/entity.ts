@@ -108,3 +108,24 @@ export interface Role {
 	desc?: string;
 	permission?: Permission[];
 }
+
+export interface Knowledge {
+	id: string;
+	name: string;
+	description?: string;
+	pointStructCount: number;
+	fileCount: number;
+	sliceCount: number;
+	avatar: string;
+	statusId: string;
+	creationTime: string;
+	totalTextCount: number;
+	chatModelID: string;
+	chatModel: string;
+	embeddingModelID: string;
+	embeddingModel: string;
+	maxTokensPerParagraph: number;
+	maxTokensPerLine: number;
+	overlappingTokens: number;
+	isOCR: boolean;
+}
