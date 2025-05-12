@@ -28,7 +28,7 @@ import {
 } from "@ant-design/icons";
 import { aimodelService } from "@/api/services/aimodelService";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import type { AIModel, AIProvider } from "#/entity";
+import type { AIModel, AIProvider, UpdateProviderModel } from "#/entity";
 import LLMIcon from "@/components/icon/llmIcon";
 
 const { Panel } = Collapse;
@@ -53,90 +53,6 @@ const MODEL_TYPE_ICONS = {
   Type: <ApiOutlined />,
   Tts: <ApiOutlined />,
 };
-
-const AIModelCard = ({ model, onAdd }: { model: AIModel; onAdd: () => void }) => (
-  <ConfigProvider theme={{
-    components: {
-      Card: {
-        bodyPadding: 16
-      },
-      Divider: {
-        marginLG: 8
-      },
-      Button: {
-        defaultBg: '#1890ff',
-        colorText: 'white',
-        defaultBorderColor: '#1890ff',
-      },
-      Tag: {
-        fontSize: 12
-      }
-    },
-  }}>
-    <Col key={model.id} xs={24} sm={12} md={8} lg={8} xl={6} className="mb-4">
-      <Card
-        hoverable
-        className=" flex flex-col rounded-lg bg-[#fff] shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-all duration-300"
-        classNames={{
-          body: 'flex-1',
-          cover: 'h-1/2'
-        }}
-        styles={{
-          body: {
-            paddingTop: 4
-          }
-        }}
-        cover={
-
-          <div
-            style={{ backgroundColor: MODEL_TYPE_COLORS[model.aiModelTypeName as keyof typeof MODEL_TYPE_COLORS] + "15" }}
-            className=" w-fit p-2 rounded-full"
-          >
-            <LLMIcon provider={model.provider} size={60} />
-          </div>}
-      >
-        <div className="w-full h-full flex flex-col">
-          <Space className="w-full" direction="vertical" size={8}>
-            <div className="flex flex-row">
-              <Text strong className="text-base flex-1" ellipsis={{ tooltip: model.modelName }}>
-                {model.modelName}
-              </Text>
-              <div>
-                <Tag color={MODEL_TYPE_COLORS[model.aiModelTypeName as keyof typeof MODEL_TYPE_COLORS]}>
-                  {MODEL_TYPE_ICONS[model.aiModelTypeName as keyof typeof MODEL_TYPE_ICONS]} {model.aiModelTypeName}
-                </Tag>
-              </div>
-            </div>
-
-
-            {/* 模型描述 - 字体更小 */}
-            <div className="flex-1">
-              <Text type="secondary" style={{ fontSize: '12px' }} ellipsis={{ tooltip: model.modelDescription }}>
-                {model.modelDescription || "暂无描述"}
-              </Text>
-            </div>
-          </Space>
-
-
-          {/* 添加分割线 */}
-          <Divider />
-
-          {/* 添加按钮 */}
-          <div className="">
-            <Button
-              icon={<PlusOutlined />}
-              className="w-full"
-              onClick={onAdd}
-            >
-              添加模型
-            </Button>
-          </div>
-        </div>
-
-      </Card>
-    </Col>
-  </ConfigProvider >
-)
 
 const ModelManagementPage: React.FC = () => {
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
@@ -164,7 +80,7 @@ const ModelManagementPage: React.FC = () => {
 
   // 使用 React Query 更新模型配置
   const updateModelMutation = useMutation({
-    mutationFn: aimodelService.updateModel,
+    mutationFn: aimodelService.updateProvider,
     onSuccess: (response) => {
       if (response.success) {
         message.success("模型配置已更新");
@@ -195,6 +111,7 @@ const ModelManagementPage: React.FC = () => {
 
   // 处理设置编辑
   const handleEditSettings = (model: AIModel) => {
+    console.log("Editing settings for model:", model);
     setCurrentModel(model);
     form.setFieldsValue({
       apiUrl: model.endPoint || "",
@@ -234,13 +151,13 @@ const ModelManagementPage: React.FC = () => {
 
   // 保存设置
   const handleSaveSettings = () => {
+    console.log('执行UpdatreModelMutation');
     form.validateFields().then((values) => {
       if (currentModel) {
-        const updatedModel = {
-          ...currentModel,
-          endPoint: values.apiUrl,
-          modelKey: values.apiKey,
-          isConfigured: true,
+        const updatedModel: UpdateProviderModel = {
+          id: currentModel.id,
+          endpoint: values.apiUrl,
+          modelKey: values.apiKey
         };
         updateModelMutation.mutate(updatedModel);
       }

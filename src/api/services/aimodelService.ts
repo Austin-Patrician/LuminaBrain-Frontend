@@ -1,13 +1,15 @@
 // aimodelService.ts
 import apiClient from "@/api/apiClient";
-import type { AIModel, AIProvider } from "#/entity";
+import type { AIModel, AIProvider,UpdateProviderModel } from "#/entity";
 
 // 定义API端点
 enum AIModelApi {
-	GetModels = "/aimodel/allAiProvider",
-	UpdateModel = "/aimodel/update",
+	GetModels = "/provider/all",
+	UpdateModel = "/provider/update",
 	ShareModel = "/aimodel/share",
 }
+
+
 
 // 服务定义
 export const aimodelService = {
@@ -24,7 +26,7 @@ export const aimodelService = {
 	},
 
 	// 更新模型配置
-	updateModel: (model: AIModel) => {
+	updateProvider: (model: UpdateProviderModel) => {
 		return apiClient.post<{
 			success: boolean;
 			data: AIModel;

@@ -1,3 +1,4 @@
+import { ex } from "node_modules/@fullcalendar/core/internal-common";
 import type { BasicStatus, PermissionType } from "./enum";
 
 export interface UserToken {
@@ -57,6 +58,13 @@ export interface AIProvider {
 	aiModels: AIModel[];
 	aIModelKey?: string;
 	endPoint?: string;
+}
+
+
+export interface UpdateProviderModel {
+	id: string;
+	endpoint?: string;
+	modelKey?: string;
 }
 
 export interface AIModel {

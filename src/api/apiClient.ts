@@ -39,7 +39,6 @@ axiosInstance.interceptors.response.use(
 		// if (hasSuccess) {
 		// 	return data;
 		// }
-		console.log(data);
 		return data;
 
 		// 业务请求错误
