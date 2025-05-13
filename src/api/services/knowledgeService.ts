@@ -2,12 +2,39 @@
 import apiClient from "@/api/apiClient";
 import type { Knowledge } from "#/entity";
 
+// 单个AI模型数据结构
+interface AiModelItem {
+  aiModelId: string;
+  aiModelName: string;
+}
+
+// AI模型列表响应类型
+interface AiModelListResponse {
+  success: boolean;
+  statusCode: number;
+  message: string;
+  data: AiModelItem[];
+}
+
 interface KnowledgeQueryParams {
   name?: string;
   statusId?: string;
   isOCR?: boolean; // 添加 isOCR 参数
   pageNumber?: number;
   pageSize?: number;
+}
+
+// 新增创建知识库的DTO
+interface CreateKnowledgeDto {
+  name: string;
+  description: string;
+  chatModelID: string | null;
+  embeddingModelID: string | null;
+  maxTokensPerParagraph: number;
+  avatar: string;
+  maxTokensPerLine: number;
+  overlappingTokens: number;
+  isOCR: boolean;
 }
 
 // 定义响应类型
@@ -34,7 +61,9 @@ export enum KnowledgeApi {
   PagedKnowledge = "/knowledge/paged",
   UpdateModel = "/knowledge/update",
   ShareModel = "/knowledge/share",
-	getKnowledge = "/knowledge/{id}"
+  getKnowledge = "/knowledge/{id}",
+  Create = "/knowledge/create",  // 新增创建��识库端点
+  GetAiModelsByTypeId = "/aiModel/getByTypeId{id}"  // 根据类型ID获取AI模型列表
 }
 
 /**
@@ -54,9 +83,9 @@ const knowledgeService = {
   /**
    * 创建新的知识库
    */
-  createKnowledge: (data: Partial<Knowledge>) => {
+  createKnowledge: (data: CreateKnowledgeDto) => {
     return apiClient.post<Knowledge>({
-      url: KnowledgeApi.PagedKnowledge,
+      url: KnowledgeApi.Create,
       data,
     });
   },
@@ -95,6 +124,15 @@ const knowledgeService = {
   getKnowledge: (id: string) => {
     return apiClient.get<KnowledgeResponse>({
       url: KnowledgeApi.getKnowledge.replace('{id}', id),
+    });
+  },
+
+  /**
+   * 根据AI模型类型ID获取AI模型集合
+   */
+  getAiModelsByTypeId: (id: string) => {
+    return apiClient.get<AiModelListResponse>({
+      url: KnowledgeApi.GetAiModelsByTypeId.replace('{id}', id),
     });
   },
 };

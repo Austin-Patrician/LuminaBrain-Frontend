@@ -33,14 +33,13 @@ axiosInstance.interceptors.response.use(
 	(res: AxiosResponse<Result>) => {
 		if (!res.data) throw new Error(t("sys.api.apiRequestFailed"));
 
-		const { status, data, message } = res.data;
+		const {data, message } = res.data;
 		// 业务请求成功
-		// const hasSuccess = data && Reflect.has(res.data, "status") && status === ResultEnum.SUCCESS;
-		// if (hasSuccess) {
-		// 	return data;
-		// }
-		return data;
-
+		const hasSuccess = res.data.success === true;
+		if (hasSuccess) {
+			return data;
+		}
+	
 		// 业务请求错误
 		throw new Error(message || t("sys.api.apiRequestFailed"));
 	},

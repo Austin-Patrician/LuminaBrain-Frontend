@@ -93,6 +93,29 @@ const ModelManagementPage: React.FC = () => {
     },
   });
 
+  // 使用 React Query 更新提供商配置
+  const updateProviderMutation = useMutation({
+    mutationFn: aimodelService.updateProvider,
+    onSuccess: (_) => {
+      // 关闭加载中状态
+      message.destroy("providerUpdate");
+
+      // 先关闭弹窗
+      setProviderModalVisible(false);
+      // 然后显示成功消息
+      message.success(`${currentProvider?.providerName} 提供商配置已更新`);
+      // 最后刷新数据
+      queryClient.invalidateQueries({ queryKey: ["models"] });
+    },
+    onError: (error) => {
+      // 关闭加载中状态
+      message.destroy("providerUpdate");
+
+      console.error("Provider update error:", error);
+      message.error("更新提供商配置失败");
+    },
+  });
+
   // 添加展开状态管理
   const [expandedProviders, setExpandedProviders] = useState<Record<string, boolean>>({});
 
@@ -164,12 +187,7 @@ const ModelManagementPage: React.FC = () => {
     });
   };
 
-  // 添加可用模型
-  const handleAddModel = (model: AIModel) => {
-    setCurrentModel(model);
-    form.resetFields();
-    setIsModalVisible(true);
-  };
+
 
   // 处理添加提供商
   const handleAddProvider = (provider: AIProvider) => {
@@ -182,10 +200,21 @@ const ModelManagementPage: React.FC = () => {
   const handleSaveProviderSettings = () => {
     providerForm.validateFields().then((values) => {
       if (currentProvider) {
-        message.success(`成功添加 ${currentProvider.providerName} 提供商配置`);
-        setProviderModalVisible(false);
-        queryClient.invalidateQueries({ queryKey: ["models"] });
+        // 显示加载中状态，设置duration为0表示不自动关闭
+        message.loading({ content: "正在更新提供商配置...", key: "providerUpdate", duration: 0 });
+
+        // 构建API请求数据
+        const updatedProvider: UpdateProviderModel = {
+          id: currentProvider.id,
+          endpoint: values.apiEndpoint,
+          modelKey: values.apiKey
+        };
+
+        // 调用mutation更新提供商
+        updateProviderMutation.mutate(updatedProvider);
       }
+    }).catch(errorInfo => {
+      console.error("表单验证失败:", errorInfo);
     });
   };
 
@@ -241,7 +270,7 @@ const ModelManagementPage: React.FC = () => {
               }
               onClick={() => toggleProviderExpand(provider.id)}
             >
-              {expandedProviders[provider.id] ? "收起模型" : "展开模型"}
+              {expandedProviders[provider.id] ? "收起模��" : "展开模型"}
             </Button>
           </Space>
         </Col>

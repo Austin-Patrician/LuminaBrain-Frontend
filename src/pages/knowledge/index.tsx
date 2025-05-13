@@ -14,13 +14,14 @@ import {
   Typography,
   message,
   Pagination,
+  InputNumber,
+  Switch,
 } from "antd";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "@/router/hooks";
 
 import knowledgeService from "@/api/services/knowledgeService";
 import { IconButton, Iconify } from "@/components/icon";
-import StepFormModal from "@/components/organization/StepFormModal";
 
 import type { Knowledge } from "#/entity";
 
@@ -45,6 +46,12 @@ const FEATURE_COLORS = {
   ocr: "cyan",
 };
 
+// 模型类型ID常量
+const MODEL_TYPE_IDS = {
+  CHAT_MODEL: "0D826A41-45CE-4870-8893-A8D4FAECD3A4", // 替换为实际的聊天模型类型ID
+  EMBEDDING_MODEL: "F37AF2F3-37A1-418B-8EEE-3675A5A36784", // 替换为实际的嵌入模型类型ID
+};
+
 // 更新搜索表单类型
 type SearchFormFieldType = {
   name: string;
@@ -65,6 +72,9 @@ export default function Knowledge() {
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10 });
   const queryClient = useQueryClient();
 
+  // 添加loading状态
+  const [submitLoading, setSubmitLoading] = useState(false);
+
   const [knowledgeModalProps, setKnowledgeModalProps] = useState<KnowledgeModalProps>({
     formValue: {
       id: "",
@@ -82,12 +92,39 @@ export default function Knowledge() {
     },
     title: "New",
     show: false,
-    onOk: () => {
-      const values = form.getFieldsValue();
-      if (values.id) {
-        updateKnowledge.mutate(values);
-      } else {
-        createKnowledge.mutate(values);
+    onOk: async () => {
+      try {
+        // 表单验证
+        await form.validateFields();
+
+        // 获取表单值
+        const values = form.getFieldsValue();
+
+        // 设置提交状态
+        setSubmitLoading(true);
+
+        if (values.id) {
+          // 更新操作
+          await updateKnowledge.mutateAsync(values);
+          // 成功消息由mutation的onSuccess处理，这里不再重复
+        } else {
+          // 创建操作
+          await createKnowledge.mutateAsync(values);
+          // 成功消息由mutation的onSuccess处理，这里不再重复
+        }
+
+        // 关闭模态框
+        setKnowledgeModalProps((prev) => ({ ...prev, show: false }));
+
+        // 刷新列表由mutation的onSuccess处理，这里不再重复
+      } catch (error) {
+        // 错误处理由mutation的onError处理，这里只处理表单验证错误
+        if (!(error instanceof Error)) {
+          message.error("表单验证失败，请检查输入");
+        }
+      } finally {
+        // 无论成功失败都关闭loading
+        setSubmitLoading(false);
       }
     },
     onCancel: () => {
@@ -107,32 +144,64 @@ export default function Knowledge() {
   });
 
   console.log("Knowledge Data:", data);
-  // 访问嵌套数据结构
+  // 访问知识库数据结构
   const knowledgeBases: Knowledge[] = data?.data || [];
   const totalCount = data?.total || 0;
+
+  // 查询聊天模型列表
+  const { data: chatModels } = useQuery({
+    queryKey: ["chatModels"],
+    queryFn: () => knowledgeService.getAiModelsByTypeId(MODEL_TYPE_IDS.CHAT_MODEL),
+  });
+
+  // 查询嵌入模型列表
+  const { data: embeddingModels } = useQuery({
+    queryKey: ["embeddingModels"],
+    queryFn: () => knowledgeService.getAiModelsByTypeId(MODEL_TYPE_IDS.EMBEDDING_MODEL),
+  });
+
+  // 处理聊天模型选项
+  const chatModelOptions = chatModels?.map((model) => ({
+    label: model.aiModelName,
+    value: model.aiModelId,
+  })) || [];
+
+  // 处理嵌入模型选项
+  const embeddingModelOptions = embeddingModels?.map((model) => ({
+    label: model.aiModelName,
+    value: model.aiModelId,
+  })) || [];
 
   // Mutations for create, update, delete
   const createKnowledge = useMutation({
     mutationFn: knowledgeService.createKnowledge,
     onSuccess: () => {
-      message.success("Knowledge base created successfully");
-      setKnowledgeModalProps((prev) => ({ ...prev, show: false }));
+      message.success("知识库创建成功");
+      // 刷新知识库列表
       queryClient.invalidateQueries({ queryKey: ["knowledge"] });
     },
     onError: (error) => {
-      message.error(`Failed to create knowledge base: ${error}`);
+      if (error instanceof Error) {
+        message.error(`创建知识库失败: ${error.message}`);
+      } else {
+        message.error("创建知识库失败，请重试");
+      }
     },
   });
 
   const updateKnowledge = useMutation({
     mutationFn: knowledgeService.updateKnowledge,
     onSuccess: () => {
-      message.success("Knowledge base updated successfully");
-      setKnowledgeModalProps((prev) => ({ ...prev, show: false }));
+      message.success("知识库更新成功");
+      // 刷新知识库列表
       queryClient.invalidateQueries({ queryKey: ["knowledge"] });
     },
     onError: (error) => {
-      message.error(`Failed to update knowledge base: ${error}`);
+      if (error instanceof Error) {
+        message.error(`更新知识库失败: ${error.message}`);
+      } else {
+        message.error("更新知识库失败，请重试");
+      }
     },
   });
 
@@ -150,7 +219,7 @@ export default function Knowledge() {
   const onSearch = () => {
     const values = searchForm.getFieldsValue();
     setSearchParams(values);
-    setPagination(prev => ({ ...prev, current: 1 }));
+    setPagination((prev) => ({ ...prev, current: 1 }));
   };
 
   const onSearchFormReset = () => {
@@ -159,23 +228,38 @@ export default function Knowledge() {
   };
 
   const onCreate = () => {
+    // 完全重置表单值，设置新的默认值
+    const defaultFormValue = {
+      id: "",
+      name: "",
+      description: "",
+      statusId: "DE546396-5B62-41E5-8814-4C072C74F26A",
+      chatModelID: null,
+      chatModel: "",
+      embeddingModelID: null,
+      embeddingModel: "",
+      maxTokensPerParagraph: 700,
+      maxTokensPerLine: 300,
+      overlappingTokens: 100,
+      isOCR: false,
+      avatar: "",
+    };
+
     setKnowledgeModalProps((prev) => ({
       ...prev,
       show: true,
       title: "Create New Knowledge Base",
-      formValue: {
-        ...prev.formValue,
-        id: "",
-        name: "",
-        description: "",
-        statusId: "DE546396-5B62-41E5-8814-4C072C74F26A",
-      },
+      formValue: defaultFormValue,
     }));
+
+    // 手动重置表单值
+    form.resetFields();
+    form.setFieldsValue(defaultFormValue);
   };
 
   const onView = (knowledgeBase: Knowledge) => {
     console.log("Knowledge Base ID:", knowledgeBase.id);
-    push(`/knowledge/knowledge/${knowledgeBase.id}`);
+    push(`${pathname}/${knowledgeBase.id}`);
   };
 
   const onEdit = (formValue: Knowledge) => {
@@ -197,6 +281,8 @@ export default function Knowledge() {
 
   useEffect(() => {
     if (knowledgeModalProps.show) {
+      // 强制重置表单后再设置值，确保表单值正确更新
+      form.resetFields();
       form.setFieldsValue(knowledgeModalProps.formValue);
     }
   }, [knowledgeModalProps.formValue, knowledgeModalProps.show, form]);
@@ -292,7 +378,7 @@ export default function Knowledge() {
                     </div>
                     <div className="bg-gray-50 p-2 rounded">
                       <div className="text-xs text-gray-500">结构点数</div>
-                      <div className="font-medium">{kb.pointStructCount || 0}</div>
+                      <div className="font-medium">{kb.totalTextCount || 0}</div>
                     </div>
                   </div>
                 </div>
@@ -357,14 +443,58 @@ export default function Knowledge() {
           </div>
         )}
       </Card>
-      <StepFormModal
+      <Modal
         title={knowledgeModalProps.title}
         open={knowledgeModalProps.show}
-        formValue={knowledgeModalProps.formValue}
         onOk={knowledgeModalProps.onOk}
         onCancel={knowledgeModalProps.onCancel}
-        form={form}
-      />
+        width={700}
+        confirmLoading={submitLoading} // 添加loading状态到确认按钮
+      >
+        <Form form={form} layout="vertical">
+          <Form.Item name="id" hidden>
+            <Input />
+          </Form.Item>
+
+          <Form.Item name="name" label="知识库名称" rules={[{ required: true, message: "请输入知识库名称" }]}>
+            <Input placeholder="请输入知识库名称" />
+          </Form.Item>
+
+          <Form.Item name="description" label="知识库描述">
+            <Input.TextArea rows={3} placeholder="请输入知识库描述" />
+          </Form.Item>
+
+          <Form.Item name="chatModelID" label="聊天模型" rules={[{ required: true, message: "请选择聊天模型" }]}>
+            <Select placeholder="请选择聊天模型" options={chatModelOptions} allowClear />
+          </Form.Item>
+
+          <Form.Item name="embeddingModelID" label="嵌入模型" rules={[{ required: true, message: "请选择嵌入模型" }]}>
+            <Select placeholder="请选择嵌入模型" options={embeddingModelOptions} allowClear />
+          </Form.Item>
+
+          <Row gutter={16}>
+            <Col span={8}>
+              <Form.Item name="maxTokensPerParagraph" label="段落最大令牌数" initialValue={700}>
+                <InputNumber min={1} max={2000} style={{ width: "100%" }} />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="maxTokensPerLine" label="每行最大令牌数" initialValue={300}>
+                <InputNumber min={1} max={1000} style={{ width: "100%" }} />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="overlappingTokens" label="重叠令牌数" initialValue={100}>
+                <InputNumber min={0} max={500} style={{ width: "100%" }} />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Form.Item name="isOCR" valuePropName="checked" label="启用OCR">
+            <Switch />
+          </Form.Item>
+        </Form>
+      </Modal>
     </Space>
   );
 }
