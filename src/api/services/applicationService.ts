@@ -1,5 +1,20 @@
 import apiClient from "@/api/apiClient";
-import type { Application } from "#/entity";
+import type { Application, AiModelItem, AiModelListResponse } from "#/entity";
+import type { CreateApplicationDto } from "#/dto/application";
+
+// 知识库项定义
+interface KnowledgeItem {
+  knowledgeId: string;
+  knowledgeName: string;
+}
+
+// 知识库列表响应定义
+interface KnowledgeListResponse {
+  success: boolean;
+  statusCode: number;
+  message: string;
+  data: KnowledgeItem[];
+}
 
 interface ApplicationSearchParams {
 	name?: string;
@@ -27,6 +42,8 @@ export enum ApplicationApi {
 	DeleteApplication = "/application/delete",
 	UpdateApplication = "/application/update",
 	ShareApplication = "/application/share",
+	GetAiModelsByTypeId = "/aiModel/getByTypeId{id}" , // 根据类型ID获取AI模型列表
+	GetKnowledgeList = "/knowledge/dropdown",
 }
 
 /**
@@ -53,10 +70,22 @@ const applicationService = {
 		});
 	},
 
+	getAiModelsByTypeId: (id: string) => {
+    return apiClient.get<AiModelListResponse>({
+      url: ApplicationApi.GetAiModelsByTypeId.replace('{id}', id),
+    });
+  },
+
+	GetKnowledgeList: () => {
+    return apiClient.get<KnowledgeListResponse>({
+      url: ApplicationApi.GetKnowledgeList,
+    });
+  },
+
 	/**
 	 * Create a new application
 	 */
-	createApplication: (data: Omit<Application, "id">) => {
+	createApplication: (data: CreateApplicationDto) => {
 		return apiClient.post<Application>({
 			url: ApplicationApi.AddApplication,
 			data,

@@ -1,20 +1,7 @@
 // aimodelService.ts
 import apiClient from "@/api/apiClient";
-import type { Knowledge } from "#/entity";
+import type { Knowledge,AiModelItem,AiModelListResponse } from "#/entity";
 
-// 单个AI模型数据结构
-interface AiModelItem {
-  aiModelId: string;
-  aiModelName: string;
-}
-
-// AI模型列表响应类型
-interface AiModelListResponse {
-  success: boolean;
-  statusCode: number;
-  message: string;
-  data: AiModelItem[];
-}
 
 interface KnowledgeQueryParams {
   name?: string;

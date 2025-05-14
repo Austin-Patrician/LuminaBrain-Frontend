@@ -1,4 +1,3 @@
-import { ex } from "node_modules/@fullcalendar/core/internal-common";
 import type { BasicStatus, PermissionType } from "./enum";
 
 export interface UserToken {
@@ -30,12 +29,14 @@ export interface Application {
 	id: string;
 	name: string;
 	description?: string;
+	applicationTypeId?: string;
 	ChatModelId: string;
 	ChatModelName: string;
+	imageModelID?: string | null;
 	Icon?: string;
 	embeddingModelID: string;
 	embeddingModelName: string;
-	rerankModelID?: string;
+	rerankModelID?: string | null;
 	rerankModelName?: string;
 	status: string;
 	statusId: string;
@@ -46,6 +47,18 @@ export interface Application {
 	modificationTime: Date;
 	relevance: number;
 	prompt?: string;
+	maxResponseTokens?: number;
+	maxRequestTokens?: number;
+	knowledgeIds?: string[];
+	matchCount?: number;
+	needModelSupport?: boolean | null;
+	promptWord?: string;
+	isSummary?: boolean;
+	isRerank?: boolean;
+	temperature?: number;
+	topP?: number;
+	frequencyPenalty?: number;
+	presencePenalty?: number;
 }
 
 export interface AIProvider {
@@ -142,4 +155,20 @@ export interface Knowledge {
 	overlappingTokens: number;
 	isOCR: boolean;
 	knowledgeItems?: KnowledgeItem[];
+}
+
+
+
+// 单个AI模型数据结构
+export interface AiModelItem {
+  aiModelId: string;
+  aiModelName: string;
+}
+
+// AI模型列表响应类型
+export interface AiModelListResponse {
+  success: boolean;
+  statusCode: number;
+  message: string;
+  data: AiModelItem[];
 }

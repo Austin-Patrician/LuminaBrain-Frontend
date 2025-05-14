@@ -16,10 +16,13 @@ import {
 	Pagination,
 } from "antd";
 import { useEffect, useState } from "react";
+import { PlusOutlined } from "@ant-design/icons";
+import { useTranslation } from "react-i18next";
 
 import applicationService from "@/api/services/applicationService";
 import { IconButton, Iconify } from "@/components/icon";
 import StepFormModal from "@/components/organization/StepFormModal";
+import CreateApplicationModal from "./components/CreateApplicationModal";
 
 import type { Application } from "#/entity";
 
@@ -62,6 +65,8 @@ export default function ApplicationPage() {
 	});
 	const [pagination, setPagination] = useState({ current: 1, pageSize: 10 });
 	const queryClient = useQueryClient();
+	const { t } = useTranslation();
+	const [createModalVisible, setCreateModalVisible] = useState(false);
 
 	const [applicationModalProps, setApplicationModalProps] = useState<ApplicationModalProps>({
 		formValue: {
@@ -156,22 +161,6 @@ export default function ApplicationPage() {
 		setSearchParams({ name: "", statusId: "", applicationType: "" });
 	};
 
-	const onCreate = () => {
-		setApplicationModalProps((prev) => ({
-			...prev,
-			show: true,
-			title: "Create New",
-			formValue: {
-				...prev.formValue,
-				id: "",
-				name: "",
-				description: "",
-				type: "",
-				statusId: "DE546396-5B62-41E5-8814-4C072C74F26A",
-				prompt: "",
-			},
-		}));
-	};
 
 	const onEdit = (formValue: Application) => {
 		setApplicationModalProps((prev) => ({
@@ -199,6 +188,10 @@ export default function ApplicationPage() {
 
 	const onPageChange = (page: number, pageSize: number) => {
 		setPagination({ current: page, pageSize });
+	};
+
+	const refreshList = () => {
+		refetch();
 	};
 
 	useEffect(() => {
@@ -256,9 +249,15 @@ export default function ApplicationPage() {
 			<Card
 				title="Application List"
 				extra={
-					<Button type="primary" onClick={onCreate}>
-						New
-					</Button>
+					<>
+						<Button
+							type="primary"
+							icon={<PlusOutlined />}
+							onClick={() => setCreateModalVisible(true)}
+						>
+							{t("新增应用")}
+						</Button>
+					</>
 				}
 				loading={isLoading}
 			>
@@ -335,6 +334,14 @@ export default function ApplicationPage() {
 					</div>
 				)}
 			</Card>
+			<CreateApplicationModal
+				visible={createModalVisible}
+				onCancel={() => setCreateModalVisible(false)}
+				onSuccess={() => {
+					setCreateModalVisible(false);
+					refreshList();
+				}}
+			/>
 			<StepFormModal
 				title={applicationModalProps.title}
 				open={applicationModalProps.show}
