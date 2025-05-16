@@ -14,33 +14,33 @@ function Wrapper({ children }: any) {
 }
 
 const knowledge: AppRouteObject[] = [
-  {
-    path: "knowledge",
-    element: (
-      <Suspense fallback={<CircleLoading />}>
-        <Outlet />
-      </Suspense>
-    ),
-    meta: {
-      label: "sys.menu.knowledge",
-      icon: <Iconify icon="solar:calendar-bold-duotone" size={24} />,
-      key: "/knowledge",
-    },
-    children: [
-      {
-        index: false,
-        element: <Knowledge />,
-      },
-      {
-        path: ":id",
-        element: <KnowledgeDetail />,
-        meta: {
-          label: "sys.menu.knowledge_detail",
-          key: "/knowledge/:id",
-        },
-      },
-    ],
-  },
+  // {
+  //   path: "knowledge",
+  //   element: (
+  //     <Suspense fallback={<CircleLoading />}>
+  //       <Outlet />
+  //     </Suspense>
+  //   ),
+  //   meta: {
+  //     label: "sys.menu.knowledge",
+  //     icon: <Iconify icon="solar:calendar-bold-duotone" size={24} />,
+  //     key: "/knowledge",
+  //   },
+  //   children: [
+  //     {
+  //       index: false,
+  //       element: <Knowledge />,
+  //     },
+  //     {
+  //       path: ":id",
+  //       element: <KnowledgeDetail />,
+  //       meta: {
+  //         label: "sys.menu.knowledge_detail",
+  //         key: "/knowledge/:id",
+  //       },
+  //     },
+  //   ],
+  // },
 ];
 
 export default knowledge;

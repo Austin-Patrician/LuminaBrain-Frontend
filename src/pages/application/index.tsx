@@ -21,8 +21,8 @@ import { useTranslation } from "react-i18next";
 
 import applicationService from "@/api/services/applicationService";
 import { IconButton, Iconify } from "@/components/icon";
-import StepFormModal from "@/components/organization/StepFormModal";
 import CreateApplicationModal from "./components/CreateApplicationModal";
+import EditApplicationModal from "./components/EditApplicationModal";
 
 import type { Application } from "#/entity";
 
@@ -67,35 +67,8 @@ export default function ApplicationPage() {
 	const queryClient = useQueryClient();
 	const { t } = useTranslation();
 	const [createModalVisible, setCreateModalVisible] = useState(false);
-
-	const [applicationModalProps, setApplicationModalProps] = useState<ApplicationModalProps>({
-		formValue: {
-			id: "",
-			name: "",
-			statusId: "DE546396-5B62-41E5-8814-4C072C74F26A",
-			description: "",
-			type: "",
-			prompt: "",
-			ChatModelId: "",
-			ChatModelName: "",
-			embeddingModelID: "",
-			embeddingModelName: "",
-			status: "enable",
-		},
-		title: "New",
-		show: false,
-		onOk: () => {
-			const values = form.getFieldsValue();
-			if (values.id) {
-				updateApplication.mutate(values);
-			} else {
-				createApplication.mutate(values);
-			}
-		},
-		onCancel: () => {
-			setApplicationModalProps((prev) => ({ ...prev, show: false }));
-		},
-	});
+	const [editModalVisible, setEditModalVisible] = useState(false);
+	const [currentApplication, setCurrentApplication] = useState<Application | null>(null);
 
 	// Query for fetching applications with search params and pagination
 	const { data, isLoading, refetch } = useQuery({
@@ -120,7 +93,7 @@ export default function ApplicationPage() {
 		mutationFn: applicationService.createApplication,
 		onSuccess: () => {
 			message.success("Application created successfully");
-			setApplicationModalProps((prev) => ({ ...prev, show: false }));
+			setCreateModalVisible(false);
 			queryClient.invalidateQueries({ queryKey: ["applications"] });
 		},
 		onError: (error) => {
@@ -132,7 +105,7 @@ export default function ApplicationPage() {
 		mutationFn: applicationService.updateApplication,
 		onSuccess: () => {
 			message.success("Application updated successfully");
-			setApplicationModalProps((prev) => ({ ...prev, show: false }));
+			setEditModalVisible(false);
 			queryClient.invalidateQueries({ queryKey: ["applications"] });
 		},
 		onError: (error) => {
@@ -161,17 +134,14 @@ export default function ApplicationPage() {
 		setSearchParams({ name: "", statusId: "", applicationType: "" });
 	};
 
+	const onEdit = (application: Application) => {
+		setCurrentApplication(application);
+		setEditModalVisible(true);
+	};
 
-	const onEdit = (formValue: Application) => {
-		setApplicationModalProps((prev) => ({
-			...prev,
-			show: true,
-			title: "Edit",
-			formValue: {
-				...formValue,
-				prompt: formValue.prompt || "",
-			},
-		}));
+	const handleEditSuccess = () => {
+		setEditModalVisible(false);
+		queryClient.invalidateQueries({ queryKey: ["applications"] });
 	};
 
 	const onDelete = (id: string) => {
@@ -194,11 +164,10 @@ export default function ApplicationPage() {
 		refetch();
 	};
 
-	useEffect(() => {
-		if (applicationModalProps.show) {
-			form.setFieldsValue(applicationModalProps.formValue);
-		}
-	}, [applicationModalProps.formValue, applicationModalProps.show, form]);
+	const onEditModalSuccess = () => {
+		setEditModalVisible(false);
+		queryClient.invalidateQueries({ queryKey: ["applications"] });
+	};
 
 	return (
 		<Space direction="vertical" size="large" className="w-full">
@@ -285,10 +254,10 @@ export default function ApplicationPage() {
 									{app.embeddingModelName && <Tag color={MODEL_TAG_COLORS.Embedding}>{app.embeddingModelName}</Tag>}
 									{app.rerankModelName && <Tag color={MODEL_TAG_COLORS.Rerank}>{app.rerankModelName}</Tag>}
 									{app.imageModelName && <Tag color={MODEL_TAG_COLORS.Image}>{app.imageModelName}</Tag>}
-									{app.applicationType && (
-										<Tag color="cyan">{APPLICATION_TYPES.find((t) => t.id === app.applicationType)?.name || ""}</Tag>
+									{app.applicationTypeId && (
+										<Tag color="cyan">{APPLICATION_TYPES.find((t) => t.id === app.applicationTypeId)?.name || ""}</Tag>
 									)}
-									{app.type && app.type !== APPLICATION_TYPES.find((t) => t.id === app.applicationType)?.name && (
+									{app.type && app.type !== APPLICATION_TYPES.find((t) => t.id === app.applicationTypeId)?.name && (
 										<Tag color="magenta">{app.type}</Tag>
 									)}
 								</div>
@@ -342,22 +311,12 @@ export default function ApplicationPage() {
 					refreshList();
 				}}
 			/>
-			<StepFormModal
-				title={applicationModalProps.title}
-				open={applicationModalProps.show}
-				formValue={applicationModalProps.formValue}
-				onOk={applicationModalProps.onOk}
-				onCancel={applicationModalProps.onCancel}
-				form={form}
+			<EditApplicationModal
+				visible={editModalVisible}
+				application={currentApplication}
+				onCancel={() => setEditModalVisible(false)}
+				onSuccess={handleEditSuccess}
 			/>
 		</Space>
 	);
 }
-
-type ApplicationModalProps = {
-	formValue: Partial<Application>;
-	title: string;
-	show: boolean;
-	onOk: VoidFunction;
-	onCancel: VoidFunction;
-};

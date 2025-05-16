@@ -107,6 +107,9 @@
         "firstStep": "基础设置",
         "secondStep": "高级设置"
       },
+      "knowledgedetail": "知识库详情",
+      "knowledge": "知识库",
+      "aimodel": "AI模型",
       "animate": "动画",
       "scroll": "滚动",
       "markdown": "Markdown",

@@ -38,6 +38,7 @@ export interface Application {
 	embeddingModelName: string;
 	rerankModelID?: string | null;
 	rerankModelName?: string;
+	imageModelName?: string;
 	status: string;
 	statusId: string;
 	type: string;

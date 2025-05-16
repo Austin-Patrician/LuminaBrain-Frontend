@@ -107,6 +107,9 @@
         "firstStep": "Basic Settings",
         "secondStep": "Advanced Settings"
       },
+      "knowledgedetail": "Knowledge Detail",
+      "aimodel": "AI Model",
+      "knowledge": "Knowledge",
       "icon": "Icon",
       "animate": "Animate",
       "scroll": "Scroll",

@@ -35,7 +35,7 @@ axiosInstance.interceptors.response.use(
 
 		const {data, message } = res.data;
 		// 业务请求成功
-		const hasSuccess = res.data.success === true;
+		const hasSuccess = res.data.success === true || res.data.status === ResultEnum.SUCCESS;
 		if (hasSuccess) {
 			return data;
 		}

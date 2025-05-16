@@ -2,6 +2,7 @@ import useUserStore from "@/store/userStore";
 import { faker } from "@faker-js/faker";
 
 import { BasicStatus, PermissionType } from "#/enum";
+
 /**
  * Organization data mock
  */
@@ -441,7 +442,7 @@ const OTHERS_PERMISSION = [
 	{
 		id: "3981225257359247",
 		parentId: "",
-		label: "sys.menu.application",
+		label: "sys.menu.application.index",
 		name: "Application",
 		icon: "solar:calendar-bold-duotone",
 		type: PermissionType.MENU,
@@ -459,25 +460,37 @@ const OTHERS_PERMISSION = [
 		component: "/aimodel/index.tsx",
 	},
 	{
-		id: "3981225257659277",
-		parentId: "",
-		label: "sys.menu.knowledge",
-		name: "Knowledge",
-		icon: "solar:calendar-bold-duotone",
-		type: PermissionType.MENU,
-		route: "knowledge",
-		component: "/knowledge/index.tsx",
-	},
-	{
-		id: "0157980245365434",
-		parentId: "3981225257659277",
-		label: "sys.menu.knowledge_detail",
-		name: "Knowledge Detail",
-		type: PermissionType.MENU,
-		route: "knowledge/:id",
-		component: "/knowledge/detail.tsx",
-		hide: true,
-	},
+    id: "3981225257659277",
+    parentId: "",
+    label: "sys.menu.knowledge",
+    name: "Knowledge",
+    icon: "solar:calendar-bold-duotone",
+    type: PermissionType.CATALOGUE,
+    route: "knowledgemanagement",
+		order: 7,
+    children: [
+			{
+        id: "0157980245365734",
+        parentId: "3981225257659277",
+        label: "sys.menu.knowledge",
+        name: "Knowledge",
+        type: PermissionType.MENU,
+        route: "knowledge",
+				component: "/knowledge/index.tsx",
+        hide: false,
+      },
+			{
+				id: "0157980245365434",
+				parentId: "0157980245365734",
+				label: "sys.menu.knowledgedetail",
+				name: "Knowledge Detail",
+				type: PermissionType.MENU,
+				route: "knowledge/:id",
+				component: "/knowledge/detail.tsx",
+				hide: true,
+			},
+    ],
+  },
 	{
 		id: "3513985683886393",
 		parentId: "",
