@@ -492,6 +492,16 @@ const OTHERS_PERMISSION = [
     ],
   },
 	{
+		id: "3081225257359246",
+		parentId: "",
+		label: "sys.menu.calendar",
+		name: "Calendar",
+		icon: "solar:calendar-bold-duotone",
+		type: PermissionType.MENU,
+		route: "agent",
+		component: "/agent/index.tsx",
+	},
+	{
 		id: "3513985683886393",
 		parentId: "",
 		label: "sys.menu.kanban",
