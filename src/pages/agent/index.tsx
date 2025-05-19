@@ -41,7 +41,7 @@ const SERVICE_IDS = [
   { id: "google-ai", name: "Google AI" },
 ];
 
-// 状��选项
+// 状态选项
 const STATUS_TYPES = [
   { id: "active", name: "活跃" },
   { id: "inactive", name: "非活跃" },
@@ -83,10 +83,23 @@ export default function AgentPage() {
     },
   });
 
+  // 获取AI模型服务列表，用于在卡片中显示服务名称
+  const { data: aiModelData } = useQuery({
+    queryKey: ["aiModels"],
+    queryFn: () => agentService.getAiModelsByTypeId("0D826A41-45CE-4870-8893-A8D4FAECD3A4"),
+  });
+
+  const serviceOptions = aiModelData?.data || [];
+
+  // 通过serviceId查找对应的模型名称
+  const getServiceNameById = (serviceId: string) => {
+    const model = serviceOptions.find((model: AiModelItem) => model.aiModelId === serviceId);
+    return model?.aiModelName || serviceId;
+  };
+
   // 从查询结果中提取数据
   const agents: Agent[] = data?.data || [];
   const totalCount = data?.total || 0;
-
 
   const deleteAgent = useMutation({
     mutationFn: agentService.deleteAgent,
@@ -202,10 +215,10 @@ export default function AgentPage() {
                   </div>
                 </div>
 
-                {/* 服务信息 */}
+                {/* 服务信息，使用API获取的服务名称 */}
                 <div className="mb-3">
                   <Tag color="blue" className="mr-1">
-                    {SERVICE_IDS.find(s => s.id === agent.serviceId)?.name || agent.serviceId}
+                    {getServiceNameById(agent.serviceId)}
                   </Tag>
                   {agent.functionChoiceBehavior && (
                     <Tag color="green" className="mr-1">

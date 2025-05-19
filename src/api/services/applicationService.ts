@@ -25,7 +25,7 @@ interface ApplicationSearchParams {
 }
 
 // 修正响应类型定义以匹配实际API返回结构
-interface ApplicationListResponse {
+export interface ApplicationListResponse {
 	success: boolean; // 注意：之前拼写错误为"sucess"
 	statusCode: number;
 	message: string;

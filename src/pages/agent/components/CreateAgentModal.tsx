@@ -49,7 +49,7 @@ const CreateAgentModal: React.FC<CreateAgentModalProps> = ({
     enabled: visible, // 只在modal可见时加载数据
   });
 
-  const serviceOptions = aiModelData?.data || [];
+  const serviceOptions = aiModelData || [];
 
   // 使用 useMutation 处理创建请求
   const createMutation = useMutation({
