@@ -22,40 +22,9 @@ import { useTranslation } from "react-i18next";
 import { IconButton, Iconify } from "@/components/icon";
 import CreateAgentModal from "./components/CreateAgentModal";
 import EditAgentModal from "./components/EditAgentModal";
-
-// 模拟的Agent服务API
-const agentService = {
-  getAgentList: async (params: any) => {
-    // 模拟API调用
-    return { data: [], total: 0 };
-  },
-  createAgent: async (data: any) => {
-    // 模拟API调用
-    return data;
-  },
-  updateAgent: async (data: any) => {
-    // 模拟API调用
-    return data;
-  },
-  deleteAgent: async (id: string) => {
-    // 模拟API调用
-    return id;
-  },
-};
-
-// Agent类型定义
-type Agent = {
-  id: string;
-  name: string;
-  instructions: string;
-  functionChoiceBehavior: string;
-  serviceId: string;
-  statusId: string;
-  topP: number;
-  temperature: number;
-  maxTokens: number;
-  createdAt: string;
-};
+import agentService from "@/api/services/agentService"; // 导入真实的agentService
+import type { Agent } from "#/entity";
+import type { AgentSearchParams } from "#/dto/agent";
 
 // 函数选择行为选项
 const FUNCTION_CHOICE_BEHAVIORS = [
@@ -72,7 +41,7 @@ const SERVICE_IDS = [
   { id: "google-ai", name: "Google AI" },
 ];
 
-// 状态选项
+// 状��选项
 const STATUS_TYPES = [
   { id: "active", name: "活跃" },
   { id: "inactive", name: "非活跃" },
@@ -89,7 +58,7 @@ const { Title, Paragraph } = Typography;
 
 export default function AgentPage() {
   const [searchForm] = Form.useForm();
-  const [searchParams, setSearchParams] = useState<SearchFormFieldType>({
+  const [searchParams, setSearchParams] = useState<AgentSearchParams>({
     name: "",
     statusId: "",
     serviceId: "",
@@ -104,42 +73,20 @@ export default function AgentPage() {
   // 查询Agent列表
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["agents", searchParams, pagination],
-    queryFn: () =>
-      agentService.getAgentList({
+    queryFn: async () => {
+      const response = await agentService.getAgentList({
         ...searchParams,
         pageNumber: pagination.current,
         pageSize: pagination.pageSize,
-      }),
+      });
+      return response;
+    },
   });
 
   // 从查询结果中提取数据
   const agents: Agent[] = data?.data || [];
   const totalCount = data?.total || 0;
 
-  // 创建、更新、删除的mutation
-  const createAgent = useMutation({
-    mutationFn: agentService.createAgent,
-    onSuccess: () => {
-      message.success("Agent创建成功");
-      setCreateModalVisible(false);
-      queryClient.invalidateQueries({ queryKey: ["agents"] });
-    },
-    onError: (error) => {
-      message.error(`创建Agent失败: ${error}`);
-    },
-  });
-
-  const updateAgent = useMutation({
-    mutationFn: agentService.updateAgent,
-    onSuccess: () => {
-      message.success("Agent更新成功");
-      setEditModalVisible(false);
-      queryClient.invalidateQueries({ queryKey: ["agents"] });
-    },
-    onError: (error) => {
-      message.error(`更新Agent失败: ${error}`);
-    },
-  });
 
   const deleteAgent = useMutation({
     mutationFn: agentService.deleteAgent,
@@ -244,31 +191,57 @@ export default function AgentPage() {
           {agents.map((agent: Agent) => (
             <Col xs={24} sm={24} md={12} xl={8} key={agent.id}>
               <Card hoverable className="h-full flex flex-col">
-                <div className="mb-3 flex items-center justify-between">
-                  <Title level={5} className="m-0">
-                    {agent.name}
-                  </Title>
-                  <Tag color={agent.statusId === "active" ? "success" : "error"}>
-                    {agent.statusId === "active" ? "活跃" : "非活跃"}
-                  </Tag>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center">
+                    <Title level={5} className="m-0 mr-2">
+                      {agent.name}
+                    </Title>
+                    <Tag color={agent.statusId === "active" ? "success" : "error"} className="ml-1">
+                      {agent.statusId === "active" ? "活跃" : "非活跃"}
+                    </Tag>
+                  </div>
                 </div>
-
-                {/* 指令信息 */}
-                <Paragraph className="mb-4 text-left" ellipsis={{ rows: 2 }}>
-                  {agent.instructions || "无指令说明"}
-                </Paragraph>
 
                 {/* 服务信息 */}
-                <div className="mb-4 flex flex-wrap gap-2">
-                  <Tag color="blue">
+                <div className="mb-3">
+                  <Tag color="blue" className="mr-1">
                     {SERVICE_IDS.find(s => s.id === agent.serviceId)?.name || agent.serviceId}
                   </Tag>
-                  <Tag color="green">
-                    函数选择: {FUNCTION_CHOICE_BEHAVIORS.find(f => f.id === agent.functionChoiceBehavior)?.name || agent.functionChoiceBehavior}
-                  </Tag>
-                  {agent.topP && <Tag color="orange">Top P: {agent.topP}</Tag>}
-                  {agent.temperature && <Tag color="purple">Temperature: {agent.temperature}</Tag>}
+                  {agent.functionChoiceBehavior && (
+                    <Tag color="green" className="mr-1">
+                      函数选择: {FUNCTION_CHOICE_BEHAVIORS.find(f => f.id === agent.functionChoiceBehavior)?.name || agent.functionChoiceBehavior}
+                    </Tag>
+                  )}
                 </div>
+
+                {/* 模型参数 */}
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  {agent.temperature && (
+                    <div className="flex items-center text-gray-600 text-sm">
+                      <Iconify icon="ph:thermometer" className="mr-1" />
+                      温度: {agent.temperature}
+                    </div>
+                  )}
+                  {agent.topP && (
+                    <div className="flex items-center text-gray-600 text-sm">
+                      <Iconify icon="mdi:chart-bell-curve-cumulative" className="mr-1" />
+                      Top P: {agent.topP}
+                    </div>
+                  )}
+                  {agent.maxTokens && (
+                    <div className="flex items-center text-gray-600 text-sm">
+                      <Iconify icon="mdi:counter" className="mr-1" />
+                      令牌: {agent.maxTokens}
+                    </div>
+                  )}
+                </div>
+
+                {/* 创建时间 */}
+                {agent.createdAt && (
+                  <div className="text-xs text-gray-400 mb-3">
+                    创建于: {new Date(agent.createdAt).toLocaleString()}
+                  </div>
+                )}
 
                 {/* 操作按钮 */}
                 <div className="mt-auto flex justify-end space-x-2 pt-2 border-t">

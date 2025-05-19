@@ -158,7 +158,22 @@ export interface Knowledge {
 	knowledgeItems?: KnowledgeItem[];
 }
 
-
+export interface Agent {
+  id: string;
+  name: string;
+  instructions: string;
+  serviceId: string;
+  statusId: string;
+  extensionData?: string;
+  temperature?: number | null;
+  topP?: number | null;
+  frequencyPenalty?: number | null;
+  presencePenalty?: number | null;
+  maxTokens?: number | null;
+  functionChoiceBehavior?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
 
 // 单个AI模型数据结构
 export interface AiModelItem {

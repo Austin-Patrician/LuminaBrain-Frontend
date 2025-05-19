@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import {
   Modal,
@@ -6,13 +5,15 @@ import {
   Input,
   Select,
   InputNumber,
-  Switch,
-  Divider,
-  Typography,
-  Tooltip,
   Button,
+  message,
+  Spin
 } from "antd";
-import { QuestionCircleOutlined } from "@ant-design/icons";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import type { Agent } from "#/entity";
+import type { UpdateAgentDto } from "#/dto/agent";
+import type { AiModelItem } from "#/entity";
+import agentService from "@/api/services/agentService";
 
 // 函数选择行为选项
 const FUNCTION_CHOICE_BEHAVIORS = [
@@ -21,36 +22,18 @@ const FUNCTION_CHOICE_BEHAVIORS = [
   { id: "none", name: "无" },
 ];
 
-// 服务ID选项
-const SERVICE_IDS = [
-  { id: "openai", name: "OpenAI" },
-  { id: "azure-openai", name: "Azure OpenAI" },
-  { id: "anthropic", name: "Anthropic" },
-  { id: "google-ai", name: "Google AI" },
+// 状态选项
+const STATUS_TYPES = [
+  { id: "DE546396-5B62-41E5-8814-4C072C74F26A", name: "活跃" },
+  { id: "inactive", name: "非活跃" },
 ];
-
-// Agent类型定义
-type Agent = {
-  id: string;
-  name: string;
-  instructions: string;
-  functionChoiceBehavior: string;
-  serviceId: string;
-  statusId: string;
-  topP: number;
-  temperature: number;
-  maxTokens: number;
-  createdAt: string;
-};
 
 interface EditAgentModalProps {
   visible: boolean;
-  agent: Agent | null;
+  agent: Agent;
   onCancel: () => void;
   onSuccess: () => void;
 }
-
-const { Title } = Typography;
 
 const EditAgentModal: React.FC<EditAgentModalProps> = ({
   visible,
@@ -61,115 +44,152 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
 
+  // 获取AI模型服务列表
+  const { data: aiModelData, isLoading: aiModelLoading } = useQuery({
+    queryKey: ["aiModels"],
+    queryFn: () => agentService.getAiModelsByTypeId("0D826A41-45CE-4870-8893-A8D4FAECD3A4"),
+    enabled: visible, // 只在modal可见时加载数据
+  });
+
+  const serviceOptions = aiModelData || [];
+
+  // 当组件收到新的agent数据时重置表单
   useEffect(() => {
     if (visible && agent) {
       form.setFieldsValue({
-        ...agent,
-        enabled: agent.statusId === "active",
+        name: agent.name,
+        instructions: agent.instructions,
+        serviceId: agent.serviceId,
+        statusId: agent.statusId,
+        extensionData: agent.extensionData,
+        temperature: agent.temperature,
+        topP: agent.topP,
+        frequencyPenalty: agent.frequencyPenalty,
+        presencePenalty: agent.presencePenalty,
+        maxTokens: agent.maxTokens,
+        functionChoiceBehavior: agent.functionChoiceBehavior,
       });
     }
-  }, [visible, agent, form]);
+  }, [form, agent, visible]);
 
+  // 使用 useMutation 处理更新请求
+  const updateMutation = useMutation({
+    mutationFn: agentService.updateAgent,
+    onSuccess: () => {
+      message.success("Agent更新成功");
+      onSuccess();
+    },
+    onError: (error: any) => {
+      message.error(`更新Agent失败: ${error.message || '未知错误'}`);
+    },
+    onSettled: () => {
+      setLoading(false);
+    }
+  });
+
+  // 处理表单提交
   const handleSubmit = async () => {
     try {
-      const values = await form.validateFields();
       setLoading(true);
+      const values = await form.validateFields();
+      const agentData: UpdateAgentDto = {
+        id: agent.id,
+        name: values.name,
+        instructions: values.instructions,
+        serviceId: values.serviceId,
+        statusId: values.statusId,
+        extensionData: values.extensionData,
+        temperature: values.temperature,
+        topP: values.topP,
+        frequencyPenalty: values.frequencyPenalty,
+        presencePenalty: values.presencePenalty,
+        maxTokens: values.maxTokens,
+        functionChoiceBehavior: values.functionChoiceBehavior,
+      };
 
-      // 这里应该调用更新Agent的API
-      console.log("更新Agent:", { ...values, id: agent?.id });
-
-      // 模拟API调用
-      setTimeout(() => {
-        setLoading(false);
-        onSuccess();
-      }, 1000);
+      // 执行更新操作
+      updateMutation.mutate(agentData);
     } catch (error) {
-      console.error("表单验证失败:", error);
+      setLoading(false);
+      // 表单验证错误由Form组件处理
     }
   };
 
   return (
     <Modal
-      title="编辑AI Agent"
+      title="编辑Agent"
       open={visible}
       onCancel={onCancel}
-      width={700}
       footer={[
-        <Button key="cancel" onClick={onCancel}>
+        <Button key="back" onClick={onCancel}>
           取消
         </Button>,
-        <Button
-          key="submit"
-          type="primary"
-          loading={loading}
-          onClick={handleSubmit}
-        >
-          保存
+        <Button key="submit" type="primary" loading={loading} onClick={handleSubmit}>
+          更新
         </Button>,
       ]}
+      width={700}
     >
       <Form
         form={form}
         layout="vertical"
-        requiredMark="optional"
       >
-        <Title level={5}>基本信息</Title>
         <Form.Item
-          label="Agent名称"
           name="name"
+          label="名称"
           rules={[{ required: true, message: "请输入Agent名称" }]}
         >
-          <Input placeholder="为您的Agent起个名字" />
+          <Input placeholder="请输入Agent名称" />
         </Form.Item>
 
         <Form.Item
-          label="指令内容"
           name="instructions"
-          rules={[{ required: true, message: "请输入指令内容" }]}
+          label="指令说明"
+          rules={[{ required: true, message: "请输入指令说明" }]}
         >
           <Input.TextArea
             rows={4}
-            placeholder="提供详细的指令内容，描述Agent的行为和目标"
+            placeholder="请输入Agent的指令说明"
           />
         </Form.Item>
 
-        <Divider />
-        <Title level={5}>参数配置</Title>
-
         <Form.Item
-          label={
-            <span>
-              服务提供商
-              <Tooltip title="选择AI服务提供商">
-                <QuestionCircleOutlined style={{ marginLeft: 4 }} />
-              </Tooltip>
-            </span>
-          }
           name="serviceId"
-          rules={[{ required: true, message: "请选择服务提供商" }]}
+          label="服务"
+          rules={[{ required: true, message: "请选择服务" }]}
         >
-          <Select>
-            {SERVICE_IDS.map((service) => (
-              <Select.Option key={service.id} value={service.id}>
-                {service.name}
+          <Select
+            placeholder={aiModelLoading ? "加载中..." : "请选择服务"}
+            loading={aiModelLoading}
+            disabled={aiModelLoading}
+          >
+            {serviceOptions.map((model: AiModelItem) => (
+              <Select.Option key={model.aiModelId} value={model.aiModelId}>
+                {model.aiModelName}
               </Select.Option>
             ))}
           </Select>
         </Form.Item>
 
         <Form.Item
-          label={
-            <span>
-              函数选择行为
-              <Tooltip title="决定Agent如何选择和使用函数">
-                <QuestionCircleOutlined style={{ marginLeft: 4 }} />
-              </Tooltip>
-            </span>
-          }
-          name="functionChoiceBehavior"
-          rules={[{ required: true, message: "请选择函数选择行为" }]}
+          name="statusId"
+          label="状态"
+          rules={[{ required: true, message: "请选择状态" }]}
         >
-          <Select>
+          <Select placeholder="请选择状态">
+            {STATUS_TYPES.map((status) => (
+              <Select.Option key={status.id} value={status.id}>
+                {status.name}
+              </Select.Option>
+            ))}
+          </Select>
+        </Form.Item>
+
+        <Form.Item
+          name="functionChoiceBehavior"
+          label="函数选择行为"
+        >
+          <Select placeholder="请选择函数选择行为">
             {FUNCTION_CHOICE_BEHAVIORS.map((behavior) => (
               <Select.Option key={behavior.id} value={behavior.id}>
                 {behavior.name}
@@ -178,66 +198,52 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
           </Select>
         </Form.Item>
 
-        <Form.Item
-          label={
-            <span>
-              Top P
-              <Tooltip title="控制随机性，较低的值会使输出更确定">
-                <QuestionCircleOutlined style={{ marginLeft: 4 }} />
-              </Tooltip>
-            </span>
-          }
-          name="topP"
-        >
-          <InputNumber
-            min={0}
-            max={1}
-            step={0.01}
-            precision={2}
-            style={{ width: "100%" }}
-          />
+        <Form.Item name="extensionData" label="扩展数据">
+          <Input.TextArea rows={3} placeholder="JSON格式的扩展数据" />
         </Form.Item>
 
-        <Form.Item
-          label={
-            <span>
-              温度
-              <Tooltip title="控制回答的随机性，值越高回答越多样化">
-                <QuestionCircleOutlined style={{ marginLeft: 4 }} />
-              </Tooltip>
-            </span>
-          }
-          name="temperature"
-        >
-          <InputNumber
-            min={0}
-            max={2}
-            step={0.1}
-            precision={1}
-            style={{ width: "100%" }}
-          />
-        </Form.Item>
-
-        <Form.Item
-          label={
-            <span>
-              最大Token数
-              <Tooltip title="控制回答的最大长度">
-                <QuestionCircleOutlined style={{ marginLeft: 4 }} />
-              </Tooltip>
-            </span>
-          }
-          name="maxTokens"
-        >
-          <InputNumber min={1} max={4096} style={{ width: "100%" }} />
-        </Form.Item>
-
-        <Form.Item
-          label="启用状态"
-          name="enabled"
-          valuePropName="checked"
-        >
-          <Switch />
+        <Form.Item label="模型参数" className="mb-0">
+          <div className="grid grid-cols-2 gap-4">
+            <Form.Item name="temperature" label="Temperature" className="mb-0">
+              <InputNumber
+                min={0}
+                max={1}
+                step={0.1}
+                style={{ width: '100%' }}
+              />
+            </Form.Item>
+            <Form.Item name="topP" label="Top P" className="mb-0">
+              <InputNumber
+                min={0}
+                max={1}
+                step={0.1}
+                style={{ width: '100%' }}
+              />
+            </Form.Item>
+            <Form.Item name="frequencyPenalty" label="频率惩罚" className="mb-0">
+              <InputNumber
+                min={0}
+                max={2}
+                step={0.1}
+                style={{ width: '100%' }}
+              />
+            </Form.Item>
+            <Form.Item name="presencePenalty" label="存在惩罚" className="mb-0">
+              <InputNumber
+                min={0}
+                max={2}
+                step={0.1}
+                style={{ width: '100%' }}
+              />
+            </Form.Item>
+            <Form.Item name="maxTokens" label="最大令牌数" className="mb-0">
+              <InputNumber
+                min={1}
+                step={10}
+                style={{ width: '100%' }}
+              />
+            </Form.Item>
+          </div>
         </Form.Item>
       </Form>
     </Modal>
