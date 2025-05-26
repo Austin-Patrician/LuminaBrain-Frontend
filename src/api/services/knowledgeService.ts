@@ -49,8 +49,10 @@ export enum KnowledgeApi {
   UpdateModel = "/knowledge/update",
   ShareModel = "/knowledge/share",
   getKnowledge = "/knowledge/{id}",
-  Create = "/knowledge/create",  // 新增创建��识库端点
-  GetAiModelsByTypeId = "/aiModel/getByTypeId{id}"  // 根据类型ID获取AI模型列表
+  Create = "/knowledge/create",  // 新增创建知识库端点
+  GetAiModelsByTypeId = "/aiModel/getByTypeId{id}" , // 根据类型ID获取AI模型列表
+  GetAntiforgerytoken = "/file/antiforgery/token",
+  UploadFile = "/file/upload/{knowledgeId}",
 }
 
 /**
@@ -120,6 +122,29 @@ const knowledgeService = {
   getAiModelsByTypeId: (id: string) => {
     return apiClient.get<AiModelListResponse>({
       url: KnowledgeApi.GetAiModelsByTypeId.replace('{id}', id),
+    });
+  },
+
+  /**
+   * 获取CSRF令牌
+   */
+  getAntiforgerytoken: () => {
+    return apiClient.get<string>({
+      url: KnowledgeApi.GetAntiforgerytoken,
+    });
+  },
+
+  /**
+   * 上传文件到知识库
+   */
+  uploadFile: (knowledgeId: string, formData: FormData, headers: Record<string, string>) => {
+    // 确保URL路径中包含knowledgeId，而不是在FormData中
+    return apiClient.post({
+      url: KnowledgeApi.UploadFile.replace('{knowledgeId}', knowledgeId),
+      data: formData,
+      headers,
+      // 不要设置withCredentials为false，否则可能无法正确发送cookies
+    withCredentials: false,
     });
   },
 };
