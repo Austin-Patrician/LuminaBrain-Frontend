@@ -14,7 +14,6 @@ import { InboxOutlined, DownloadOutlined } from '@ant-design/icons';
 
 import knowledgeService from "@/api/services/knowledgeService";
 import { IconButton, Iconify } from "@/components/icon";
-import type { Knowledge, KnowledgeItem } from "#/entity";
 
 // 导入样式文件
 import './index.css';
@@ -26,10 +25,10 @@ const { Dragger } = Upload;
 
 // 导入类型枚举
 enum ImportType {
-  FILE = 'file',
-  LINK = 'link',
-  TEXT = 'text',
-  QA = 'qa'
+  FILE = '3f8b38d6-f321-4d1a-89c0-93d7a5023a2c',
+  LINK = '47c5ab88-65e4-4ea8-a214-b384b9d37d27',
+  TEXT = 'd6a6eeb2-79d9-4a5f-8f1b-f2c9a7c4d2b0',
+  QA = 'c18b1f8a-4e70-49e5-b7cc-59af73c3bc6a'
 }
 
 // 切分类型枚举
