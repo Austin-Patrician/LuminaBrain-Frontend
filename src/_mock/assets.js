@@ -467,29 +467,28 @@ const OTHERS_PERMISSION = [
     icon: "solar:calendar-bold-duotone",
     type: PermissionType.CATALOGUE,
     route: "knowledgemanagement",
-		order: 7,
+    order: 7,
     children: [
-			{
+      {
         id: "0157980245365734",
         parentId: "3981225257659277",
         label: "sys.menu.knowledge",
         name: "Knowledge",
         type: PermissionType.MENU,
         route: "knowledge",
-				component: "/knowledge/index.tsx",
-        hide: false,
+        component: "/knowledge/index.tsx",
       },
-			{
-				id: "0157980245365434",
-				parentId: "0157980245365734",
-				label: "sys.menu.knowledgedetail",
-				name: "Knowledge Detail",
-				type: PermissionType.MENU,
-				route: "knowledge/:id",
-				component: "/knowledge/detail.tsx",
-				hide: true,
-			},
-    ],
+      {
+        id: "0157980245365434",
+        parentId: "3981225257659277",
+        label: "sys.menu.knowledge_detail",
+        name: "Knowledge Detail",
+        type: PermissionType.MENU,
+        route: "knowledge/:id",
+        component: "/knowledge/detail.tsx",
+        hide: true
+      }
+    ]
   },
 	{
 		id: "3081225257359246",
