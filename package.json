@@ -34,6 +34,7 @@
 		"@vanilla-extract/vite-plugin": "^4.0.19",
 		"@vercel/analytics": "^1.4.0",
 		"@vitejs/plugin-react": "^4.3.3",
+		"@xyflow/react": "^12.6.4",
 		"antd": "^5.22.1",
 		"apexcharts": "^3.54.1",
 		"autosuggest-highlight": "^3.3.4",
