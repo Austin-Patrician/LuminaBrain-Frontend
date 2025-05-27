@@ -1,31 +1,56 @@
-.agent-flow-root {
+.agent-flow-container {
   display: flex;
+  flex-direction: column;
   height: 100vh;
   width: 100%;
   background: #f7f8fa;
   overflow: hidden;
-  position: relative;
 }
 
-.node-panel-wrapper {
-  width: 220px;
-  height: 100%;
+/* 顶部功能区样式 - 修改内边距和布局 */
+.agent-flow-header {
+  height: 56px;
+  /* 稍微减小高度 */
   background: #fff;
-  border-right: 1px solid #eee;
-  padding: 16px 8px;
-  overflow-y: auto;
+  border-bottom: 1px solid #eee;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
   flex-shrink: 0;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
 }
 
-.flow-canvas-wrapper {
+.agent-flow-title h1 {
+  font-size: 16px;
+  /* 稍微减小字体大小 */
+  font-weight: 600;
+  margin: 0;
+  margin-right: 24px;
+  /* 添加右边距，与按钮组保持适当距离 */
+  color: #111;
+}
+
+.agent-flow-actions {
+  display: flex;
+  gap: 6px;
+  /* 稍微减小按钮间距 */
+}
+
+/* 主体区域样式 */
+.agent-flow-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.agent-flow-canvas {
   flex: 1;
   position: relative;
-  width: calc(100% - 540px);
   height: 100%;
   min-width: 400px;
 }
 
-.properties-panel-wrapper {
+.agent-flow-properties {
   width: 320px;
   height: 100%;
   background: #fff;
@@ -35,9 +60,38 @@
   flex-shrink: 0;
 }
 
+/* 节点样式 */
+.react-flow__node {
+  transition: box-shadow 0.2s;
+}
+
 .react-flow__node.selected {
   box-shadow: 0 0 0 2px #1677ff;
   z-index: 2;
+}
+
+/* 节点删除按钮 */
+.node-delete-btn {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 18px;
+  height: 18px;
+  background: #ff4d4f;
+  border-radius: 50%;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 10;
+}
+
+.react-flow__node:hover .node-delete-btn {
+  opacity: 1;
 }
 
 /* 节点面板样式 */
@@ -61,6 +115,7 @@
   border: 1px solid #e5e7eb;
   transition: background 0.2s;
 }
+
 .node-panel-item:hover {
   background: #e6f0ff;
 }
@@ -68,6 +123,117 @@
 .node-panel-item-icon {
   margin-right: 8px;
   font-size: 18px;
+}
+
+/* 节点面板相关样式 */
+.agent-flow-node-panel {
+  width: 240px;
+  height: 100%;
+  background: #fff;
+  border-right: 1px solid #eee;
+  padding: 16px;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.node-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.node-panel-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.node-panel-group {
+  margin-bottom: 20px;
+}
+
+.node-panel-group-title {
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: #333;
+}
+
+.node-panel-group-title span {
+  margin-left: 8px;
+}
+
+.node-panel-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.node-panel-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  background-color: #f9f9f9;
+  border: 1px solid #eaeaea;
+  border-radius: 4px;
+  cursor: grab;
+  transition: all 0.2s;
+}
+
+.node-panel-item:hover {
+  background-color: #f0f0f0;
+  border-color: #d9d9d9;
+}
+
+.node-panel-item-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+.node-panel-item-color.basicNode {
+  background-color: #1677ff;
+}
+
+.node-panel-item-color.processNode {
+  background-color: #52c41a;
+}
+
+.node-panel-item-color.decisionNode {
+  background-color: #faad14;
+}
+
+.node-panel-item-color.startNode {
+  background-color: #722ed1;
+}
+
+.node-panel-item-color.endNode {
+  background-color: #f5222d;
+}
+
+.node-panel-item-color.conditionNode {
+  background-color: #fa8c16;
+}
+
+.node-panel-item-color.customNode {
+  background-color: #2f54eb;
+}
+
+.node-panel-item-color.jsonExtractor {
+  background-color: #eb2f96;
+}
+
+.node-panel-item-color.databaseNode {
+  background-color: #13c2c2;
+}
+
+.node-panel-item-color.knowledgeBaseNode {
+  background-color: #a0d911;
+}
+
+.node-panel-item-color.aiDialogNode {
+  background-color: #1890ff;
 }
 
 /* 属性面板样式 */
@@ -101,14 +267,226 @@
   margin: 0 0 8px 0;
 }
 
-/* Add a class for the React Flow container */
-.react-flow {
-  width: 100%;
-  height: 100%;
-}
-
 /* Set fixed dimensions for MiniMap */
 .react-flow__minimap {
   height: 120px !important;
   width: 240px !important;
+}
+
+/* 简化 AI 对话节点样式 */
+.ai-dialog-node-container {
+  font-size: 12px;
+  cursor: default;
+}
+
+.ai-dialog-node-container .ant-form-item {
+  margin-bottom: 0;
+}
+
+.ai-dialog-node-container .ant-form-item-label>label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #333;
+}
+
+.ai-dialog-node-container .ant-select,
+.ai-dialog-node-container .ant-input,
+.ai-dialog-node-container .ant-input-textarea {
+  font-size: 12px;
+}
+
+.ai-dialog-node-container .ant-slider {
+  margin: 8px 0 0 0;
+}
+
+/* 防止拖拽时选中文本 */
+.ai-dialog-node-container * {
+  user-select: none;
+}
+
+.ai-dialog-node-container .ant-input,
+.ai-dialog-node-container .ant-input-textarea {
+  user-select: text;
+}
+
+/* 修复选择框下拉菜单层级问题 */
+.ant-select-dropdown {
+  z-index: 9999 !important;
+}
+
+/* 确保选择框下拉菜单不被遮挡 */
+.react-flow .ant-select-dropdown {
+  z-index: 9999 !important;
+}
+
+/* Handle 样式优化 */
+.react-flow__handle {
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.react-flow__handle.react-flow__handle-left {
+  left: -6px;
+}
+
+.react-flow__handle.react-flow__handle-right {
+  right: -6px;
+}
+
+/* AI 对话节点 - 按照 React Flow 官方格式 */
+.ai-dialog-node {
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  background: white;
+  width: 280px;
+  font-size: 12px;
+  color: #222;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+.ai-dialog-node.selected {
+  border-color: #1677ff;
+  box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.2);
+}
+
+/* 节点头部 */
+.ai-dialog-header {
+  background: #f0f0f0;
+  padding: 8px 10px;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-radius: 3px 3px 0 0;
+}
+
+.ai-dialog-title {
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+  color: #1677ff;
+}
+
+.ai-dialog-icon {
+  margin-right: 6px;
+  color: #1677ff;
+}
+
+.ai-dialog-toggle-btn {
+  padding: 0;
+  color: #999;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ai-dialog-toggle-btn:hover {
+  color: #1677ff;
+}
+
+/* 节点主体 */
+.ai-dialog-body {
+  padding: 10px;
+}
+
+.ai-dialog-field {
+  margin-bottom: 10px;
+}
+
+.ai-dialog-field:last-child {
+  margin-bottom: 0;
+}
+
+.ai-dialog-label {
+  display: block;
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.ai-dialog-select {
+  width: 100%;
+}
+
+.ai-dialog-textarea {
+  width: 100%;
+  resize: none;
+}
+
+.ai-dialog-expanded {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed #eee;
+}
+
+.ai-dialog-slider {
+  margin: 6px 0 0 0;
+}
+
+/* 连接点样式 */
+.ai-dialog-handle {
+  width: 8px;
+  height: 8px;
+  background: #1677ff;
+  border: 2px solid white;
+}
+
+.ai-dialog-handle-input {
+  left: -4px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.ai-dialog-handle-output {
+  right: -4px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #52c41a;
+}
+
+/* 表单组件样式覆盖 */
+.ai-dialog-node .ant-input,
+.ai-dialog-node .ant-input-textarea {
+  font-size: 12px;
+  border-radius: 4px;
+}
+
+.ai-dialog-node .ant-slider {
+  margin: 0;
+}
+
+.ai-dialog-node .ant-slider-track {
+  background: #1677ff;
+}
+
+.ai-dialog-node .ant-slider-handle {
+  border-color: #1677ff;
+}
+
+.ai-dialog-node .ant-slider-handle:hover {
+  border-color: #1677ff;
+}
+
+.ai-dialog-node .ant-slider-handle:focus {
+  border-color: #1677ff;
+  box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.2);
+}
+
+/* 防止选中文本 */
+.ai-dialog-node * {
+  user-select: none;
+}
+
+.ai-dialog-node .ant-input,
+.ai-dialog-node .ant-input-textarea {
+  user-select: text;
+}
+
+/* 确保下拉菜单在最顶层 */
+.ant-select-dropdown {
+  z-index: 9999 !important;
 }
