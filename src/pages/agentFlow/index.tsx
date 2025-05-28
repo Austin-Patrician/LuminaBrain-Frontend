@@ -17,7 +17,6 @@ import {
   applyEdgeChanges,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import "./index.css";
 import { nodeTypes } from "./components/nodes";
 import { Button, Dropdown, Menu, message, Tooltip } from "antd";
 import {
@@ -48,7 +47,7 @@ const nodeCategories = [
     key: "process",
     label: "处理节点",
     children: [
-      { key: "processNode", label: "处���节点" },
+      { key: "processNode", label: "处理节点" },
       { key: "decisionNode", label: "判断节点" },
     ],
   },
@@ -56,7 +55,7 @@ const nodeCategories = [
     key: "ai",
     label: "AI节点",
     children: [
-      { key: "aiDialogNode", label: "AI对话" }, // 添加AI对话节点
+      { key: "aiDialogNode", label: "AI对话" },
       { key: "conditionNode", label: "条件节点" },
       { key: "customNode", label: "自定义节点" },
       { key: "jsonExtractor", label: "JSON提取器" },
@@ -91,15 +90,10 @@ const initialNodes: Node[] = [
 ];
 
 // Define initial edges with proper typing
-const initialEdges: Edge[] = [
-  {
-    id: "start-end",
-    source: "start",
-    target: "end",
-    type: "smoothstep",
-    animated: true,
-  },
-];
+const initialEdges: Edge[] = [];
+
+const snapGrid: [number, number] = [20, 20];
+const defaultViewport = { x: 0, y: 0, zoom: 1 };
 
 export default function AgentFlowPage() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
@@ -108,7 +102,7 @@ export default function AgentFlowPage() {
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
   const [initialized, setInitialized] = useState(false);
-  const [nodePanelVisible, setNodePanelVisible] = useState(false);
+  const [nodePanelVisible, setNodePanelVisible] = useState(true);
 
   // 添加历史记录相关状态
   const [history, setHistory] = useState<Array<{ nodes: Node[]; edges: Edge[] }>>([
@@ -184,7 +178,12 @@ export default function AgentFlowPage() {
   const handleConnect = useCallback(
     (params: Connection) => {
       setEdges((eds) => {
-        const newEdges = addEdge({ ...params, type: "smoothstep" }, eds);
+        const newEdges = addEdge({
+          ...params,
+          type: "smoothstep",
+          animated: true,
+          style: { stroke: '#1677ff', strokeWidth: 2 }
+        }, eds);
 
         // 添加新状态到历史记录
         const currentHistory = history.slice(0, historyIndex + 1);
@@ -370,19 +369,20 @@ export default function AgentFlowPage() {
 
   return (
     <ReactFlowProvider>
-      <div className="agent-flow-container">
-        {/* 顶部功能区 */}
-        <div className="agent-flow-header">
-          <div className="agent-flow-title">
-            <h1>工作流设计器</h1>
+      <div className="flex flex-col h-screen w-full bg-gray-50 overflow-hidden">
+        {/* 顶部功能栏 - 使用 Tailwind 类 */}
+        <div className="h-14 bg-white border-b border-gray-200 px-4 flex items-center justify-between shadow-sm">
+          <div className="flex items-center">
+            <h1 className="text-lg font-semibold text-gray-800 mr-6">工作流设计器</h1>
           </div>
-          <div className="agent-flow-actions">
-            {/* 替换原来的两个按钮为一个切换节点面板的按钮 */}
+
+          <div className="flex items-center gap-2">
             <Tooltip title={nodePanelVisible ? "关闭节点面板" : "打开节点面板"}>
               <Button
                 type="primary"
                 icon={<PlusOutlined />}
                 onClick={toggleNodePanel}
+                className="flex items-center"
               >
                 节点面板
               </Button>
@@ -394,11 +394,8 @@ export default function AgentFlowPage() {
                 onClick={handleDeleteSelectedNode}
                 disabled={!selectedNode || selectedNode.deletable === false}
                 danger
+                className="flex items-center"
               />
-            </Tooltip>
-
-            <Tooltip title="保存工作流">
-              <Button icon={<SaveOutlined />} onClick={handleSaveFlow} />
             </Tooltip>
 
             <Tooltip title="撤销">
@@ -406,6 +403,7 @@ export default function AgentFlowPage() {
                 icon={<UndoOutlined />}
                 onClick={handleUndo}
                 disabled={historyIndex <= 0}
+                className="flex items-center"
               />
             </Tooltip>
 
@@ -414,30 +412,47 @@ export default function AgentFlowPage() {
                 icon={<RedoOutlined />}
                 onClick={handleRedo}
                 disabled={historyIndex >= history.length - 1}
+                className="flex items-center"
+              />
+            </Tooltip>
+
+            <div className="h-6 w-px bg-gray-300 mx-1" />
+
+            <Tooltip title="保存工作流">
+              <Button
+                icon={<SaveOutlined />}
+                onClick={handleSaveFlow}
+                className="flex items-center"
               />
             </Tooltip>
 
             <Tooltip title="导入">
-              <Button icon={<ImportOutlined />} />
+              <Button
+                icon={<ImportOutlined />}
+                className="flex items-center"
+              />
             </Tooltip>
 
             <Tooltip title="导出">
-              <Button icon={<ExportOutlined />} />
+              <Button
+                icon={<ExportOutlined />}
+                className="flex items-center"
+              />
             </Tooltip>
           </div>
         </div>
 
-        {/* 主体面板区 */}
-        <div className="agent-flow-body">
-          {/* 节点面板 - 可拖拽区域 */}
+        {/* 主体区域 - 使用 Flexbox 布局 */}
+        <div className="flex flex-1 overflow-hidden">
+          {/* 节点面板 - 左侧 */}
           {nodePanelVisible && (
-            <div className="agent-flow-node-panel">
+            <div className="w-64 bg-white border-r border-gray-200 p-4 overflow-y-auto">
               <NodePanel categories={nodeCategories} />
             </div>
           )}
 
-          {/* 流程设计画布 */}
-          <div className="agent-flow-canvas" ref={reactFlowWrapper}>
+          {/* 流程设计画布 - 中间 */}
+          <div className="flex-1 relative" ref={reactFlowWrapper}>
             {initialized && (
               <ReactFlow
                 nodes={nodes}
@@ -452,20 +467,54 @@ export default function AgentFlowPage() {
                 onNodesDelete={onNodesDelete}
                 onDragOver={onDragOver}
                 onDrop={onDrop}
-                defaultEdgeOptions={{ type: "smoothstep" }}
+                defaultEdgeOptions={{
+                  type: "smoothstep",
+                  animated: true,
+                  style: { stroke: '#1677ff', strokeWidth: 2 }
+                }}
+                snapToGrid={true}
+                snapGrid={snapGrid}
+                defaultViewport={defaultViewport}
                 fitView
                 minZoom={0.1}
-                maxZoom={1.5}
+                maxZoom={2}
+                className="bg-gray-50"
               >
-                <Background variant="dots" gap={16} size={1} />
-                <Controls />
-                <MiniMap style={{ height: 120 }} zoomable pannable />
+                <Background
+                  variant="dots"
+                  gap={20}
+                  size={1}
+                  className="bg-gray-50"
+                  color="#e2e8f0"
+                />
+                <Controls className="bg-white border border-gray-200 rounded-lg shadow-lg" />
+                <MiniMap
+                  style={{ height: 120, width: 200 }}
+                  className="bg-white border border-gray-200 rounded-lg shadow-lg"
+                  nodeColor={(node) => {
+                    switch (node.type) {
+                      case 'startNode': return '#10b981';
+                      case 'endNode': return '#ef4444';
+                      case 'aiDialogNode': return '#3b82f6';
+                      case 'processNode': return '#8b5cf6';
+                      case 'decisionNode': return '#f59e0b';
+                      default: return '#6b7280';
+                    }
+                  }}
+                />
+
+                {/* Panel 组件用于显示浮动信息 */}
+                <Panel position="top-right" className="bg-white p-2 rounded-lg shadow-lg border border-gray-200">
+                  <div className="text-sm text-gray-600">
+                    节点: {nodes.length} | 连线: {edges.length}
+                  </div>
+                </Panel>
               </ReactFlow>
             )}
           </div>
 
-          {/* 属性面板 */}
-          <div className="agent-flow-properties">
+          {/* 属性面板 - 右侧 */}
+          <div className="w-80 bg-white border-l border-gray-200 p-4 overflow-y-auto">
             <PropertiesPanel node={selectedNode} onChange={onNodeDataChange} />
           </div>
         </div>
