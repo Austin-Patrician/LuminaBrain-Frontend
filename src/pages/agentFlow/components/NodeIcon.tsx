@@ -6,6 +6,18 @@ interface NodeIconProps {
 
 const NodeIcon: React.FC<NodeIconProps> = ({ type }) => {
   const colors: Record<string, string> = {
+    // AI节点
+    aiDialogNode: 'bg-blue-500',
+    aiSummaryNode: 'bg-cyan-500',
+    aiExtractNode: 'bg-purple-500',
+    aiJsonNode: 'bg-pink-500',
+    // 数据节点
+    databaseNode: 'bg-teal-500',
+    knowledgeBaseNode: 'bg-lime-500',
+    bingNode: 'bg-orange-500',
+    // 响应节点
+    responseNode: 'bg-green-500',
+    // 基础节点
     basicNode: 'bg-blue-500',
     processNode: 'bg-green-500',
     decisionNode: 'bg-yellow-500',

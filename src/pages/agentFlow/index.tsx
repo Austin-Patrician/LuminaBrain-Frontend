@@ -18,73 +18,240 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { nodeTypes } from "./components/nodes";
-import { Button, Dropdown, Menu, message, Tooltip } from "antd";
+import { Button, message, Tooltip } from "antd";
 import {
   PlusOutlined,
   SaveOutlined,
   DeleteOutlined,
-  DownOutlined,
   ExportOutlined,
   ImportOutlined,
   UndoOutlined,
   RedoOutlined,
+  RobotOutlined,
+  DatabaseOutlined,
+  BranchesOutlined,
+  PlayCircleOutlined,
+  StopOutlined,
+  ThunderboltOutlined,
+  SettingOutlined,
+  FileTextOutlined,
+  SearchOutlined,
+  CloudOutlined,
+  MessageOutlined,
 } from "@ant-design/icons";
 import PropertiesPanel from "./components/PropertiesPanel";
 import NodePanel from "./components/NodePanel";
 
-// 节点分类数据
+// 生成36位GUID的工具函数
+const generateGUID = (): string => {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
+// 获取节点默认属性的函数
+const getDefaultNodeData = (nodeType: string, label: string) => {
+  const baseData = {
+    label: label,
+    description: '',
+  };
+
+  switch (nodeType) {
+    case 'aiDialogNode':
+    case 'aiSummaryNode':
+    case 'aiExtractNode':
+    case 'aiJsonNode':
+      return {
+        ...baseData,
+        model: 'gpt-3.5-turbo',
+        systemPrompt: '',
+        userMessage: '',
+        temperature: 0.7,
+        maxTokens: 1000,
+        stream: false,
+      };
+
+    case 'databaseNode':
+      return {
+        ...baseData,
+        dbType: 'mysql',
+        connectionString: '',
+        query: '',
+        timeout: 30,
+      };
+
+    case 'knowledgeBaseNode':
+      return {
+        ...baseData,
+        knowledgeBaseId: '',
+        searchQuery: '',
+        topK: 5,
+        similarityThreshold: 0.7,
+      };
+
+    case 'bingNode':
+      return {
+        ...baseData,
+        searchQuery: '',
+        maxResults: 10,
+        safeSearch: 'moderate',
+      };
+
+    case 'decisionNode':
+    case 'conditionNode':
+      return {
+        ...baseData,
+        condition: '',
+        conditionType: 'javascript',
+        trueBranch: '',
+        falseBranch: '',
+      };
+
+    case 'jsonExtractor':
+      return {
+        ...baseData,
+        jsonPath: '',
+        extractMode: 'single',
+        defaultValue: '',
+      };
+
+    case 'responseNode':
+      return {
+        ...baseData,
+        responseTemplate: '',
+        responseFormat: 'text',
+        statusCode: 200,
+      };
+
+    case 'startNode':
+      return {
+        ...baseData,
+        triggerType: 'manual',
+        scheduleTime: '',
+      };
+
+    case 'endNode':
+      return {
+        ...baseData,
+        outputFormat: 'json',
+        returnCode: 0,
+      };
+
+    default:
+      return {
+        ...baseData,
+        nodeType: nodeType,
+        configurable: true,
+      };
+  }
+};
+
+// 节点图标映射函数
+const getNodeIcon = (type: string) => {
+  const iconMap: Record<string, React.ReactNode> = {
+    aiDialogNode: <RobotOutlined />,
+    aiSummaryNode: <FileTextOutlined />,
+    aiExtractNode: <ThunderboltOutlined />,
+    aiJsonNode: <SettingOutlined />,
+    databaseNode: <DatabaseOutlined />,
+    knowledgeBaseNode: <CloudOutlined />,
+    bingNode: <SearchOutlined />,
+    responseNode: <MessageOutlined />,
+    startNode: <PlayCircleOutlined />,
+    endNode: <StopOutlined />,
+    basicNode: <ThunderboltOutlined />,
+    processNode: <SettingOutlined />,
+    decisionNode: <BranchesOutlined />,
+    conditionNode: <BranchesOutlined />,
+    customNode: <SettingOutlined />,
+    jsonExtractor: <SettingOutlined />,
+  };
+  return iconMap[type] || <ThunderboltOutlined />;
+};
+
+// 节点颜色映射函数
+const getNodeColor = (type: string) => {
+  const colorMap: Record<string, string> = {
+    aiDialogNode: "blue",
+    aiSummaryNode: "cyan",
+    aiExtractNode: "purple",
+    aiJsonNode: "magenta",
+    databaseNode: "teal",
+    knowledgeBaseNode: "lime",
+    bingNode: "orange",
+    responseNode: "green",
+    startNode: "emerald",
+    endNode: "red",
+    basicNode: "blue",
+    processNode: "green",
+    decisionNode: "yellow",
+    conditionNode: "orange",
+    customNode: "indigo",
+    jsonExtractor: "pink",
+  };
+  return colorMap[type] || "gray";
+};
+
+// 节点分类数据 - 修复为正确的数据结构
 const nodeCategories = [
   {
-    key: "basic",
-    label: "基础节点",
-    children: [
-      { key: "basicNode", label: "基础节点" },
-      { key: "startNode", label: "开始节点" },
-      { key: "endNode", label: "结束节点" },
-    ],
-  },
-  {
-    key: "process",
-    label: "处理节点",
-    children: [
-      { key: "processNode", label: "处理节点" },
-      { key: "decisionNode", label: "判断节点" },
-    ],
-  },
-  {
     key: "ai",
-    label: "AI节点",
+    label: "AI处理节点",
     children: [
-      { key: "aiDialogNode", label: "AI对话" },
-      { key: "conditionNode", label: "条件节点" },
-      { key: "customNode", label: "自定义节点" },
-      { key: "jsonExtractor", label: "JSON提取器" },
+      { type: "aiDialogNode", label: "AI对话", icon: getNodeIcon("aiDialogNode"), color: getNodeColor("aiDialogNode"), description: "与AI模型进行对话交互" },
+      { type: "aiSummaryNode", label: "摘要总结", icon: getNodeIcon("aiSummaryNode"), color: getNodeColor("aiSummaryNode"), description: "对文本内容进行智能摘要" },
+      { type: "aiExtractNode", label: "内容提取", icon: getNodeIcon("aiExtractNode"), color: getNodeColor("aiExtractNode"), description: "从文本中提取关键信息" },
+      { type: "aiJsonNode", label: "JSON处理", icon: getNodeIcon("aiJsonNode"), color: getNodeColor("aiJsonNode"), description: "AI处理JSON数据格式" },
     ],
   },
   {
     key: "data",
-    label: "数据节点",
+    label: "数据处理节点",
     children: [
-      { key: "databaseNode", label: "数据库节点" },
-      { key: "knowledgeBaseNode", label: "知识库节点" },
+      { type: "databaseNode", label: "数据库查询", icon: getNodeIcon("databaseNode"), color: getNodeColor("databaseNode"), description: "执行数据库查询操作" },
+      { type: "knowledgeBaseNode", label: "知识库检索", icon: getNodeIcon("knowledgeBaseNode"), color: getNodeColor("knowledgeBaseNode"), description: "从知识库中检索相关信息" },
+      { type: "bingNode", label: "必应搜索", icon: getNodeIcon("bingNode"), color: getNodeColor("bingNode"), description: "使用必应进行网络搜索" },
+    ],
+  },
+  {
+    key: "control",
+    label: "控制节点",
+    children: [
+      { type: "startNode", label: "开始", icon: getNodeIcon("startNode"), color: getNodeColor("startNode"), description: "工作流开始节点" },
+      { type: "endNode", label: "结束", icon: getNodeIcon("endNode"), color: getNodeColor("endNode"), description: "工作流结束节点" },
+      { type: "responseNode", label: "响应输出", icon: getNodeIcon("responseNode"), color: getNodeColor("responseNode"), description: "输出最终响应结果" },
+    ],
+  },
+  {
+    key: "basic",
+    label: "基础节点",
+    children: [
+      { type: "basicNode", label: "基础节点", icon: getNodeIcon("basicNode"), color: getNodeColor("basicNode"), description: "基础功能节点" },
+      { type: "processNode", label: "处理节点", icon: getNodeIcon("processNode"), color: getNodeColor("processNode"), description: "数据处理和转换节点" },
+      { type: "decisionNode", label: "判断节点", icon: getNodeIcon("decisionNode"), color: getNodeColor("decisionNode"), description: "条件判断和分支节点" },
+      { type: "conditionNode", label: "条件节点", icon: getNodeIcon("conditionNode"), color: getNodeColor("conditionNode"), description: "逻辑条件处理节点" },
+      { type: "customNode", label: "自定义节点", icon: getNodeIcon("customNode"), color: getNodeColor("customNode"), description: "可自定义功能的节点" },
+      { type: "jsonExtractor", label: "JSON提取器", icon: getNodeIcon("jsonExtractor"), color: getNodeColor("jsonExtractor"), description: "从JSON中提取特定数据" },
     ],
   },
 ];
 
-// Define initial nodes with proper typing
+// Define initial nodes with proper typing and GUID IDs
 const initialNodes: Node[] = [
   {
-    id: "start",
+    id: generateGUID(),
     type: "startNode",
     position: { x: 100, y: 200 },
-    data: { label: "开始" },
+    data: getDefaultNodeData("startNode", "开始"),
     deletable: false,
   },
   {
-    id: "end",
+    id: generateGUID(),
     type: "endNode",
     position: { x: 700, y: 200 },
-    data: { label: "结束" },
+    data: getDefaultNodeData("endNode", "结束"),
     deletable: false,
   },
 ];
@@ -110,6 +277,13 @@ export default function AgentFlowPage() {
   ]);
   const [historyIndex, setHistoryIndex] = useState(0);
   const ignoreHistoryRef = useRef(false);
+
+  // 添加历史记录的辅助函数
+  const addToHistory = useCallback((newState: { nodes: Node[]; edges: Edge[] }) => {
+    const currentHistory = history.slice(0, historyIndex + 1);
+    setHistory([...currentHistory, newState]);
+    setHistoryIndex(historyIndex + 1);
+  }, [history, historyIndex]);
 
   // Initialize the flow after the component has mounted
   useEffect(() => {
@@ -206,12 +380,91 @@ export default function AgentFlowPage() {
     setSelectedNode(null);
   }, []);
 
-  // 更新节点参数
-  const onNodeDataChange = (id: string, data: any) => {
+  // 节点数据更改处理函数
+  const onNodeDataChange = useCallback((nodeId: string, newData: any) => {
     setNodes((nds) =>
-      nds.map((node) => (node.id === id ? { ...node, data: { ...node.data, ...data } } : node))
+      nds.map((node) => {
+        if (node.id === nodeId) {
+          const updatedNode = {
+            ...node,
+            data: { ...node.data, ...newData }
+          };
+          return updatedNode;
+        }
+        return node;
+      })
     );
-  };
+
+    // 同时更新选中节点状态
+    setSelectedNode((selected) => {
+      if (selected && selected.id === nodeId) {
+        return {
+          ...selected,
+          data: { ...selected.data, ...newData }
+        };
+      }
+      return selected;
+    });
+
+    // 保存到历史记录
+    const newFlowData = {
+      nodes: nodes.map((node) => {
+        if (node.id === nodeId) {
+          return {
+            ...node,
+            data: { ...node.data, ...newData }
+          };
+        }
+        return node;
+      }),
+      edges
+    };
+
+    addToHistory(newFlowData);
+  }, [nodes, edges, addToHistory]);
+
+  // 节点名称更改处理函数
+  const onNodeLabelChange = useCallback((nodeId: string, newLabel: string) => {
+    setNodes((nds) =>
+      nds.map((node) => {
+        if (node.id === nodeId) {
+          const updatedNode = {
+            ...node,
+            data: { ...node.data, label: newLabel }
+          };
+          return updatedNode;
+        }
+        return node;
+      })
+    );
+
+    // 同时更新选中节点状态
+    setSelectedNode((selected) => {
+      if (selected && selected.id === nodeId) {
+        return {
+          ...selected,
+          data: { ...selected.data, label: newLabel }
+        };
+      }
+      return selected;
+    });
+
+    // 保存到历史记录
+    const newFlowData = {
+      nodes: nodes.map((node) => {
+        if (node.id === nodeId) {
+          return {
+            ...node,
+            data: { ...node.data, label: newLabel }
+          };
+        }
+        return node;
+      }),
+      edges
+    };
+
+    addToHistory(newFlowData);
+  }, [nodes, edges, addToHistory]);
 
   // 删除节点时自动删除相关边
   const onNodesDelete = useCallback(
@@ -244,17 +497,37 @@ export default function AgentFlowPage() {
       }
 
       // 获取放置位置
-      const position = reactFlowInstance.screenToFlowPosition({
-        x: event.clientX - reactFlowBounds.left,
-        y: event.clientY - reactFlowBounds.top,
-      });
+      let position;
+
+      // 检查是否是从节点面板拖拽（没有具体的鼠标位置或位置在画布外）
+      const mouseX = event.clientX - reactFlowBounds.left;
+      const mouseY = event.clientY - reactFlowBounds.top;
+
+      // 如果鼠标位置在画布边界内，使用鼠标位置
+      if (mouseX >= 0 && mouseX <= reactFlowBounds.width &&
+        mouseY >= 0 && mouseY <= reactFlowBounds.height) {
+        position = reactFlowInstance.screenToFlowPosition({
+          x: event.clientX - reactFlowBounds.left,
+          y: event.clientY - reactFlowBounds.top,
+        });
+      } else {
+        // 否则将节点放置在当前视图的中央
+        const viewport = reactFlowInstance.getViewport();
+        const centerX = reactFlowBounds.width / 2;
+        const centerY = reactFlowBounds.height / 2;
+
+        position = reactFlowInstance.screenToFlowPosition({
+          x: centerX,
+          y: centerY,
+        });
+      }
 
       // 创建新节点
       const newNode = {
-        id: `${type}-${Date.now()}`,
+        id: generateGUID(),
         type,
         position,
-        data: { label: label || type },
+        data: getDefaultNodeData(type, label || type),
       };
 
       setNodes((nds) => nds.concat(newNode));
@@ -262,39 +535,6 @@ export default function AgentFlowPage() {
     },
     [reactFlowInstance, setNodes]
   );
-
-  // 添加新节点
-  const handleAddNode = (nodeType: string, label: string) => {
-    if (!reactFlowInstance) return;
-
-    // 获取视口中心位置
-    const center = reactFlowInstance.getViewport();
-    const position = reactFlowInstance.project({
-      x: window.innerWidth / 2 - center.x / center.zoom,
-      y: window.innerHeight / 3 - center.y / center.zoom,
-    });
-
-    // 创建新节点
-    const newNode = {
-      id: `${nodeType}-${Date.now()}`,
-      type: nodeType,
-      position,
-      data: { label },
-    };
-
-    setNodes((nds) => {
-      const newNodes = nds.concat(newNode);
-
-      // 添加新状态到历史记录
-      const currentHistory = history.slice(0, historyIndex + 1);
-      setHistory([...currentHistory, { nodes: newNodes, edges }]);
-      setHistoryIndex(historyIndex + 1);
-
-      return newNodes;
-    });
-
-    message.success(`添加了 ${label} 节点`);
-  };
 
   // 删除选中节点
   const handleDeleteSelectedNode = () => {
@@ -481,7 +721,6 @@ export default function AgentFlowPage() {
                 className="bg-gray-50"
               >
                 <Background
-                  variant="dots"
                   gap={20}
                   size={1}
                   className="bg-gray-50"
@@ -514,8 +753,13 @@ export default function AgentFlowPage() {
           </div>
 
           {/* 属性面板 - 右侧 */}
-          <div className="w-80 bg-white border-l border-gray-200 p-4 overflow-y-auto">
-            <PropertiesPanel node={selectedNode} onChange={onNodeDataChange} />
+          <div className="w-80 bg-white border-l border-gray-200 flex flex-col">
+            <PropertiesPanel
+              node={selectedNode}
+              edges={edges}
+              onChange={onNodeDataChange}
+              onLabelChange={onNodeLabelChange}
+            />
           </div>
         </div>
       </div>
