@@ -18,13 +18,11 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { nodeTypes } from "./components/nodes";
-import { Button, message, Tooltip } from "antd";
+import { Button, message, Tooltip, Modal, Input, Form, Select, Tag } from "antd";
 import {
   PlusOutlined,
   SaveOutlined,
   DeleteOutlined,
-  ExportOutlined,
-  ImportOutlined,
   UndoOutlined,
   RedoOutlined,
   RobotOutlined,
@@ -38,9 +36,17 @@ import {
   SearchOutlined,
   CloudOutlined,
   MessageOutlined,
+  LeftOutlined,
+  CheckCircleOutlined,
+  FolderOpenOutlined
 } from "@ant-design/icons";
 import PropertiesPanel from "./components/PropertiesPanel";
 import NodePanel from "./components/NodePanel";
+import { flowService, FlowDataRaw } from "../../api/services/flowService";
+import { useNavigate, useSearchParams } from "react-router";
+
+const { TextArea } = Input;
+const { Option } = Select;
 
 // 生成36位GUID的工具函数
 const generateGUID = (): string => {
@@ -263,6 +269,10 @@ const snapGrid: [number, number] = [20, 20];
 const defaultViewport = { x: 0, y: 0, zoom: 1 };
 
 export default function AgentFlowPage() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const flowId = searchParams.get('id');
+
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
@@ -271,12 +281,163 @@ export default function AgentFlowPage() {
   const [initialized, setInitialized] = useState(false);
   const [nodePanelVisible, setNodePanelVisible] = useState(true);
 
+  // 流程保存相关状态
+  const [currentFlow, setCurrentFlow] = useState<FlowDataRaw | null>(null);
+  const [isFlowModified, setIsFlowModified] = useState(false);
+  const [saveModalVisible, setSaveModalVisible] = useState(false);
+  const [publishModalVisible, setPublishModalVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
+
   // 添加历史记录相关状态
   const [history, setHistory] = useState<Array<{ nodes: Node[]; edges: Edge[] }>>([
     { nodes: initialNodes, edges: initialEdges },
   ]);
   const [historyIndex, setHistoryIndex] = useState(0);
   const ignoreHistoryRef = useRef(false);
+
+  // 页面加载时检查是否有流程ID，如果有则加载流程
+  useEffect(() => {
+    if (flowId) {
+      loadFlow(flowId);
+    }
+  }, [flowId]);
+
+  // 监听节点和边的变化，标记为已修改
+  useEffect(() => {
+    if (initialized && currentFlow) {
+      setIsFlowModified(true);
+    }
+  }, [nodes, edges, initialized]);
+
+  // 加载流程数据
+  const loadFlow = async (id: string) => {
+    setLoading(true);
+    try {
+      const flowData = await flowService.getFlowById(id);
+      setCurrentFlow(flowData);
+
+      if (flowData.nodes && flowData.edges) {
+        setNodes(flowData.nodes);
+        setEdges(flowData.edges);
+
+        // 重置历史记录
+        setHistory([{ nodes: flowData.nodes, edges: flowData.edges }]);
+        setHistoryIndex(0);
+
+        // 如果有视口信息，应用它
+        if (flowData.viewport && reactFlowInstance) {
+          setTimeout(() => {
+            reactFlowInstance.setViewport(flowData.viewport!);
+          }, 100);
+        }
+      }
+
+      setIsFlowModified(false);
+      message.success('流程加载成功');
+    } catch (error) {
+      message.error('流程加载失败');
+      console.error('Load flow error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 保存流程
+  const saveFlow = async (flowData: Partial<FlowDataRaw>) => {
+    if (!reactFlowInstance) return;
+
+    const flowObject = reactFlowInstance.toObject();
+
+    // 确保必需字段有值
+    if (!flowData.name) {
+      message.error('流程名称不能为空');
+      return;
+    }
+
+    const saveData: FlowDataRaw = {
+      name: flowData.name,
+      description: flowData.description || '',
+      nodes: flowObject.nodes,
+      edges: flowObject.edges,
+      viewport: flowObject.viewport,
+      nodeCount: flowObject.nodes.length,
+      connectionCount: flowObject.edges.length,
+      tags: flowData.tags || [],
+    };
+
+    setLoading(true);
+    try {
+      let result;
+      if (currentFlow?.id) {
+        // 更新现有流程
+        result = await flowService.updateFlow(currentFlow.id, saveData);
+        message.success('流程保存成功');
+      } else {
+        // 创建新流程
+        result = await flowService.createFlow(saveData);
+        message.success('流程创建成功');
+
+        console.log('New flow created with ID:', result);
+        // 更新URL，添加流程ID
+        navigate(`/agentFlow/editor?id=${result}`, { replace: true });
+      }
+
+      setCurrentFlow(result);
+      setIsFlowModified(false);
+    } catch (error) {
+      message.error(currentFlow?.id ? '流程保存失败' : '流程创建失败');
+      console.error('Save flow error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 发布流程
+  const publishFlow = async () => {
+    if (!currentFlow?.id) {
+      message.warning('请先保存流程');
+      return;
+    }
+
+    try {
+      await flowService.publishFlow(currentFlow.id);
+      setCurrentFlow({ ...currentFlow, status: 'published' });
+      message.success('流程发布成功');
+      setPublishModalVisible(false);
+    } catch (error) {
+      message.error('流程发布失败');
+      console.error('Publish flow error:', error);
+    }
+  };
+
+  // 返回流程列表
+  const handleBackToList = () => {
+    if (isFlowModified) {
+      Modal.confirm({
+        title: '未保存的更改',
+        content: '您有未保存的更改，确定要离开吗？',
+        onOk: () => navigate('/agentFlow'),
+        okText: '确定',
+        cancelText: '取消',
+      });
+    } else {
+      navigate('/agentFlow');
+    }
+  };
+
+  // 快速保存
+  const handleQuickSave = async () => {
+    if (!currentFlow) {
+      setSaveModalVisible(true);
+      return;
+    }
+
+    await saveFlow({
+      name: currentFlow.name,
+      description: currentFlow.description,
+      tags: currentFlow.tags,
+    });
+  };
 
   // 添加历史记录的辅助函数
   const addToHistory = useCallback((newState: { nodes: Node[]; edges: Edge[] }) => {
@@ -512,7 +673,6 @@ export default function AgentFlowPage() {
         });
       } else {
         // 否则将节点放置在当前视图的中央
-        const viewport = reactFlowInstance.getViewport();
         const centerX = reactFlowBounds.width / 2;
         const centerY = reactFlowBounds.height / 2;
 
@@ -562,14 +722,6 @@ export default function AgentFlowPage() {
     }
   };
 
-  // 保存工作流
-  const handleSaveFlow = () => {
-    const flow = reactFlowInstance?.toObject();
-    console.log("保存工作流:", flow);
-    message.success("工作流已保存");
-    // 这里添加实际的保存逻辑
-  };
-
   // 实现撤销功能
   const handleUndo = useCallback(() => {
     if (historyIndex > 0) {
@@ -611,74 +763,128 @@ export default function AgentFlowPage() {
     <ReactFlowProvider>
       <div className="flex flex-col h-screen w-full bg-gray-50 overflow-hidden">
         {/* 顶部功能栏 - 使用 Tailwind 类 */}
-        <div className="h-14 bg-white border-b border-gray-200 px-4 flex items-center justify-between shadow-sm">
-          <div className="flex items-center">
-            <h1 className="text-lg font-semibold text-gray-800 mr-6">工作流设计器</h1>
-          </div>
+        <div className="h-14 bg-white border-b border-gray-200 px-6 flex items-center shadow-sm">
+          <div className="flex items-center gap-6">
+            {/* 返回按钮和标题 */}
+            <div className="flex items-center gap-3">
+              <Tooltip title="返回流程列表">
+                <Button
+                  icon={<LeftOutlined />}
+                  onClick={handleBackToList}
+                  size="small"
+                  className="flex items-center"
+                />
+              </Tooltip>
+              <div>
+                <h1 className="text-lg font-semibold text-gray-800">
+                  {currentFlow?.name || '新建流程'}
+                  {isFlowModified && <span className="text-orange-500 ml-2">●</span>}
+                </h1>
+                {currentFlow && (
+                  <div className="flex items-center gap-2 mt-1">
+                    <Tag color={currentFlow.status === 'published' ? 'success' : 'default'}>
+                      {currentFlow.status === 'draft' ? '草稿' :
+                        currentFlow.status === 'published' ? '已发布' : '已归档'}
+                    </Tag>
+                    {currentFlow.tags?.map(tag => (
+                      <Tag key={tag}>{tag}</Tag>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
 
-          <div className="flex items-center gap-2">
+            {/* 节点面板控制按钮 */}
             <Tooltip title={nodePanelVisible ? "关闭节点面板" : "打开节点面板"}>
               <Button
-                type="primary"
+                type={nodePanelVisible ? "primary" : "default"}
                 icon={<PlusOutlined />}
                 onClick={toggleNodePanel}
                 className="flex items-center"
+                size="small"
               >
                 节点面板
               </Button>
             </Tooltip>
 
-            <Tooltip title="删除选中节点">
-              <Button
-                icon={<DeleteOutlined />}
-                onClick={handleDeleteSelectedNode}
-                disabled={!selectedNode || selectedNode.deletable === false}
-                danger
-                className="flex items-center"
-              />
-            </Tooltip>
+            {/* 分隔线 */}
+            <div className="h-6 w-px bg-gray-300" />
 
-            <Tooltip title="撤销">
-              <Button
-                icon={<UndoOutlined />}
-                onClick={handleUndo}
-                disabled={historyIndex <= 0}
-                className="flex items-center"
-              />
-            </Tooltip>
+            {/* 编辑工具栏 */}
+            <div className="flex items-center gap-2">
+              <Tooltip title="删除选中节点">
+                <Button
+                  icon={<DeleteOutlined />}
+                  onClick={handleDeleteSelectedNode}
+                  disabled={!selectedNode || selectedNode.deletable === false}
+                  danger
+                  size="small"
+                  className="flex items-center"
+                />
+              </Tooltip>
 
-            <Tooltip title="重做">
-              <Button
-                icon={<RedoOutlined />}
-                onClick={handleRedo}
-                disabled={historyIndex >= history.length - 1}
-                className="flex items-center"
-              />
-            </Tooltip>
+              <Tooltip title="撤销">
+                <Button
+                  icon={<UndoOutlined />}
+                  onClick={handleUndo}
+                  disabled={historyIndex <= 0}
+                  size="small"
+                  className="flex items-center"
+                />
+              </Tooltip>
 
-            <div className="h-6 w-px bg-gray-300 mx-1" />
+              <Tooltip title="重做">
+                <Button
+                  icon={<RedoOutlined />}
+                  onClick={handleRedo}
+                  disabled={historyIndex >= history.length - 1}
+                  size="small"
+                  className="flex items-center"
+                />
+              </Tooltip>
 
-            <Tooltip title="保存工作流">
-              <Button
-                icon={<SaveOutlined />}
-                onClick={handleSaveFlow}
-                className="flex items-center"
-              />
-            </Tooltip>
+              {/* 分隔线 */}
+              <div className="h-6 w-px bg-gray-300 mx-1" />
 
-            <Tooltip title="导入">
-              <Button
-                icon={<ImportOutlined />}
-                className="flex items-center"
-              />
-            </Tooltip>
+              {/* 保存相关按钮 */}
+              <Tooltip title={currentFlow ? "快速保存" : "保存为新流程"}>
+                <Button
+                  type="primary"
+                  icon={<SaveOutlined />}
+                  onClick={handleQuickSave}
+                  loading={loading}
+                  size="small"
+                  className="flex items-center"
+                >
+                  保存
+                </Button>
+              </Tooltip>
 
-            <Tooltip title="导出">
-              <Button
-                icon={<ExportOutlined />}
-                className="flex items-center"
-              />
-            </Tooltip>
+              {currentFlow && (
+                <Tooltip title="发布流程">
+                  <Button
+                    icon={<CheckCircleOutlined />}
+                    onClick={() => setPublishModalVisible(true)}
+                    disabled={currentFlow.status === 'published'}
+                    size="small"
+                    className="flex items-center"
+                  >
+                    发布
+                  </Button>
+                </Tooltip>
+              )}
+
+              <Tooltip title="另存为">
+                <Button
+                  icon={<FolderOpenOutlined />}
+                  onClick={() => setSaveModalVisible(true)}
+                  size="small"
+                  className="flex items-center"
+                >
+                  另存为
+                </Button>
+              </Tooltip>
+            </div>
           </div>
         </div>
 
@@ -763,6 +969,126 @@ export default function AgentFlowPage() {
           </div>
         </div>
       </div>
+
+      {/* 保存流程模态框 */}
+      <Modal
+        title="保存流程"
+        open={saveModalVisible}
+        onCancel={() => setSaveModalVisible(false)}
+        footer={null}
+        width={600}
+      >
+        <Form
+          layout="vertical"
+          initialValues={{
+            name: currentFlow?.name || '',
+            description: currentFlow?.description || '',
+            tags: currentFlow?.tags || [],
+          }}
+          onFinish={async (values) => {
+            await saveFlow(values);
+            setSaveModalVisible(false);
+          }}
+        >
+          <Form.Item
+            label="流程名称"
+            name="name"
+            rules={[
+              { required: true, message: '请输入流程名称' },
+              { min: 2, message: '流程名称至少2个字符' },
+              { max: 50, message: '流程名称不能超过50个字符' }
+            ]}
+          >
+            <Input placeholder="请输入流程名称" />
+          </Form.Item>
+
+          <Form.Item
+            label="流程描述"
+            name="description"
+            rules={[
+              { max: 200, message: '描述不能超过200个字符' }
+            ]}
+          >
+            <TextArea
+              rows={3}
+              placeholder="请输入流程描述（可选）"
+              showCount
+              maxLength={200}
+            />
+          </Form.Item>
+
+          <Form.Item
+            label="标签"
+            name="tags"
+            help="添加标签便于分类和搜索"
+          >
+            <Select
+              mode="tags"
+              placeholder="输入标签并按回车添加"
+              tokenSeparators={[',']}
+              maxTagCount={5}
+              maxTagTextLength={10}
+            >
+              <Option value="AI对话">AI对话</Option>
+              <Option value="数据处理">数据处理</Option>
+              <Option value="自动化">自动化</Option>
+              <Option value="客服">客服</Option>
+              <Option value="分析">分析</Option>
+            </Select>
+          </Form.Item>
+
+          <div className="flex justify-end gap-2 mt-6">
+            <Button onClick={() => setSaveModalVisible(false)}>
+              取消
+            </Button>
+            <Button type="primary" htmlType="submit" loading={loading}>
+              保存
+            </Button>
+          </div>
+        </Form>
+      </Modal>
+
+      {/* 发布流程模态框 */}
+      <Modal
+        title="发布流程"
+        open={publishModalVisible}
+        onCancel={() => setPublishModalVisible(false)}
+        onOk={publishFlow}
+        okText="发布"
+        cancelText="取消"
+        confirmLoading={loading}
+      >
+        <div className="space-y-4">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <div className="text-yellow-600 text-lg">⚠️</div>
+              <div>
+                <div className="font-medium text-yellow-800 mb-1">发布前请确认</div>
+                <ul className="text-sm text-yellow-700 space-y-1">
+                  <li>• 流程配置已经完整且正确</li>
+                  <li>• 所有节点都已正确连接</li>
+                  <li>• 已测试流程的执行逻辑</li>
+                  <li>• 发布后流程将可被其他用户使用</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="text-sm text-gray-600 space-y-2">
+              <div><strong>流程名称：</strong>{currentFlow?.name}</div>
+              <div><strong>节点数量：</strong>{nodes.length} 个</div>
+              <div><strong>连接数量：</strong>{edges.length} 个</div>
+              <div><strong>当前状态：</strong>
+                <Tag color={currentFlow?.status === 'published' ? 'success' : 'default'} className="ml-2">
+                  {currentFlow?.status === 'draft' ? '草稿' :
+                    currentFlow?.status === 'published' ? '已发布' : '已归档'}
+                </Tag>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Modal>
     </ReactFlowProvider>
   );
 }

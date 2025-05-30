@@ -28,9 +28,9 @@ import type { AgentSearchParams } from "#/dto/agent";
 
 // 函数选择行为选项
 const FUNCTION_CHOICE_BEHAVIORS = [
-  { id: "auto", name: "自动" },
-  { id: "required", name: "必需" },
-  { id: "none", name: "无" },
+  { id: "7DB033D5-C0C4-4139-9522-24AC58A202AB", name: "自动" },
+  { id: "A665F2CB-4A80-4E79-8A42-D7E612F2A1EC", name: "必需" },
+  { id: "4FFBB956-E037-4D42-8F19-626627911983", name: "无" },
 ];
 
 // 服务ID选项

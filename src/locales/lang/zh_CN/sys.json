@@ -109,6 +109,8 @@
       },
       "knowledgedetail": "知识库详情",
       "knowledge": "知识库",
+      "agent": "智能体",
+      "agentFlow": "智能流程",
       "aimodel": "AI模型",
       "animate": "动画",
       "scroll": "滚动",

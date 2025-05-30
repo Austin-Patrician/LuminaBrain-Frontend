@@ -230,7 +230,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ node, edges, onChange
                 2: { label: '创意', style: { fontSize: '10px' } }
               }}
               tooltip={{
-                formatter: (value) => `${value} - ${value < 0.3 ? '更精确' : value > 1.5 ? '更创意' : '平衡'}`
+                formatter: (value) => value ? `${value} - ${value < 0.3 ? '更精确' : value > 1.5 ? '更创意' : '平衡'}` : '0.7'
               }}
             />
           </div>
@@ -390,7 +390,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ node, edges, onChange
             maxLength={2000}
           />
           <Text className="text-xs text-gray-500 mt-1">
-            支持变量：{{ userId }}, {{ input }} 等
+            支持变量：{`{{ userId }}, {{ input }}`} 等
           </Text>
         </div>
 
@@ -527,7 +527,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ node, edges, onChange
               1: { label: '严格', style: { fontSize: '10px' } }
             }}
             tooltip={{
-              formatter: (value) => `${value} - ${value < 0.3 ? '宽松匹配' : value > 0.8 ? '严格匹配' : '适中匹配'}`
+              formatter: (value) => value ? `${value} - ${value < 0.3 ? '宽松匹配' : value > 0.8 ? '严格匹配' : '适中匹配'}` : '0.7'
             }}
           />
         </div>

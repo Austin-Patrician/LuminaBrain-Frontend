@@ -1,21 +1,15 @@
 import React from "react";
-import { Collapse, Typography } from "antd";
-import {
-  RobotOutlined,
-  DatabaseOutlined,
-  BranchesOutlined,
-  PlayCircleOutlined,
-  StopOutlined,
-  ThunderboltOutlined,
-  SettingOutlined,
-  FileTextOutlined,
-  SearchOutlined,
-  CloudOutlined,
-  MessageOutlined,
-} from "@ant-design/icons";
+import { Collapse } from "antd";
+import { NODE_TYPE_CONFIGS } from "../config/nodeConfig";
+import * as Icons from '@ant-design/icons';
 
 const { Panel } = Collapse;
-const { Text } = Typography;
+
+// 图标映射函数
+const getIconComponent = (iconName: string) => {
+  const IconComponent = (Icons as any)[iconName];
+  return IconComponent ? React.createElement(IconComponent) : React.createElement(Icons.SettingOutlined);
+};
 
 interface NodeType {
   type: string;
@@ -31,99 +25,162 @@ interface NodeCategory {
   children: NodeType[];
 }
 
-// 节点图标和颜色映射
-const getNodeIcon = (type: string) => {
-  const iconMap: Record<string, React.ReactNode> = {
-    aiDialogNode: <RobotOutlined />,
-    aiSummaryNode: <FileTextOutlined />,
-    aiExtractNode: <ThunderboltOutlined />,
-    aiJsonNode: <SettingOutlined />,
-    databaseNode: <DatabaseOutlined />,
-    knowledgeBaseNode: <CloudOutlined />,
-    bingNode: <SearchOutlined />,
-    responseNode: <MessageOutlined />,
-    startNode: <PlayCircleOutlined />,
-    endNode: <StopOutlined />,
-    basicNode: <ThunderboltOutlined />,
-    processNode: <SettingOutlined />,
-    decisionNode: <BranchesOutlined />,
-    conditionNode: <BranchesOutlined />,
-    customNode: <SettingOutlined />,
-    jsonExtractor: <SettingOutlined />,
-  };
-  return iconMap[type] || <ThunderboltOutlined />;
+// 从配置中生成节点分类数据
+const generateNodeCategories = (): NodeCategory[] => {
+  return [
+    {
+      key: "ai",
+      label: "AI处理节点",
+      children: [
+        {
+          type: "aiDialogNode",
+          label: NODE_TYPE_CONFIGS.aiDialogNode.label,
+          icon: getIconComponent(NODE_TYPE_CONFIGS.aiDialogNode.iconName),
+          color: NODE_TYPE_CONFIGS.aiDialogNode.color,
+          description: NODE_TYPE_CONFIGS.aiDialogNode.description
+        },
+        {
+          type: "aiSummaryNode",
+          label: NODE_TYPE_CONFIGS.aiSummaryNode.label,
+          icon: getIconComponent(NODE_TYPE_CONFIGS.aiSummaryNode.iconName),
+          color: NODE_TYPE_CONFIGS.aiSummaryNode.color,
+          description: NODE_TYPE_CONFIGS.aiSummaryNode.description
+        },
+        {
+          type: "aiExtractNode",
+          label: NODE_TYPE_CONFIGS.aiExtractNode.label,
+          icon: getIconComponent(NODE_TYPE_CONFIGS.aiExtractNode.iconName),
+          color: NODE_TYPE_CONFIGS.aiExtractNode.color,
+          description: NODE_TYPE_CONFIGS.aiExtractNode.description
+        },
+        {
+          type: "aiJsonNode",
+          label: NODE_TYPE_CONFIGS.aiJsonNode.label,
+          icon: getIconComponent(NODE_TYPE_CONFIGS.aiJsonNode.iconName),
+          color: NODE_TYPE_CONFIGS.aiJsonNode.color,
+          description: NODE_TYPE_CONFIGS.aiJsonNode.description
+        },
+      ],
+    },
+    {
+      key: "data",
+      label: "数据节点",
+      children: [
+        {
+          type: "databaseNode",
+          label: NODE_TYPE_CONFIGS.databaseNode.label,
+          icon: getIconComponent(NODE_TYPE_CONFIGS.databaseNode.iconName),
+          color: NODE_TYPE_CONFIGS.databaseNode.color,
+          description: NODE_TYPE_CONFIGS.databaseNode.description
+        },
+        {
+          type: "knowledgeBaseNode",
+          label: NODE_TYPE_CONFIGS.knowledgeBaseNode.label,
+          icon: getIconComponent(NODE_TYPE_CONFIGS.knowledgeBaseNode.iconName),
+          color: NODE_TYPE_CONFIGS.knowledgeBaseNode.color,
+          description: NODE_TYPE_CONFIGS.knowledgeBaseNode.description
+        },
+        {
+          type: "bingNode",
+          label: NODE_TYPE_CONFIGS.bingNode.label,
+          icon: getIconComponent(NODE_TYPE_CONFIGS.bingNode.iconName),
+          color: NODE_TYPE_CONFIGS.bingNode.color,
+          description: NODE_TYPE_CONFIGS.bingNode.description
+        },
+        {
+          type: "httpNode",
+          label: NODE_TYPE_CONFIGS.httpNode.label,
+          icon: getIconComponent(NODE_TYPE_CONFIGS.httpNode.iconName),
+          color: NODE_TYPE_CONFIGS.httpNode.color,
+          description: NODE_TYPE_CONFIGS.httpNode.description
+        },
+      ],
+    },
+    {
+      key: "control",
+      label: "控制节点",
+      children: [
+        {
+          type: "startNode",
+          label: NODE_TYPE_CONFIGS.startNode.label,
+          icon: getIconComponent(NODE_TYPE_CONFIGS.startNode.iconName),
+          color: NODE_TYPE_CONFIGS.startNode.color,
+          description: NODE_TYPE_CONFIGS.startNode.description
+        },
+        {
+          type: "endNode",
+          label: NODE_TYPE_CONFIGS.endNode.label,
+          icon: getIconComponent(NODE_TYPE_CONFIGS.endNode.iconName),
+          color: NODE_TYPE_CONFIGS.endNode.color,
+          description: NODE_TYPE_CONFIGS.endNode.description
+        },
+        {
+          type: "responseNode",
+          label: NODE_TYPE_CONFIGS.responseNode.label,
+          icon: getIconComponent(NODE_TYPE_CONFIGS.responseNode.iconName),
+          color: NODE_TYPE_CONFIGS.responseNode.color,
+          description: NODE_TYPE_CONFIGS.responseNode.description
+        },
+        {
+          type: "conditionNode",
+          label: NODE_TYPE_CONFIGS.conditionNode.label,
+          icon: getIconComponent(NODE_TYPE_CONFIGS.conditionNode.iconName),
+          color: NODE_TYPE_CONFIGS.conditionNode.color,
+          description: NODE_TYPE_CONFIGS.conditionNode.description
+        },
+        {
+          type: "decisionNode",
+          label: NODE_TYPE_CONFIGS.decisionNode.label,
+          icon: getIconComponent(NODE_TYPE_CONFIGS.decisionNode.iconName),
+          color: NODE_TYPE_CONFIGS.decisionNode.color,
+          description: NODE_TYPE_CONFIGS.decisionNode.description
+        },
+      ],
+    },
+    {
+      key: "basic",
+      label: "基础节点",
+      children: [
+        {
+          type: "basicNode",
+          label: NODE_TYPE_CONFIGS.basicNode.label,
+          icon: getIconComponent(NODE_TYPE_CONFIGS.basicNode.iconName),
+          color: NODE_TYPE_CONFIGS.basicNode.color,
+          description: NODE_TYPE_CONFIGS.basicNode.description
+        },
+        {
+          type: "processNode",
+          label: NODE_TYPE_CONFIGS.processNode.label,
+          icon: getIconComponent(NODE_TYPE_CONFIGS.processNode.iconName),
+          color: NODE_TYPE_CONFIGS.processNode.color,
+          description: NODE_TYPE_CONFIGS.processNode.description
+        },
+        {
+          type: "customNode",
+          label: NODE_TYPE_CONFIGS.customNode.label,
+          icon: getIconComponent(NODE_TYPE_CONFIGS.customNode.iconName),
+          color: NODE_TYPE_CONFIGS.customNode.color,
+          description: NODE_TYPE_CONFIGS.customNode.description
+        },
+        {
+          type: "jsonExtractor",
+          label: NODE_TYPE_CONFIGS.jsonExtractor.label,
+          icon: getIconComponent(NODE_TYPE_CONFIGS.jsonExtractor.iconName),
+          color: NODE_TYPE_CONFIGS.jsonExtractor.color,
+          description: NODE_TYPE_CONFIGS.jsonExtractor.description
+        },
+      ],
+    },
+  ];
 };
-
-const getNodeColor = (type: string) => {
-  const colorMap: Record<string, string> = {
-    aiDialogNode: "blue",
-    aiSummaryNode: "cyan",
-    aiExtractNode: "purple",
-    aiJsonNode: "magenta",
-    databaseNode: "teal",
-    knowledgeBaseNode: "lime",
-    bingNode: "orange",
-    responseNode: "green",
-    startNode: "emerald",
-    endNode: "red",
-    basicNode: "blue",
-    processNode: "green",
-    decisionNode: "yellow",
-    conditionNode: "orange",
-    customNode: "indigo",
-    jsonExtractor: "pink",
-  };
-  return colorMap[type] || "gray";
-};
-
-// 默认节点分类数据
-const DEFAULT_NODE_GROUPS: NodeCategory[] = [
-  {
-    key: "ai",
-    label: "AI处理节点",
-    children: [
-      { type: "aiDialogNode", label: "AI对话22", icon: getNodeIcon("aiDialogNode"), color: getNodeColor("aiDialogNode"), description: "与AI模型进行对话交互" },
-      { type: "aiSummaryNode", label: "摘要总结", icon: getNodeIcon("aiSummaryNode"), color: getNodeColor("aiSummaryNode"), description: "对文本内容进行智能摘要" },
-      { type: "aiExtractNode", label: "内容提取", icon: getNodeIcon("aiExtractNode"), color: getNodeColor("aiExtractNode"), description: "从文本中提取关键信息" },
-      { type: "jsonExtractor", label: "JSON提取器", icon: getNodeIcon("jsonExtractor"), color: getNodeColor("jsonExtractor"), description: "提取和处理JSON数据" },
-    ],
-  },
-  {
-    key: "data",
-    label: "数据节点",
-    children: [
-      { type: "databaseNode", label: "数据库", icon: getNodeIcon("databaseNode"), color: getNodeColor("databaseNode"), description: "数据库查询和操作" },
-      { type: "knowledgeBaseNode", label: "知识库", icon: getNodeIcon("knowledgeBaseNode"), color: getNodeColor("knowledgeBaseNode"), description: "知识库检索和查询" },
-      { type: "bingNode", label: "Bing搜索", icon: getNodeIcon("bingNode"), color: getNodeColor("bingNode"), description: "使用Bing进行网络搜索" },
-    ],
-  },
-  {
-    key: "response",
-    label: "响应节点",
-    children: [
-      { type: "responseNode", label: "固定回答", icon: getNodeIcon("responseNode"), color: getNodeColor("responseNode"), description: "返回预设的固定回答" },
-    ],
-  },
-  {
-    key: "basic",
-    label: "基础节点",
-    children: [
-      { type: "startNode", label: "开始", icon: getNodeIcon("startNode"), color: getNodeColor("startNode"), description: "工作流的起始节点" },
-      { type: "endNode", label: "结束", icon: getNodeIcon("endNode"), color: getNodeColor("endNode"), description: "工作流的结束节点" },
-      { type: "basicNode", label: "基础节点", icon: getNodeIcon("basicNode"), color: getNodeColor("basicNode"), description: "通用的基础处理节点" },
-      { type: "processNode", label: "处理节点", icon: getNodeIcon("processNode"), color: getNodeColor("processNode"), description: "数据处理和转换节点" },
-      { type: "decisionNode", label: "判断节点", icon: getNodeIcon("decisionNode"), color: getNodeColor("decisionNode"), description: "条件判断和分支节点" },
-      { type: "conditionNode", label: "条件节点", icon: getNodeIcon("conditionNode"), color: getNodeColor("conditionNode"), description: "逻辑条件处理节点" },
-      { type: "customNode", label: "自定义节点", icon: getNodeIcon("customNode"), color: getNodeColor("customNode"), description: "可自定义功能的节点" },
-    ],
-  },
-];
 
 interface NodePanelProps {
   categories?: NodeCategory[];
 }
 
-function NodePanel({ categories = DEFAULT_NODE_GROUPS }: NodePanelProps) {
+function NodePanel({ categories }: NodePanelProps) {
+  const nodeCategories = categories || generateNodeCategories();
+
   // 拖拽开始事件处理
   const onDragStart = (event: React.DragEvent<HTMLDivElement>, nodeType: string, label: string) => {
     event.dataTransfer.setData("application/reactflow", nodeType);
@@ -142,12 +199,12 @@ function NodePanel({ categories = DEFAULT_NODE_GROUPS }: NodePanelProps) {
       {/* 节点分类列表 */}
       <div className="flex-1 overflow-y-auto">
         <Collapse
-          defaultActiveKey={categories.map(cat => cat.key)}
+          defaultActiveKey={nodeCategories.map(cat => cat.key)}
           ghost
           size="small"
           className="bg-transparent"
         >
-          {categories.map((category) => (
+          {nodeCategories.map((category) => (
             <Panel
               header={
                 <span className="text-sm font-medium text-gray-700">
@@ -161,21 +218,22 @@ function NodePanel({ categories = DEFAULT_NODE_GROUPS }: NodePanelProps) {
                 {category.children.map((node) => (
                   <div
                     key={node.type}
-                    className={`
-                      group flex items-center p-3 rounded-lg border-2 border-dashed border-gray-200
-                      bg-white hover:bg-gray-50 hover:border-${node.color}-300 hover:shadow-md
+                    className="group flex items-center p-3 rounded-lg border-2 border-dashed border-gray-200
+                      bg-white hover:bg-gray-50 hover:border-blue-300 hover:shadow-md
                       cursor-grab active:cursor-grabbing transition-all duration-200
-                      transform hover:scale-105 active:scale-95
-                    `}
+                      transform hover:scale-105 active:scale-95"
+                    style={{
+                      '--node-color': node.color,
+                    } as React.CSSProperties}
                     draggable
                     onDragStart={(e) => onDragStart(e, node.type, node.label)}
                   >
                     {/* 节点图标 */}
-                    <div className={`
-                      flex items-center justify-center w-8 h-8 rounded-full mr-3
-                      bg-${node.color}-100 text-${node.color}-600 group-hover:bg-${node.color}-200
-                      transition-colors duration-200
-                    `}>
+                    <div
+                      className="flex items-center justify-center w-8 h-8 rounded-full mr-3
+                        bg-blue-100 group-hover:bg-blue-200 transition-colors duration-200"
+                      style={{ color: node.color }}
+                    >
                       {node.icon}
                     </div>
 
@@ -212,6 +270,7 @@ function NodePanel({ categories = DEFAULT_NODE_GROUPS }: NodePanelProps) {
           <ul className="space-y-1 text-blue-600">
             <li>• 拖拽节点到画布创建工作流</li>
             <li>• 点击节点可在右侧编辑属性</li>
+            <li>• 🔵 蓝色连接点为入口，🟢 绿色为出口</li>
             <li>• 连接节点构建处理流程</li>
           </ul>
         </div>

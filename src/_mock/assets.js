@@ -493,9 +493,9 @@ const OTHERS_PERMISSION = [
 	{
 		id: "3081225257359246",
 		parentId: "",
-		label: "sys.menu.calendar",
-		name: "Calendar",
-		icon: "solar:calendar-bold-duotone",
+		label: "sys.menu.agent",
+		name: "Agent",
+		icon: "solar:widget-5-bold-duotone",
 		type: PermissionType.MENU,
 		route: "agent",
 		component: "/agent/index.tsx",
@@ -503,8 +503,8 @@ const OTHERS_PERMISSION = [
 	{
 		id: "3081225957359246",
 		parentId: "",
-		label: "sys.menu.calendar",
-		name: "Calendar",
+		label: "sys.menu.agentFlow",
+		name: "AgentFlow",
 		icon: "solar:calendar-bold-duotone",
 		type: PermissionType.MENU,
 		route: "agentFlow",

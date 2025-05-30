@@ -107,6 +107,9 @@
         "firstStep": "Basic Settings",
         "secondStep": "Advanced Settings"
       },
+
+      "agent": "Agent",
+      "agentFlow": "Agent Flow",
       "knowledgedetail": "Knowledge Detail",
       "aimodel": "AI Model",
       "knowledge": "Knowledge",

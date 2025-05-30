@@ -270,7 +270,7 @@ const ModelManagementPage: React.FC = () => {
               }
               onClick={() => toggleProviderExpand(provider.id)}
             >
-              {expandedProviders[provider.id] ? "收起模��" : "展开模型"}
+              {expandedProviders[provider.id] ? "收起模型" : "展开模型"}
             </Button>
           </Space>
         </Col>
