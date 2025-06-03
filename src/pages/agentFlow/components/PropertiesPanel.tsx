@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Input, Select, Slider, Switch, Card, Typography, Space, InputNumber, Button, Collapse, Tag, Tooltip, Badge } from 'antd';
+import { Input, Select, Slider, Switch, Typography, InputNumber, Button, Collapse, Tooltip, Badge } from 'antd';
 import { Node, Edge } from '@xyflow/react';
 import {
   EditOutlined,
@@ -769,9 +769,19 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ node, edges, onChange
       {/* 面板头部 */}
       <div className="flex-shrink-0 p-4 border-b border-gray-200 bg-gray-50">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <EditOutlined className="text-blue-600" />
-            <Title level={5} className="m-0">属性面板</Title>
+          <div className="flex items-center gap-3">
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-white"
+              style={{ backgroundColor: nodeTypeInfo.color }}
+            >
+              {nodeTypeInfo.icon}
+            </div>
+            <div>
+              <Title level={5} className="m-0">{nodeTypeInfo.label}</Title>
+              <Text type="secondary" className="text-xs">
+                {nodeData.label || `未命名${nodeTypeInfo.label}`}
+              </Text>
+            </div>
           </div>
           <div className="flex items-center gap-1">
             <Tooltip title={debugVisible ? "隐藏调试信息" : "显示调试信息"}>

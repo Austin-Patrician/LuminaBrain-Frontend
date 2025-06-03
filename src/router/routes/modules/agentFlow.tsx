@@ -5,7 +5,6 @@ import { SvgIcon } from "@/components/icon";
 import { CircleLoading } from "@/components/loading";
 
 import type { AppRouteObject } from "#/router";
-import { fa } from "@faker-js/faker";
 
 const AgentFlowListPage = lazy(() => import("@/pages/agentFlow/list"));
 const AgentFlowEditorPage = lazy(() => import("@/pages/agentFlow/index"));

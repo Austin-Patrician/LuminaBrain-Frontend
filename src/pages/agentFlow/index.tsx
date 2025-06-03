@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ReactFlow,
   Background,
@@ -44,6 +44,9 @@ import PropertiesPanel from "./components/PropertiesPanel";
 import NodePanel from "./components/NodePanel";
 import { flowService, FlowDataRaw } from "../../api/services/flowService";
 import { useNavigate, useSearchParams } from "react-router";
+import DebugPanel from "./components/DebugPanel";
+import WorkflowExecutor, { DebugNodeResult } from "./services/workflowExecutor";
+import ReactMarkdown from 'react-markdown';
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -268,7 +271,7 @@ const initialEdges: Edge[] = [];
 const snapGrid: [number, number] = [20, 20];
 const defaultViewport = { x: 0, y: 0, zoom: 1 };
 
-export default function AgentFlowPage() {
+const AgentFlowPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const flowId = searchParams.get('id');
@@ -294,6 +297,18 @@ export default function AgentFlowPage() {
   ]);
   const [historyIndex, setHistoryIndex] = useState(0);
   const ignoreHistoryRef = useRef(false);
+
+  // 调试相关状态
+  const [debugPanelVisible, setDebugPanelVisible] = useState(false);
+  const [debugResults, setDebugResults] = useState<Record<string, DebugNodeResult>>({});
+  const isDebugMode = Object.keys(debugResults).length > 0;
+
+  // Markdown查看器状态
+  const [markdownViewerVisible, setMarkdownViewerVisible] = useState(false);
+  const [currentMarkdownContent, setCurrentMarkdownContent] = useState('');
+
+  // WorkflowExecutor实例
+  const workflowExecutorRef = useRef<WorkflowExecutor>(new WorkflowExecutor());
 
   // 页面加载时检查是否有流程ID，如果有则加载流程
   useEffect(() => {
@@ -759,6 +774,38 @@ export default function AgentFlowPage() {
     setNodePanelVisible(!nodePanelVisible);
   };
 
+  // 切换调试面板显示/隐藏
+  const toggleDebugPanel = () => {
+    console.log('Toggle debug panel clicked, current state:', debugPanelVisible);
+    setDebugPanelVisible(!debugPanelVisible);
+    console.log('Debug panel state will change to:', !debugPanelVisible);
+  };
+
+  // 显示Markdown结果
+  const handleShowMarkdownResult = (result: DebugNodeResult) => {
+    setCurrentMarkdownContent(result.markdownOutput || '');
+    setMarkdownViewerVisible(true);
+  };
+
+  // 配置WorkflowExecutor
+  useEffect(() => {
+    console.log('Configuring executor for main page integration');
+  }, []);
+
+  // 创建带有调试数据的节点
+  const enhancedNodes = useMemo(() => {
+    return nodes.map(node => ({
+      ...node,
+      data: {
+        ...node.data,
+        debugResult: debugResults[node.id],
+        isDebugMode,
+        onShowMarkdownResult: handleShowMarkdownResult,
+      },
+    }));
+  }, [nodes, debugResults, isDebugMode]);
+
+  // 渲染组件
   return (
     <ReactFlowProvider>
       <div className="flex flex-col h-screen w-full bg-gray-50 overflow-hidden">
@@ -804,6 +851,19 @@ export default function AgentFlowPage() {
                 size="small"
               >
                 节点面板
+              </Button>
+            </Tooltip>
+
+            {/* 调试面板控制按钮 */}
+            <Tooltip title="打开调试面板">
+              <Button
+                type={debugPanelVisible ? "primary" : "default"}
+                icon={<PlayCircleOutlined />}
+                onClick={toggleDebugPanel}
+                className="flex items-center"
+                size="small"
+              >
+                调试面板
               </Button>
             </Tooltip>
 
@@ -901,12 +961,12 @@ export default function AgentFlowPage() {
           <div className="flex-1 relative" ref={reactFlowWrapper}>
             {initialized && (
               <ReactFlow
-                nodes={nodes}
+                nodes={enhancedNodes}
                 edges={edges}
                 onNodesChange={handleNodesChange}
                 onEdgesChange={handleEdgesChange}
                 onConnect={handleConnect}
-                onInit={onInit}
+                onInit={onInit as any}
                 nodeTypes={nodeTypes}
                 onNodeClick={onNodeClick}
                 onPaneClick={onPaneClick}
@@ -924,7 +984,7 @@ export default function AgentFlowPage() {
                 fitView
                 minZoom={0.1}
                 maxZoom={2}
-                className="bg-gray-50"
+                className={`bg-gray-50 ${isDebugMode ? 'debug-mode' : ''}`}
               >
                 <Background
                   gap={20}
@@ -937,6 +997,18 @@ export default function AgentFlowPage() {
                   style={{ height: 120, width: 200 }}
                   className="bg-white border border-gray-200 rounded-lg shadow-lg"
                   nodeColor={(node) => {
+                    if (isDebugMode) {
+                      const debugResult = debugResults[node.id];
+                      if (debugResult) {
+                        switch (debugResult.status) {
+                          case 'completed': return '#10b981';
+                          case 'failed': return '#ef4444';
+                          case 'running': return '#f59e0b';
+                          case 'waiting_input': return '#eab308';
+                          default: return '#6b7280';
+                        }
+                      }
+                    }
                     switch (node.type) {
                       case 'startNode': return '#10b981';
                       case 'endNode': return '#ef4444';
@@ -952,6 +1024,12 @@ export default function AgentFlowPage() {
                 <Panel position="top-right" className="bg-white p-2 rounded-lg shadow-lg border border-gray-200">
                   <div className="text-sm text-gray-600">
                     节点: {nodes.length} | 连线: {edges.length}
+                    {isDebugMode && (
+                      <>
+                        <br />
+                        调试中: {Object.values(debugResults).filter(r => r.status === 'completed').length} / {Object.keys(debugResults).length}
+                      </>
+                    )}
                   </div>
                 </Panel>
               </ReactFlow>
@@ -967,6 +1045,36 @@ export default function AgentFlowPage() {
           />
         </div>
       </div>
+
+      {/* 调试面板 */}
+      <DebugPanel
+        visible={debugPanelVisible}
+        onClose={() => setDebugPanelVisible(false)}
+        executor={workflowExecutorRef.current}
+        nodes={nodes}
+        edges={edges}
+        onExecutionStateChange={(state) => {
+          setDebugResults(state.results || {});
+        }}
+      />
+
+      {/* Markdown查看器 */}
+      <Modal
+        title="节点执行结果"
+        open={markdownViewerVisible}
+        onCancel={() => setMarkdownViewerVisible(false)}
+        footer={[
+          <Button key="close" onClick={() => setMarkdownViewerVisible(false)}>
+            关闭
+          </Button>
+        ]}
+        width={800}
+        className="markdown-viewer-modal"
+      >
+        <div className="max-h-96 overflow-y-auto bg-white p-4 border rounded">
+          <ReactMarkdown>{currentMarkdownContent}</ReactMarkdown>
+        </div>
+      </Modal>
 
       {/* 保存流程模态框 */}
       <Modal
@@ -1089,5 +1197,7 @@ export default function AgentFlowPage() {
       </Modal>
     </ReactFlowProvider>
   );
-}
+};
+
+export default AgentFlowPage;
 

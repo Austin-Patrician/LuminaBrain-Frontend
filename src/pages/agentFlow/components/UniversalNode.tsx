@@ -3,6 +3,8 @@ import { Handle, Position, useReactFlow, NodeProps } from '@xyflow/react';
 import { CloseCircleFilled } from '@ant-design/icons';
 import { Tooltip } from 'antd';
 import { getNodeConfig, HANDLE_STYLES, generateHandleId } from '../config/nodeConfig';
+import NodeDebugResult from './NodeDebugResult';
+import { DebugNodeResult } from '../services/workflowExecutor';
 import * as Icons from '@ant-design/icons';
 
 // 图标映射函数
@@ -67,18 +69,30 @@ const NodeWrapper = ({
 // 通用节点组件
 interface UniversalNodeProps extends NodeProps {
   nodeType?: string;
+  debugResult?: DebugNodeResult;
+  isDebugMode?: boolean;
+  onShowMarkdownResult?: (result: DebugNodeResult) => void;
 }
 
 const UniversalNode: React.FC<UniversalNodeProps> = ({
   id,
   data,
   selected,
-  nodeType
+  nodeType,
+  debugResult,
+  isDebugMode = false,
+  onShowMarkdownResult
 }) => {
   const nodeData = data as NodeData;
   const config = getNodeConfig(nodeType || nodeData?.nodeType || 'basicNode');
   const isStart = config.type === 'startNode';
   const isEnd = config.type === 'endNode' || config.type === 'responseNode';
+
+  const handleShowMarkdown = () => {
+    if (debugResult && onShowMarkdownResult) {
+      onShowMarkdownResult(debugResult);
+    }
+  };
 
   return (
     <NodeWrapper id={id} isStart={isStart} isEnd={isEnd}>
@@ -87,10 +101,22 @@ const UniversalNode: React.FC<UniversalNodeProps> = ({
           relative px-4 py-3 shadow-lg rounded-lg border-2 transition-all duration-200
           ${config.bgColor} ${config.borderColor}
           ${selected ? 'ring-4 ring-blue-200 ring-opacity-50' : ''}
+          ${isDebugMode && debugResult?.status === 'running' ? 'ring-4 ring-yellow-200 ring-opacity-50 animate-pulse' : ''}
+          ${isDebugMode && debugResult?.status === 'completed' ? 'ring-2 ring-green-200' : ''}
+          ${isDebugMode && debugResult?.status === 'failed' ? 'ring-2 ring-red-200' : ''}
           hover:shadow-xl transform hover:scale-105
           min-w-[160px] max-w-[280px]
         `}
       >
+        {/* 调试结果显示 */}
+        {isDebugMode && debugResult && (
+          <NodeDebugResult
+            result={debugResult}
+            position="top-right"
+            onShowMarkdown={handleShowMarkdown}
+          />
+        )}
+
         {/* 目标连接点 - 顶部，蓝色 */}
         {config.hasTarget && (
           <Handle
@@ -110,6 +136,7 @@ const UniversalNode: React.FC<UniversalNodeProps> = ({
               rounded-full w-10 h-10 flex items-center justify-center 
               ${config.iconBgColor} transition-colors duration-200
               border-2 border-white shadow-sm
+              ${isDebugMode && debugResult?.status === 'running' ? 'animate-spin' : ''}
             `}
             style={{ color: config.color }}
           >
@@ -130,6 +157,12 @@ const UniversalNode: React.FC<UniversalNodeProps> = ({
             {nodeData?.model && (
               <div className="text-xs text-blue-600 truncate mt-1">
                 {String(nodeData.model)}
+              </div>
+            )}
+            {/* 调试模式下显示执行时间 */}
+            {isDebugMode && debugResult && debugResult.status !== 'pending' && (
+              <div className="text-xs text-gray-400 truncate mt-1">
+                {debugResult.duration}ms
               </div>
             )}
           </div>
