@@ -958,15 +958,13 @@ export default function AgentFlowPage() {
             )}
           </div>
 
-          {/* 属性面板 - 右侧 */}
-          <div className="w-80 bg-white border-l border-gray-200 flex flex-col">
-            <PropertiesPanel
-              node={selectedNode}
-              edges={edges}
-              onChange={onNodeDataChange}
-              onLabelChange={onNodeLabelChange}
-            />
-          </div>
+          {/* 属性面板 - 右侧，使用 PropertiesPanel 组件自身的拉伸功能 */}
+          <PropertiesPanel
+            node={selectedNode}
+            edges={edges}
+            onChange={onNodeDataChange}
+            onLabelChange={onNodeLabelChange}
+          />
         </div>
       </div>
 

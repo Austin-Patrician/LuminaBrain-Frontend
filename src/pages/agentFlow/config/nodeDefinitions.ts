@@ -1,658 +1,414 @@
 import { 
   NodeType, 
-  NodeDefinition, 
-  NodeCategory, 
-  DataType, 
-  NodeStatus 
+  NodeConfig, 
+  PropertyConfig,
+  NODE_REGISTRY 
 } from '@/types/agentFlow';
 
-// AI对话节点定义
-const aiDialogNodeDefinition: NodeDefinition = {
-  type: NodeType.AI_DIALOG,
-  label: 'AI对话',
-  description: '与AI模型进行对话交互',
-  category: 'ai',
-  icon: 'RobotOutlined',
-  color: 'blue',
-  
-  defaultConfig: {
-    label: 'AI对话',
-    status: NodeStatus.IDLE,
-    parameters: {
-      model: 'gpt-3.5-turbo',
-      userMessage: '',
-      systemPrompt: '',
-      temperature: 0.7,
-      maxTokens: 1000,
-      stream: false,
-      timeout: 30
-    },
-    style: {
-      backgroundColor: '#e3f2fd',
-      borderColor: '#2196f3',
-      color: '#1976d2'
-    }
-  },
-  
-  parameterDefinitions: [
-    {
-      key: 'model',
-      label: 'AI模型',
-      type: DataType.STRING,
-      required: true,
-      defaultValue: 'gpt-3.5-turbo',
-      description: '选择要使用的AI模型',
-      options: [
-        { label: 'GPT-3.5 Turbo', value: 'gpt-3.5-turbo' },
-        { label: 'GPT-4', value: 'gpt-4' },
-        { label: 'GPT-4 Turbo', value: 'gpt-4-turbo' },
-        { label: 'Claude-3', value: 'claude-3' }
-      ],
-      group: 'basic'
-    },
-    {
-      key: 'userMessage',
-      label: '用户消息',
-      type: DataType.STRING,
-      required: true,
-      defaultValue: '',
-      description: '发送给AI的用户消息内容',
-      group: 'basic'
-    },
-    {
-      key: 'systemPrompt',
-      label: '系统提示',
-      type: DataType.STRING,
-      required: false,
-      defaultValue: '',
-      description: '系统级别的提示信息，用于设定AI的行为模式',
-      group: 'basic'
-    },
-    {
-      key: 'temperature',
-      label: '温度',
-      type: DataType.NUMBER,
-      required: false,
-      defaultValue: 0.7,
-      description: '控制输出的随机性，0-1之间',
-      validation: { min: 0, max: 1 },
-      group: 'advanced'
-    },
-    {
-      key: 'maxTokens',
-      label: '最大令牌数',
-      type: DataType.NUMBER,
-      required: false,
-      defaultValue: 1000,
-      description: '限制输出的最大长度',
-      validation: { min: 1, max: 4000 },
-      group: 'advanced'
-    },
-    {
-      key: 'stream',
-      label: '流式输出',
-      type: DataType.BOOLEAN,
-      required: false,
-      defaultValue: false,
-      description: '是否启用流式输出',
-      group: 'advanced'
-    },
-    {
-      key: 'timeout',
-      label: '超时时间(秒)',
-      type: DataType.NUMBER,
-      required: false,
-      defaultValue: 30,
-      description: '请求超时时间',
-      validation: { min: 5, max: 300 },
-      group: 'advanced'
-    }
-  ],
-  
-  inputDefinitions: [
-    {
-      name: 'input',
-      dataType: DataType.STRING,
-      required: true,
-      description: '输入文本或上下文'
-    }
-  ],
-  
-  outputDefinitions: [
-    {
-      name: 'output',
-      dataType: DataType.STRING,
-      required: true,
-      description: 'AI生成的回复内容'
-    }
+// 为每个节点添加通用的"输入参数"选择器
+const createInputSourceProperty = (): PropertyConfig => ({
+  key: 'inputSource',
+  label: '输入参数',
+  type: 'select',
+  required: true,
+  defaultValue: '1',
+  options: [
+    { label: '用户输入', value: '1' },
+    { label: '上一步结果', value: '2' }
   ]
-};
+});
 
-// 知识库节点定义
-const knowledgeBaseNodeDefinition: NodeDefinition = {
-  type: NodeType.KNOWLEDGE_BASE,
-  label: '知识库',
-  description: '从知识库中检索相关信息',
-  category: 'data',
-  icon: 'CloudOutlined',
-  color: 'green',
+// 扩展现有的节点配置，添加输入参数选择器
+export const enhancedNodeConfigs: Record<NodeType, NodeConfig> = {
+  // 保留所有现有配置，并为每个节点添加输入参数选择器
+  ...NODE_REGISTRY,
   
-  defaultConfig: {
-    label: '知识库',
-    status: NodeStatus.IDLE,
-    parameters: {
-      knowledgeBaseId: '',
-      query: '',
-      topK: 5,
-      threshold: 0.7,
-      searchType: 'semantic'
-    },
-    style: {
-      backgroundColor: '#e8f5e8',
-      borderColor: '#4caf50',
-      color: '#388e3c'
-    }
+  [NodeType.AI_DIALOG]: {
+    ...NODE_REGISTRY[NodeType.AI_DIALOG],
+    properties: [
+      createInputSourceProperty(),
+      ...(NODE_REGISTRY[NodeType.AI_DIALOG].properties || [])
+    ]
   },
   
-  parameterDefinitions: [
-    {
-      key: 'knowledgeBaseId',
-      label: '知识库ID',
-      type: DataType.STRING,
-      required: true,
-      defaultValue: '',
-      description: '要查询的知识库标识',
-      group: 'basic'
-    },
-    {
-      key: 'query',
-      label: '查询内容',
-      type: DataType.STRING,
-      required: true,
-      defaultValue: '',
-      description: '要在知识库中搜索的内容',
-      group: 'basic'
-    },
-    {
-      key: 'topK',
-      label: '返回数量',
-      type: DataType.NUMBER,
-      required: false,
-      defaultValue: 5,
-      description: '返回最相关的结果数量',
-      validation: { min: 1, max: 20 },
-      group: 'advanced'
-    },
-    {
-      key: 'threshold',
-      label: '相似度阈值',
-      type: DataType.NUMBER,
-      required: false,
-      defaultValue: 0.7,
-      description: '结果相似度的最低阈值',
-      validation: { min: 0, max: 1 },
-      group: 'advanced'
-    },
-    {
-      key: 'searchType',
-      label: '搜索类型',
-      type: DataType.STRING,
-      required: false,
-      defaultValue: 'semantic',
-      description: '搜索算法类型',
-      options: [
-        { label: '语义搜索', value: 'semantic' },
-        { label: '关键词搜索', value: 'keyword' },
-        { label: '混合搜索', value: 'hybrid' }
-      ],
-      group: 'advanced'
-    }
-  ],
-  
-  inputDefinitions: [
-    {
-      name: 'query',
-      dataType: DataType.STRING,
-      required: true,
-      description: '搜索查询'
-    }
-  ],
-  
-  outputDefinitions: [
-    {
-      name: 'results',
-      dataType: DataType.ARRAY,
-      required: true,
-      description: '搜索结果列表'
-    }
-  ]
-};
-
-// 条件判断节点定义
-const conditionNodeDefinition: NodeDefinition = {
-  type: NodeType.CONDITION,
-  label: '条件判断',
-  description: '根据条件进行分支判断',
-  category: 'logic',
-  icon: 'BranchesOutlined',
-  color: 'orange',
-  
-  defaultConfig: {
-    label: '条件判断',
-    status: NodeStatus.IDLE,
-    parameters: {
-      condition: '',
-      operator: 'equals',
-      value: '',
-      caseSensitive: false
-    },
-    style: {
-      backgroundColor: '#fff3e0',
-      borderColor: '#ff9800',
-      color: '#f57c00'
-    }
+  [NodeType.HTTP]: {
+    ...NODE_REGISTRY[NodeType.HTTP],
+    properties: [
+      createInputSourceProperty(),
+      ...(NODE_REGISTRY[NodeType.HTTP].properties || [])
+    ]
   },
   
-  parameterDefinitions: [
-    {
-      key: 'condition',
-      label: '条件表达式',
-      type: DataType.STRING,
-      required: true,
-      defaultValue: '',
-      description: '要判断的条件表达式',
-      group: 'basic'
-    },
-    {
-      key: 'operator',
-      label: '比较操作符',
-      type: DataType.STRING,
-      required: true,
-      defaultValue: 'equals',
-      description: '条件比较的操作符',
-      options: [
-        { label: '等于', value: 'equals' },
-        { label: '不等于', value: 'notEquals' },
-        { label: '包含', value: 'contains' },
-        { label: '大于', value: 'greaterThan' },
-        { label: '小于', value: 'lessThan' },
-        { label: '为空', value: 'isEmpty' },
-        { label: '不为空', value: 'isNotEmpty' }
-      ],
-      group: 'basic'
-    },
-    {
-      key: 'value',
-      label: '比较值',
-      type: DataType.STRING,
-      required: false,
-      defaultValue: '',
-      description: '用于比较的目标值',
-      group: 'basic'
-    },
-    {
-      key: 'caseSensitive',
-      label: '区分大小写',
-      type: DataType.BOOLEAN,
-      required: false,
-      defaultValue: false,
-      description: '字符串比较时是否区分大小写',
-      group: 'advanced'
-    }
-  ],
-  
-  inputDefinitions: [
-    {
-      name: 'input',
-      dataType: DataType.ANY,
-      required: true,
-      description: '要判断的输入值'
-    }
-  ],
-  
-  outputDefinitions: [
-    {
-      name: 'true',
-      dataType: DataType.ANY,
-      required: false,
-      description: '条件为真时的输出'
-    },
-    {
-      name: 'false',
-      dataType: DataType.ANY,
-      required: false,
-      description: '条件为假时的输出'
-    }
-  ]
-};
-
-// 开始节点定义
-const startNodeDefinition: NodeDefinition = {
-  type: NodeType.START,
-  label: '开始',
-  description: '工作流的起始节点',
-  category: 'control',
-  icon: 'PlayCircleOutlined',
-  color: 'green',
-  
-  defaultConfig: {
-    label: '开始',
-    status: NodeStatus.IDLE,
-    parameters: {
-      inputSchema: '',
-      description: '工作流开始'
-    },
-    style: {
-      backgroundColor: '#e8f5e8',
-      borderColor: '#4caf50',
-      color: '#388e3c'
-    }
+  [NodeType.CONDITION]: {
+    ...NODE_REGISTRY[NodeType.CONDITION],
+    properties: [
+      createInputSourceProperty(),
+      ...(NODE_REGISTRY[NodeType.CONDITION].properties || [])
+    ]
   },
   
-  parameterDefinitions: [
-    {
-      key: 'inputSchema',
-      label: '输入结构',
-      type: DataType.STRING,
-      required: false,
-      defaultValue: '',
-      description: '定义工作流的输入数据结构',
-      group: 'basic'
-    },
-    {
-      key: 'description',
-      label: '描述',
-      type: DataType.STRING,
-      required: false,
-      defaultValue: '工作流开始',
-      description: '节点描述信息',
-      group: 'basic'
-    }
-  ],
-  
-  inputDefinitions: [],
-  
-  outputDefinitions: [
-    {
-      name: 'output',
-      dataType: DataType.ANY,
-      required: true,
-      description: '工作流的初始输出'
-    }
-  ]
-};
-
-// 结束节点定义
-const endNodeDefinition: NodeDefinition = {
-  type: NodeType.END,
-  label: '结束',
-  description: '工作流的结束节点',
-  category: 'control',
-  icon: 'StopOutlined',
-  color: 'red',
-  
-  defaultConfig: {
-    label: '结束',
-    status: NodeStatus.IDLE,
-    parameters: {
-      outputSchema: '',
-      description: '工作流结束'
-    },
-    style: {
-      backgroundColor: '#ffebee',
-      borderColor: '#f44336',
-      color: '#d32f2f'
-    }
-  },
-  
-  parameterDefinitions: [
-    {
-      key: 'outputSchema',
-      label: '输出结构',
-      type: DataType.STRING,
-      required: false,
-      defaultValue: '',
-      description: '定义工作流的最终输出数据结构',
-      group: 'basic'
-    },
-    {
-      key: 'description',
-      label: '描述',
-      type: DataType.STRING,
-      required: false,
-      defaultValue: '工作流结束',
-      description: '节点描述信息',
-      group: 'basic'
-    }
-  ],
-  
-  inputDefinitions: [
-    {
-      name: 'input',
-      dataType: DataType.ANY,
-      required: true,
-      description: '工作流的最终输入'
-    }
-  ],
-  
-  outputDefinitions: []
-};
-
-// 响应节点定义
-const responseNodeDefinition: NodeDefinition = {
-  type: NodeType.RESPONSE,
-  label: '固定回答',
-  description: '返回预设的固定回答',
-  category: 'response',
-  icon: 'MessageOutlined',
-  color: 'purple',
-  
-  defaultConfig: {
-    label: '固定回答',
-    status: NodeStatus.IDLE,
-    parameters: {
-      content: '',
-      contentType: 'text',
-      variables: {}
-    },
-    style: {
-      backgroundColor: '#f3e5f5',
-      borderColor: '#9c27b0',
-      color: '#7b1fa2'
-    }
-  },
-  
-  parameterDefinitions: [
-    {
-      key: 'content',
-      label: '回答内容',
-      type: DataType.STRING,
-      required: true,
-      defaultValue: '',
-      description: '要返回的固定回答内容',
-      group: 'basic'
-    },
-    {
-      key: 'contentType',
-      label: '内容类型',
-      type: DataType.STRING,
-      required: false,
-      defaultValue: 'text',
-      description: '回答内容的格式类型',
-      options: [
-        { label: '纯文本', value: 'text' },
-        { label: 'JSON', value: 'json' },
-        { label: 'HTML', value: 'html' },
-        { label: 'Markdown', value: 'markdown' }
-      ],
-      group: 'basic'
-    },
-    {
-      key: 'variables',
-      label: '变量替换',
-      type: DataType.OBJECT,
-      required: false,
-      defaultValue: {},
-      description: '内容中的变量替换映射',
-      group: 'advanced'
-    }
-  ],
-  
-  inputDefinitions: [
-    {
-      name: 'context',
-      dataType: DataType.ANY,
-      required: false,
-      description: '上下文信息（可用于变量替换）'
-    }
-  ],
-  
-  outputDefinitions: [
-    {
-      name: 'response',
-      dataType: DataType.STRING,
-      required: true,
-      description: '格式化后的回答内容'
-    }
-  ]
-};
-
-// 所有节点定义
-export const nodeDefinitions: Record<NodeType, NodeDefinition> = {
-  [NodeType.AI_DIALOG]: aiDialogNodeDefinition,
-  [NodeType.KNOWLEDGE_BASE]: knowledgeBaseNodeDefinition,
-  [NodeType.CONDITION]: conditionNodeDefinition,
-  [NodeType.START]: startNodeDefinition,
-  [NodeType.END]: endNodeDefinition,
-  [NodeType.RESPONSE]: responseNodeDefinition,
-  
-  // 其他节点的简化定义（可以后续完善）
-  [NodeType.AI_SUMMARY]: {
-    ...aiDialogNodeDefinition,
-    type: NodeType.AI_SUMMARY,
-    label: '摘要总结',
-    description: '对文本内容进行智能摘要'
-  },
-  [NodeType.AI_EXTRACT]: {
-    ...aiDialogNodeDefinition,
-    type: NodeType.AI_EXTRACT,
-    label: '内容提取',
-    description: '从文本中提取关键信息'
-  },
-  [NodeType.AI_JSON]: {
-    ...aiDialogNodeDefinition,
-    type: NodeType.AI_JSON,
-    label: 'JSON提取器',
-    description: '提取和处理JSON数据'
-  },
-  [NodeType.DATABASE]: {
-    ...knowledgeBaseNodeDefinition,
-    type: NodeType.DATABASE,
-    label: '数据库',
-    description: '数据库查询和操作'
-  },
-  [NodeType.BING_SEARCH]: {
-    ...knowledgeBaseNodeDefinition,
-    type: NodeType.BING_SEARCH,
-    label: 'Bing搜索',
-    description: '使用Bing进行网络搜索'
-  },
-  [NodeType.DECISION]: {
-    ...conditionNodeDefinition,
-    type: NodeType.DECISION,
-    label: '决策节点',
-    description: '多分支决策判断'
-  },
-  [NodeType.BASIC]: {
-    ...startNodeDefinition,
-    type: NodeType.BASIC,
-    label: '基础节点',
-    description: '通用的基础处理节点'
-  },
-  [NodeType.PROCESS]: {
-    ...startNodeDefinition,
-    type: NodeType.PROCESS,
-    label: '处理节点',
-    description: '数据处理和转换节点'
-  },
-  [NodeType.CUSTOM]: {
-    ...startNodeDefinition,
-    type: NodeType.CUSTOM,
-    label: '自定义节点',
-    description: '可自定义功能的节点'
-  },
   [NodeType.JSON_EXTRACTOR]: {
-    ...aiDialogNodeDefinition,
-    type: NodeType.JSON_EXTRACTOR,
-    label: 'JSON提取器',
-    description: '提取和处理JSON数据'
+    ...NODE_REGISTRY[NodeType.JSON_EXTRACTOR],
+    properties: [
+      createInputSourceProperty(),
+      ...(NODE_REGISTRY[NodeType.JSON_EXTRACTOR].properties || [])
+    ]
+  },
+  
+  [NodeType.KNOWLEDGE_BASE]: {
+    ...NODE_REGISTRY[NodeType.KNOWLEDGE_BASE],
+    properties: [
+      createInputSourceProperty(),
+      {
+        key: 'knowledgeBaseId',
+        label: '知识库ID',
+        type: 'text',
+        required: true
+      },
+      {
+        key: 'query',
+        label: '查询内容',
+        type: 'text',
+        required: true
+      },
+      {
+        key: 'topK',
+        label: '返回数量',
+        type: 'number',
+        defaultValue: 5,
+        validation: { min: 1, max: 20 }
+      },
+      {
+        key: 'threshold',
+        label: '相似度阈值',
+        type: 'number',
+        defaultValue: 0.7,
+        validation: { min: 0, max: 1 }
+      },
+      {
+        key: 'searchType',
+        label: '搜索类型',
+        type: 'select',
+        defaultValue: 'semantic',
+        options: [
+          { label: '语义搜索', value: 'semantic' },
+          { label: '关键词搜索', value: 'keyword' },
+          { label: '混合搜索', value: 'hybrid' }
+        ]
+      }
+    ]
+  },
+  
+  [NodeType.LLM]: {
+    ...NODE_REGISTRY[NodeType.LLM],
+    properties: [
+      createInputSourceProperty(),
+      {
+        key: 'model',
+        label: 'LLM模型',
+        type: 'select',
+        required: true,
+        defaultValue: 'gpt-3.5-turbo',
+        options: [
+          { label: 'GPT-3.5 Turbo', value: 'gpt-3.5-turbo' },
+          { label: 'GPT-4', value: 'gpt-4' },
+          { label: 'Claude-3', value: 'claude-3' }
+        ]
+      },
+      {
+        key: 'prompt',
+        label: '提示词',
+        type: 'textarea',
+        required: true
+      },
+      {
+        key: 'temperature',
+        label: '创造性',
+        type: 'slider',
+        defaultValue: 0.7,
+        validation: { min: 0, max: 2 }
+      }
+    ]
+  },
+  
+  [NodeType.AI_EXTRACT]: {
+    ...NODE_REGISTRY[NodeType.AI_EXTRACT],
+    properties: [
+      createInputSourceProperty(),
+      {
+        key: 'extractType',
+        label: '提取类型',
+        type: 'select',
+        required: true,
+        defaultValue: 'text',
+        options: [
+          { label: '文本提取', value: 'text' },
+          { label: '数据提取', value: 'data' },
+          { label: '结构化提取', value: 'structured' }
+        ]
+      },
+      {
+        key: 'extractPrompt',
+        label: '提取指令',
+        type: 'textarea',
+        required: true
+      }
+    ]
+  },
+  
+  [NodeType.DATABASE]: {
+    ...NODE_REGISTRY[NodeType.DATABASE],
+    properties: [
+      createInputSourceProperty(),
+      {
+        key: 'connectionString',
+        label: '数据库连接',
+        type: 'text',
+        required: true
+      },
+      {
+        key: 'query',
+        label: 'SQL查询',
+        type: 'textarea',
+        required: true
+      },
+      {
+        key: 'operation',
+        label: '操作类型',
+        type: 'select',
+        defaultValue: 'select',
+        options: [
+          { label: '查询 (SELECT)', value: 'select' },
+          { label: '插入 (INSERT)', value: 'insert' },
+          { label: '更新 (UPDATE)', value: 'update' },
+          { label: '删除 (DELETE)', value: 'delete' }
+        ]
+      }
+    ]
+  },
+  
+  [NodeType.BING_SEARCH]: {
+    ...NODE_REGISTRY[NodeType.BING_SEARCH],
+    properties: [
+      createInputSourceProperty(),
+      {
+        key: 'query',
+        label: '搜索关键词',
+        type: 'text',
+        required: true
+      },
+      {
+        key: 'count',
+        label: '结果数量',
+        type: 'number',
+        defaultValue: 10,
+        validation: { min: 1, max: 50 }
+      },
+      {
+        key: 'market',
+        label: '搜索市场',
+        type: 'select',
+        defaultValue: 'zh-CN',
+        options: [
+          { label: '中国', value: 'zh-CN' },
+          { label: '美国', value: 'en-US' },
+          { label: '英国', value: 'en-GB' }
+        ]
+      }
+    ]
+  },
+  
+  [NodeType.DECISION]: {
+    ...NODE_REGISTRY[NodeType.DECISION],
+    properties: [
+      createInputSourceProperty(),
+      {
+        key: 'conditions',
+        label: '判断条件',
+        type: 'textarea',
+        required: true
+      },
+      {
+        key: 'defaultPath',
+        label: '默认路径',
+        type: 'text',
+        defaultValue: 'default'
+      }
+    ]
+  },
+  
+  [NodeType.SWITCH]: {
+    ...NODE_REGISTRY[NodeType.SWITCH],
+    properties: [
+      createInputSourceProperty(),
+      {
+        key: 'switchExpression',
+        label: '切换表达式',
+        type: 'text',
+        required: true
+      },
+      {
+        key: 'cases',
+        label: '分支情况',
+        type: 'json',
+        defaultValue: {}
+      }
+    ]
+  },
+  
+  [NodeType.API_CALL]: {
+    ...NODE_REGISTRY[NodeType.API_CALL],
+    properties: [
+      createInputSourceProperty(),
+      {
+        key: 'method',
+        label: '请求方法',
+        type: 'select',
+        required: true,
+        defaultValue: 'GET',
+        options: [
+          { label: 'GET', value: 'GET' },
+          { label: 'POST', value: 'POST' },
+          { label: 'PUT', value: 'PUT' },
+          { label: 'DELETE', value: 'DELETE' }
+        ]
+      },
+      {
+        key: 'url',
+        label: 'API地址',
+        type: 'text',
+        required: true
+      },
+      {
+        key: 'headers',
+        label: '请求头',
+        type: 'json',
+        defaultValue: {}
+      },
+      {
+        key: 'body',
+        label: '请求体',
+        type: 'textarea'
+      }
+    ]
+  },
+  
+  [NodeType.WEBHOOK]: {
+    ...NODE_REGISTRY[NodeType.WEBHOOK],
+    properties: [
+      createInputSourceProperty(),
+      {
+        key: 'webhookUrl',
+        label: 'Webhook地址',
+        type: 'text',
+        required: true
+      },
+      {
+        key: 'method',
+        label: '请求方法',
+        type: 'select',
+        defaultValue: 'POST',
+        options: [
+          { label: 'POST', value: 'POST' },
+          { label: 'PUT', value: 'PUT' }
+        ]
+      },
+      {
+        key: 'secret',
+        label: '密钥',
+        type: 'text'
+      }
+    ]
+  },
+  
+  [NodeType.DATA_MAPPER]: {
+    ...NODE_REGISTRY[NodeType.DATA_MAPPER],
+    properties: [
+      createInputSourceProperty(),
+      {
+        key: 'mappingRules',
+        label: '映射规则',
+        type: 'json',
+        required: true,
+        defaultValue: {}
+      },
+      {
+        key: 'outputFormat',
+        label: '输出格式',
+        type: 'select',
+        defaultValue: 'json',
+        options: [
+          { label: 'JSON', value: 'json' },
+          { label: 'XML', value: 'xml' },
+          { label: 'CSV', value: 'csv' }
+        ]
+      }
+    ]
+  },
+  
+  [NodeType.TEXT_PROCESSOR]: {
+    ...NODE_REGISTRY[NodeType.TEXT_PROCESSOR],
+    properties: [
+      createInputSourceProperty(),
+      {
+        key: 'operation',
+        label: '处理操作',
+        type: 'select',
+        required: true,
+        defaultValue: 'clean',
+        options: [
+          { label: '清洗文本', value: 'clean' },
+          { label: '格式化', value: 'format' },
+          { label: '提取关键词', value: 'extract' },
+          { label: '分词', value: 'tokenize' }
+        ]
+      },
+      {
+        key: 'parameters',
+        label: '处理参数',
+        type: 'json',
+        defaultValue: {}
+      }
+    ]
+  },
+  
+  [NodeType.JAVASCRIPT]: {
+    ...NODE_REGISTRY[NodeType.JAVASCRIPT],
+    properties: [
+      createInputSourceProperty(),
+      {
+        key: 'code',
+        label: 'JavaScript代码',
+        type: 'textarea',
+        required: true,
+        defaultValue: '// 在这里编写您的代码\nfunction process(input) {\n  // 处理输入数据\n  return input;\n}'
+      },
+      {
+        key: 'timeout',
+        label: '超时时间(秒)',
+        type: 'number',
+        defaultValue: 30,
+        validation: { min: 1, max: 300 }
+      }
+    ]
+  },
+  
+  // 开始和结束节点不需要输入参数选择器
+  [NodeType.START]: NODE_REGISTRY[NodeType.START],
+  [NodeType.END]: NODE_REGISTRY[NodeType.END],
+  [NodeType.BASIC]: {
+    ...NODE_REGISTRY[NodeType.BASIC],
+    properties: [
+      createInputSourceProperty(),
+      {
+        key: 'operation',
+        label: '基础操作',
+        type: 'text',
+        defaultValue: '基础处理'
+      }
+    ]
   }
 };
 
-// 节点分类配置
-export const nodeCategories: NodeCategory[] = [
-  {
-    key: 'control',
-    label: '控制节点',
-    description: '流程控制相关节点',
-    icon: 'ControlOutlined',
-    nodes: [
-      nodeDefinitions[NodeType.START],
-      nodeDefinitions[NodeType.END]
-    ]
-  },
-  {
-    key: 'ai',
-    label: 'AI处理节点',
-    description: 'AI和机器学习相关节点',
-    icon: 'RobotOutlined',
-    nodes: [
-      nodeDefinitions[NodeType.AI_DIALOG],
-      nodeDefinitions[NodeType.AI_SUMMARY],
-      nodeDefinitions[NodeType.AI_EXTRACT],
-      nodeDefinitions[NodeType.AI_JSON]
-    ]
-  },
-  {
-    key: 'data',
-    label: '数据节点',
-    description: '数据获取和处理节点',
-    icon: 'DatabaseOutlined',
-    nodes: [
-      nodeDefinitions[NodeType.DATABASE],
-      nodeDefinitions[NodeType.KNOWLEDGE_BASE],
-      nodeDefinitions[NodeType.BING_SEARCH]
-    ]
-  },
-  {
-    key: 'logic',
-    label: '逻辑节点',
-    description: '逻辑判断和分支节点',
-    icon: 'BranchesOutlined',
-    nodes: [
-      nodeDefinitions[NodeType.CONDITION],
-      nodeDefinitions[NodeType.DECISION]
-    ]
-  },
-  {
-    key: 'response',
-    label: '响应节点',
-    description: '输出和响应相关节点',
-    icon: 'MessageOutlined',
-    nodes: [
-      nodeDefinitions[NodeType.RESPONSE]
-    ]
-  },
-  {
-    key: 'basic',
-    label: '基础节点',
-    description: '通用基础处理节点',
-    icon: 'SettingOutlined',
-    nodes: [
-      nodeDefinitions[NodeType.BASIC],
-      nodeDefinitions[NodeType.PROCESS],
-      nodeDefinitions[NodeType.CUSTOM],
-      nodeDefinitions[NodeType.JSON_EXTRACTOR]
-    ]
-  }
-];
+// 导出增强后的节点配置
+export default enhancedNodeConfigs;
