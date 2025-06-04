@@ -257,7 +257,7 @@ const VariableWatcher: React.FC<VariableWatcherProps> = ({
                         title={
                           <div className="flex items-center gap-2">
                             <Text code className="text-sm">{variable.expression}</Text>
-                            <Tag color="blue" size="small">{variable.type}</Tag>
+                            <Tag color="blue">{variable.type}</Tag>
                           </div>
                         }
                         description={
@@ -334,7 +334,7 @@ const VariableWatcher: React.FC<VariableWatcherProps> = ({
                       title={
                         <div className="flex items-center gap-2">
                           <Text code className="text-sm">{variable.expression}</Text>
-                          <Tag color="green" size="small">{variable.type}</Tag>
+                          <Tag color="green">{variable.type}</Tag>
                         </div>
                       }
                       description={

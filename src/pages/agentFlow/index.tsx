@@ -37,8 +37,7 @@ import {
   CloudOutlined,
   MessageOutlined,
   LeftOutlined,
-  CheckCircleOutlined,
-  FolderOpenOutlined
+  CheckCircleOutlined
 } from "@ant-design/icons";
 import PropertiesPanel from "./components/PropertiesPanel";
 import NodePanel from "./components/NodePanel";
@@ -74,7 +73,7 @@ const getDefaultNodeData = (nodeType: string, label: string) => {
     case 'aiJsonNode':
       return {
         ...baseData,
-        model: 'gpt-3.5-turbo',
+        model: '', // 移除默认值，让用户必须选择
         systemPrompt: '',
         userMessage: '',
         temperature: 0.7,
@@ -280,6 +279,7 @@ const AgentFlowPage: React.FC = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
+  const [selectedEdges, setSelectedEdges] = useState<string[]>([]); // 添加选中连线状态
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
   const [initialized, setInitialized] = useState(false);
   const [nodePanelVisible, setNodePanelVisible] = useState(true);
@@ -357,6 +357,35 @@ const AgentFlowPage: React.FC = () => {
     }
   };
 
+  // 验证流程配置的函数
+  const validateFlowConfiguration = (nodes: Node[]): { isValid: boolean; errors: string[] } => {
+    const errors: string[] = [];
+
+    // 检查AI节点是否选择了AI模型
+    const aiNodeTypes = ['aiDialogNode', 'aiSummaryNode', 'aiExtractNode', 'aiJsonNode'];
+
+    nodes.forEach((node) => {
+      if (aiNodeTypes.includes(node.type || '')) {
+        const nodeData = node.data || {};
+
+        // 检查AI模型是否为空，确保model是字符串类型
+        if (!nodeData.model || (typeof nodeData.model === 'string' && nodeData.model.trim() === '')) {
+          errors.push(`节点"${nodeData.label || node.type}"未选择AI模型`);
+        }
+
+        // 可以添加其他必填字段的验证
+        // if (!nodeData.systemPrompt || nodeData.systemPrompt.trim() === '') {
+        //   errors.push(`节点"${nodeData.label || node.type}"未设置系统提示词`);
+        // }
+      }
+    });
+
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  };
+
   // 保存流程
   const saveFlow = async (flowData: Partial<FlowDataRaw>) => {
     if (!reactFlowInstance) return;
@@ -366,6 +395,26 @@ const AgentFlowPage: React.FC = () => {
     // 确保必需字段有值
     if (!flowData.name) {
       message.error('流程名称不能为空');
+      return;
+    }
+
+    // 验证流程配置
+    const validation = validateFlowConfiguration(flowObject.nodes);
+    if (!validation.isValid) {
+      Modal.error({
+        title: '流程配置验证失败',
+        content: (
+          <div>
+            <p>请修复以下问题后再保存：</p>
+            <ul className="mt-2">
+              {validation.errors.map((error, index) => (
+                <li key={index} className="text-red-600">• {error}</li>
+              ))}
+            </ul>
+          </div>
+        ),
+        okText: '知道了',
+      });
       return;
     }
 
@@ -399,6 +448,11 @@ const AgentFlowPage: React.FC = () => {
 
       setCurrentFlow(result);
       setIsFlowModified(false);
+
+      // 保存成功后更新历史记录，防止继续显示未保存状态
+      setHistory([{ nodes: flowObject.nodes, edges: flowObject.edges }]);
+      setHistoryIndex(0);
+
     } catch (error) {
       message.error(currentFlow?.id ? '流程保存失败' : '流程创建失败');
       console.error('Save flow error:', error);
@@ -431,28 +485,31 @@ const AgentFlowPage: React.FC = () => {
       Modal.confirm({
         title: '未保存的更改',
         content: '您有未保存的更改，确定要离开吗？',
-        onOk: () => navigate('/agentFlow'),
+        onOk: () => navigate('/agentFlow/list'),
         okText: '确定',
         cancelText: '取消',
       });
     } else {
-      navigate('/agentFlow');
+      navigate('/agentFlow/list');
     }
   };
 
   // 快速保存
   const handleQuickSave = async () => {
     if (!currentFlow) {
+      // 新流程直接打开保存对话框
       setSaveModalVisible(true);
       return;
     }
 
+    // 现有流程快速保存
     await saveFlow({
       name: currentFlow.name,
       description: currentFlow.description,
       tags: currentFlow.tags,
     });
   };
+
 
   // 添加历史记录的辅助函数
   const addToHistory = useCallback((newState: { nodes: Node[]; edges: Edge[] }) => {
@@ -549,11 +606,34 @@ const AgentFlowPage: React.FC = () => {
   // 选中节点时显示属性面板
   const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
     setSelectedNode(node);
+    setSelectedEdges([]); // 清除连线选中状态
+  }, []);
+
+  // 连线点击事件处理
+  const onEdgeClick = useCallback((_: React.MouseEvent, edge: Edge) => {
+    setSelectedEdges([edge.id]);
+    setSelectedNode(null); // 清除节点选中状态
+  }, []);
+
+  // 选中状态改变处理
+  const onSelectionChange = useCallback((params: { nodes: Node[]; edges: Edge[] }) => {
+    // 更新选中的节点
+    if (params.nodes.length > 0) {
+      setSelectedNode(params.nodes[0]);
+      setSelectedEdges([]);
+    } else if (params.edges.length > 0) {
+      setSelectedEdges(params.edges.map(edge => edge.id));
+      setSelectedNode(null);
+    } else {
+      setSelectedNode(null);
+      setSelectedEdges([]);
+    }
   }, []);
 
   // 点击空白处清除选中
   const onPaneClick = useCallback(() => {
     setSelectedNode(null);
+    setSelectedEdges([]);
   }, []);
 
   // 节点数据更改处理函数
@@ -711,32 +791,6 @@ const AgentFlowPage: React.FC = () => {
     [reactFlowInstance, setNodes]
   );
 
-  // 删除选中节点
-  const handleDeleteSelectedNode = () => {
-    if (selectedNode) {
-      if (selectedNode.deletable === false) {
-        message.warning("该节点不允许删除");
-        return;
-      }
-
-      const newNodes = nodes.filter((node) => node.id !== selectedNode.id);
-      const newEdges = edges.filter((e) => e.source !== selectedNode.id && e.target !== selectedNode.id);
-
-      // 添加新状态到历史记录
-      const currentHistory = history.slice(0, historyIndex + 1);
-      setHistory([...currentHistory, { nodes: newNodes, edges: newEdges }]);
-      setHistoryIndex(historyIndex + 1);
-
-      setNodes(newNodes);
-      setEdges(newEdges);
-      setSelectedNode(null);
-
-      message.success("节点已删除");
-    } else {
-      message.info("请先选择要删除的节点");
-    }
-  };
-
   // 实现撤销功能
   const handleUndo = useCallback(() => {
     if (historyIndex > 0) {
@@ -787,6 +841,186 @@ const AgentFlowPage: React.FC = () => {
     setMarkdownViewerVisible(true);
   };
 
+  // 删除选中元素
+  const handleDeleteSelected = useCallback(() => {
+    if (selectedNode) {
+      handleDeleteSelectedNode();
+    } else if (selectedEdges.length > 0) {
+      handleDeleteSelectedEdges();
+    }
+  }, [selectedNode, selectedEdges]);
+
+  // 删除选中节点
+  const handleDeleteSelectedNode = useCallback(() => {
+    if (!selectedNode) {
+      message.info("请先选择要删除的节点");
+      return;
+    }
+
+    if (selectedNode.deletable === false) {
+      message.warning("该节点不允许删除");
+      return;
+    }
+
+    const newNodes = nodes.filter((node) => node.id !== selectedNode.id);
+    const newEdges = edges.filter((e) => e.source !== selectedNode.id && e.target !== selectedNode.id);
+
+    // 添加新状态到历史记录
+    const currentHistory = history.slice(0, historyIndex + 1);
+    setHistory([...currentHistory, { nodes: newNodes, edges: newEdges }]);
+    setHistoryIndex(historyIndex + 1);
+
+    setNodes(newNodes);
+    setEdges(newEdges);
+    setSelectedNode(null);
+
+    message.success("节点已删除");
+  }, [selectedNode, nodes, edges, history, historyIndex, setNodes, setEdges]);
+
+  // 删除选中连线
+  const handleDeleteSelectedEdges = useCallback(() => {
+    if (selectedEdges.length === 0) {
+      message.info("请先选择要删除的连线");
+      return;
+    }
+
+    const newEdges = edges.filter((edge) => !selectedEdges.includes(edge.id));
+
+    // 添加新状态到历史记录
+    const currentHistory = history.slice(0, historyIndex + 1);
+    setHistory([...currentHistory, { nodes, edges: newEdges }]);
+    setHistoryIndex(historyIndex + 1);
+
+    setEdges(newEdges);
+    setSelectedEdges([]);
+
+    message.success(`已删除 ${selectedEdges.length} 条连线`);
+  }, [selectedEdges, edges, nodes, history, historyIndex, setEdges]);
+
+  // 保存流程模态框
+  const saveModal = (
+    <Modal
+      title="保存流程"
+      open={saveModalVisible}
+      onCancel={() => setSaveModalVisible(false)}
+      footer={null}
+      width={600}
+    >
+      <Form
+        layout="vertical"
+        initialValues={{
+          name: currentFlow?.name || '',
+          description: currentFlow?.description || '',
+          tags: currentFlow?.tags || [],
+        }}
+        onFinish={async (values) => {
+          await saveFlow(values);
+          setSaveModalVisible(false);
+        }}
+      >
+        <Form.Item
+          label="流程名称"
+          name="name"
+          rules={[
+            { required: true, message: '请输入流程名称' },
+            { min: 2, message: '流程名称至少2个字符' },
+            { max: 50, message: '流程名称不能超过50个字符' }
+          ]}
+        >
+          <Input placeholder="请输入流程名称" />
+        </Form.Item>
+
+        <Form.Item
+          label="流程描述"
+          name="description"
+          rules={[
+            { max: 200, message: '描述不能超过200个字符' }
+          ]}
+        >
+          <TextArea
+            rows={3}
+            placeholder="请输入流程描述（可选）"
+            showCount
+            maxLength={200}
+          />
+        </Form.Item>
+
+        <Form.Item
+          label="标签"
+          name="tags"
+          help="添加标签便于分类和搜索"
+        >
+          <Select
+            mode="tags"
+            placeholder="输入标签并按回车添加"
+            tokenSeparators={[',']}
+            maxTagCount={5}
+            maxTagTextLength={10}
+          >
+            <Option value="AI对话">AI对话</Option>
+            <Option value="数据处理">数据处理</Option>
+            <Option value="自动化">自动化</Option>
+            <Option value="客服">客服</Option>
+            <Option value="分析">分析</Option>
+          </Select>
+        </Form.Item>
+
+        <div className="flex justify-end gap-2 mt-6">
+          <Button onClick={() => setSaveModalVisible(false)}>
+            取消
+          </Button>
+          <Button type="primary" htmlType="submit" loading={loading}>
+            保存
+          </Button>
+        </div>
+      </Form>
+    </Modal>
+  );
+
+  // 发布流程模态框
+  const publishModal = (
+    <Modal
+      title="发布流程"
+      open={publishModalVisible}
+      onCancel={() => setPublishModalVisible(false)}
+      onOk={publishFlow}
+      okText="发布"
+      cancelText="取消"
+      confirmLoading={loading}
+    >
+      <div className="space-y-4">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <div className="text-yellow-600 text-lg">⚠️</div>
+            <div>
+              <div className="font-medium text-yellow-800 mb-1">发布前请确认</div>
+              <ul className="text-sm text-yellow-700 space-y-1">
+                <li>• 流程配置已经完整且正确</li>
+                <li>• 所有节点都已正确连接</li>
+                <li>• 已测试流程的执行逻辑</li>
+                <li>• 发布后流程将可被其他用户使用</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <div className="text-sm text-gray-600 space-y-2">
+            <div><strong>流程名称：</strong>{currentFlow?.name}</div>
+            <div><strong>节点数量：</strong>{nodes.length} 个</div>
+            <div><strong>连接数量：</strong>{edges.length} 个</div>
+            <div><strong>当前状态：</strong>
+              <Tag color={currentFlow?.status === 'published' ? 'success' : 'default'} className="ml-2">
+                {currentFlow?.status === 'draft' ? '草稿' :
+                  currentFlow?.status === 'published' ? '已发布' : '已归档'}
+              </Tag>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Modal>
+  );
+
   // 配置WorkflowExecutor
   useEffect(() => {
     console.log('Configuring executor for main page integration');
@@ -805,6 +1039,40 @@ const AgentFlowPage: React.FC = () => {
     }));
   }, [nodes, debugResults, isDebugMode]);
 
+  // 创建带有选中状态的连线
+  const enhancedEdges = useMemo(() => {
+    return edges.map(edge => ({
+      ...edge,
+      selected: selectedEdges.includes(edge.id),
+      style: {
+        ...edge.style,
+        stroke: selectedEdges.includes(edge.id) ? '#ff6b6b' : '#1677ff',
+        strokeWidth: selectedEdges.includes(edge.id) ? 3 : 2,
+      },
+    }));
+  }, [edges, selectedEdges]);
+
+  // 添加键盘事件监听
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // 检查是否在输入框中
+      const target = event.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true') {
+        return;
+      }
+
+      if (event.key === 'Delete' || event.key === 'Backspace') {
+        event.preventDefault();
+        handleDeleteSelected();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [selectedNode, selectedEdges, handleDeleteSelected]);
+
   // 渲染组件
   return (
     <ReactFlowProvider>
@@ -822,21 +1090,29 @@ const AgentFlowPage: React.FC = () => {
                   className="flex items-center"
                 />
               </Tooltip>
-              <div>
-                <h1 className="text-lg font-semibold text-gray-800">
+
+              <div className="flex items-center gap-3">
+                <h1 className="text-lg font-semibold text-gray-800 mb-0">
                   {currentFlow?.name || '新建流程'}
-                  {isFlowModified && <span className="text-orange-500 ml-2">●</span>}
                 </h1>
+                {isFlowModified && (
+                  <Tooltip title="有未保存的更改">
+                    <span className="text-orange-500 text-sm">●</span>
+                  </Tooltip>
+                )}
                 {currentFlow && (
-                  <div className="flex items-center gap-2 mt-1">
-                    <Tag color={currentFlow.status === 'published' ? 'success' : 'default'}>
-                      {currentFlow.status === 'draft' ? '草稿' :
-                        currentFlow.status === 'published' ? '已发布' : '已归档'}
-                    </Tag>
-                    {currentFlow.tags?.map(tag => (
-                      <Tag key={tag}>{tag}</Tag>
-                    ))}
-                  </div>
+                  <Tooltip
+                    title={
+                      currentFlow.status === 'draft' ? '草稿' :
+                        currentFlow.status === 'published' ? '已发布' :
+                          currentFlow.status === 'archived' ? '已归档' : '未归档'
+                    }
+                  >
+                    <div className={`w-3 h-3 rounded-full ${currentFlow.status === 'published' ? 'bg-green-500' :
+                      currentFlow.status === 'draft' ? 'bg-blue-500' :
+                        currentFlow.status === 'archived' ? 'bg-gray-500' : 'bg-gray-400'
+                      }`} />
+                  </Tooltip>
                 )}
               </div>
             </div>
@@ -872,11 +1148,15 @@ const AgentFlowPage: React.FC = () => {
 
             {/* 编辑工具栏 */}
             <div className="flex items-center gap-2">
-              <Tooltip title="删除选中节点">
+              <Tooltip title={
+                selectedNode ? "删除选中节点" :
+                  selectedEdges.length > 0 ? "删除选中连线" :
+                    "删除选中元素"
+              }>
                 <Button
                   icon={<DeleteOutlined />}
-                  onClick={handleDeleteSelectedNode}
-                  disabled={!selectedNode || selectedNode.deletable === false}
+                  onClick={handleDeleteSelected}
+                  disabled={!selectedNode && selectedEdges.length === 0}
                   danger
                   size="small"
                   className="flex items-center"
@@ -933,17 +1213,6 @@ const AgentFlowPage: React.FC = () => {
                   </Button>
                 </Tooltip>
               )}
-
-              <Tooltip title="另存为">
-                <Button
-                  icon={<FolderOpenOutlined />}
-                  onClick={() => setSaveModalVisible(true)}
-                  size="small"
-                  className="flex items-center"
-                >
-                  另存为
-                </Button>
-              </Tooltip>
             </div>
           </div>
         </div>
@@ -962,17 +1231,22 @@ const AgentFlowPage: React.FC = () => {
             {initialized && (
               <ReactFlow
                 nodes={enhancedNodes}
-                edges={edges}
+                edges={enhancedEdges}
                 onNodesChange={handleNodesChange}
                 onEdgesChange={handleEdgesChange}
                 onConnect={handleConnect}
                 onInit={onInit as any}
                 nodeTypes={nodeTypes}
                 onNodeClick={onNodeClick}
+                onEdgeClick={onEdgeClick}
+                onSelectionChange={onSelectionChange}
                 onPaneClick={onPaneClick}
                 onNodesDelete={onNodesDelete}
                 onDragOver={onDragOver}
                 onDrop={onDrop}
+                selectNodesOnDrag={true}
+                multiSelectionKeyCode={['Meta', 'Ctrl']}
+                deleteKeyCode={['Backspace', 'Delete']}
                 defaultEdgeOptions={{
                   type: "smoothstep",
                   animated: true,
@@ -1077,124 +1351,10 @@ const AgentFlowPage: React.FC = () => {
       </Modal>
 
       {/* 保存流程模态框 */}
-      <Modal
-        title="保存流程"
-        open={saveModalVisible}
-        onCancel={() => setSaveModalVisible(false)}
-        footer={null}
-        width={600}
-      >
-        <Form
-          layout="vertical"
-          initialValues={{
-            name: currentFlow?.name || '',
-            description: currentFlow?.description || '',
-            tags: currentFlow?.tags || [],
-          }}
-          onFinish={async (values) => {
-            await saveFlow(values);
-            setSaveModalVisible(false);
-          }}
-        >
-          <Form.Item
-            label="流程名称"
-            name="name"
-            rules={[
-              { required: true, message: '请输入流程名称' },
-              { min: 2, message: '流程名称至少2个字符' },
-              { max: 50, message: '流程名称不能超过50个字符' }
-            ]}
-          >
-            <Input placeholder="请输入流程名称" />
-          </Form.Item>
-
-          <Form.Item
-            label="流程描述"
-            name="description"
-            rules={[
-              { max: 200, message: '描述不能超过200个字符' }
-            ]}
-          >
-            <TextArea
-              rows={3}
-              placeholder="请输入流程描述（可选）"
-              showCount
-              maxLength={200}
-            />
-          </Form.Item>
-
-          <Form.Item
-            label="标签"
-            name="tags"
-            help="添加标签便于分类和搜索"
-          >
-            <Select
-              mode="tags"
-              placeholder="输入标签并按回车添加"
-              tokenSeparators={[',']}
-              maxTagCount={5}
-              maxTagTextLength={10}
-            >
-              <Option value="AI对话">AI对话</Option>
-              <Option value="数据处理">数据处理</Option>
-              <Option value="自动化">自动化</Option>
-              <Option value="客服">客服</Option>
-              <Option value="分析">分析</Option>
-            </Select>
-          </Form.Item>
-
-          <div className="flex justify-end gap-2 mt-6">
-            <Button onClick={() => setSaveModalVisible(false)}>
-              取消
-            </Button>
-            <Button type="primary" htmlType="submit" loading={loading}>
-              保存
-            </Button>
-          </div>
-        </Form>
-      </Modal>
+      {saveModal}
 
       {/* 发布流程模态框 */}
-      <Modal
-        title="发布流程"
-        open={publishModalVisible}
-        onCancel={() => setPublishModalVisible(false)}
-        onOk={publishFlow}
-        okText="发布"
-        cancelText="取消"
-        confirmLoading={loading}
-      >
-        <div className="space-y-4">
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <div className="flex items-start gap-3">
-              <div className="text-yellow-600 text-lg">⚠️</div>
-              <div>
-                <div className="font-medium text-yellow-800 mb-1">发布前请确认</div>
-                <ul className="text-sm text-yellow-700 space-y-1">
-                  <li>• 流程配置已经完整且正确</li>
-                  <li>• 所有节点都已正确连接</li>
-                  <li>• 已测试流程的执行逻辑</li>
-                  <li>• 发布后流程将可被其他用户使用</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <div className="text-sm text-gray-600 space-y-2">
-              <div><strong>流程名称：</strong>{currentFlow?.name}</div>
-              <div><strong>节点数量：</strong>{nodes.length} 个</div>
-              <div><strong>连接数量：</strong>{edges.length} 个</div>
-              <div><strong>当前状态：</strong>
-                <Tag color={currentFlow?.status === 'published' ? 'success' : 'default'} className="ml-2">
-                  {currentFlow?.status === 'draft' ? '草稿' :
-                    currentFlow?.status === 'published' ? '已发布' : '已归档'}
-                </Tag>
-              </div>
-            </div>
-          </div>
-        </div>
-      </Modal>
+      {publishModal}
     </ReactFlowProvider>
   );
 };

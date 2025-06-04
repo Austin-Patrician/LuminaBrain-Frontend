@@ -42,7 +42,7 @@ export enum ApplicationApi {
 	DeleteApplication = "/application/delete",
 	UpdateApplication = "/application/update",
 	ShareApplication = "/application/share",
-	GetAiModelsByTypeId = "/aiModel/getByTypeId{id}" , // 根据类型ID获取AI模型列表
+	GetAiModelsByTypeId = "/aiModel/getByTypeId/{id}" , // 根据类型ID获取AI模型列表
 	GetKnowledgeList = "/knowledge/dropdown",
 }
 

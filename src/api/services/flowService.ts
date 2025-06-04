@@ -1,4 +1,5 @@
 import apiClient from '../apiClient';
+import type {AiModelListResponse } from "#/entity";
 
 // 流程数据接口定义 - 后端实体对应
 export interface FlowData {
@@ -211,6 +212,15 @@ export const flowService = {
     });
     
     return convertToFrontendFormat(response);
+  },
+
+/**
+   * 根据AI模型类型ID获取AI模型集合
+   */
+  getAiModelsByTypeId: () => {
+    return apiClient.get<AiModelListResponse>({
+      url:   "/aiModel/getByTypeId/0D826A41-45CE-4870-8893-A8D4FAECD3A4",
+    });
   },
 
   // 归档流程

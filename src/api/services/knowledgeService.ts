@@ -50,7 +50,7 @@ export enum KnowledgeApi {
   ShareModel = "/knowledge/share",
   getKnowledge = "/knowledge/{id}",
   Create = "/knowledge/create",  // 新增创建知识库端点
-  GetAiModelsByTypeId = "/aiModel/getByTypeId{id}" , // 根据类型ID获取AI模型列表
+  GetAiModelsByTypeId = "/aiModel/getByTypeId/{id}" , // 根据类型ID获取AI模型列表
   GetAntiforgerytoken = "/file/antiforgery/token",
   UploadFile = "/file/upload/{knowledgeId}",
 }

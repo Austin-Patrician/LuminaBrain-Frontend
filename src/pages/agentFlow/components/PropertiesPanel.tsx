@@ -1,17 +1,33 @@
-import React, { useState, useCallback } from 'react';
-import { Input, Select, Slider, Switch, Typography, InputNumber, Button, Collapse, Tooltip, Badge } from 'antd';
-import { Node, Edge } from '@xyflow/react';
+import React, { useCallback, useState, useEffect } from "react";
 import {
-  EditOutlined,
-  SaveOutlined,
-  RobotOutlined,
-  DatabaseOutlined,
-  CloudOutlined,
+  Card,
+  Typography,
+  Input,
+  Select,
+  Slider,
+  Switch,
+  Button,
+  Collapse,
+  Badge,
+  Tooltip,
+  InputNumber,
+  Tag,
+  Spin
+} from "antd";
+import {
   SettingOutlined,
   InfoCircleOutlined,
+  DatabaseOutlined,
+  CloudOutlined,
+  EditOutlined,
+  RobotOutlined,
+  EyeInvisibleOutlined,
   BugOutlined,
-  EyeInvisibleOutlined
-} from '@ant-design/icons';
+  SaveOutlined
+} from "@ant-design/icons";
+import type { Node, Edge } from "@xyflow/react";
+import { flowService } from "../../../api/services/flowService";
+import type { AiModelItem } from "#/entity";
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -62,6 +78,40 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ node, edges, onChange
   const [panelWidth, setPanelWidth] = useState(320);
   const [isResizing, setIsResizing] = useState(false);
   const [activeCollapseKeys, setActiveCollapseKeys] = useState<string[]>(['basic', 'specific']);
+
+  // AI模型相关状态
+  const [aiModels, setAiModels] = useState<AiModelItem[]>([]);
+  const [aiModelsLoading, setAiModelsLoading] = useState(false);
+
+  // 加载AI模型列表
+  useEffect(() => {
+    // 只有当节点是AI类型时才加载AI模型
+    const isAINode = node?.type && ['aiDialogNode', 'aiSummaryNode', 'aiExtractNode', 'aiJsonNode'].includes(node.type);
+
+    if (isAINode && aiModels.length === 0) {
+      loadAiModels();
+    }
+  }, [node?.type]);
+
+  const loadAiModels = async () => {
+    setAiModelsLoading(true);
+    try {
+      const response = await flowService.getAiModelsByTypeId();
+
+      setAiModels(response);
+
+    } catch (error) {
+      console.error('Failed to load AI models:', error);
+      // 设置默认模型作为fallback
+      setAiModels([
+        { aiModelId: 'gpt-3.5-turbo', aiModelName: 'GPT-3.5 Turbo' },
+        { aiModelId: 'gpt-4', aiModelName: 'GPT-4' },
+        { aiModelId: 'gpt-4-turbo', aiModelName: 'GPT-4 Turbo' }
+      ]);
+    } finally {
+      setAiModelsLoading(false);
+    }
+  };
 
   // 处理面板宽度调整
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -166,78 +216,87 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ node, edges, onChange
 
   // 渲染基础属性编辑器
   const renderBasicProperties = () => (
-    <div className="space-y-4">
-      <div>
-        <div className="flex items-center gap-2 mb-2">
-          <Text strong className="text-sm">节点名称</Text>
-          <Tooltip title="为节点设置一个易于识别的名称">
-            <InfoCircleOutlined className="text-gray-400 text-xs" />
-          </Tooltip>
-        </div>
-        <Input
-          value={nodeData.label || ''}
-          onChange={(e) => handleLabelChange(e.target.value)}
-          placeholder="输入节点名称"
-          size="large"
-          className="rounded-lg"
-        />
+    <div className="bg-gray-50 rounded-lg border border-gray-200">
+      {/* 标题栏 */}
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200 bg-gray-100 rounded-t-lg">
+        <EditOutlined className="text-gray-600" />
+        <Text strong className="text-sm">基础属性</Text>
       </div>
 
-      <div>
-        <div className="flex items-center gap-2 mb-2">
-          <Text strong className="text-sm">输入参数</Text>
-          <Tooltip title="选择此节点的输入数据来源">
-            <InfoCircleOutlined className="text-gray-400 text-xs" />
-          </Tooltip>
-        </div>
-        <Select
-          value={nodeData.inputSource || 'userInput'}
-          onChange={(value) => handlePropertyChange('inputSource', value)}
-          className="w-full"
-          size="large"
-          placeholder="选择输入数据来源"
-        >
-          <Option value="userInput">
-            <div className="py-1">
-              <div className="font-medium">用户输入</div>
-            </div>
-          </Option>
-          <Option value="previousResult">
-            <div className="py-1">
-              <div className="font-medium">上一步结果</div>
-            </div>
-          </Option>
-          <Option value="contextData">
-            <div className="py-1">
-              <div className="font-medium">上下文数据</div>
-            </div>
-          </Option>
-        </Select>
-      </div>
-
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
-            <Text strong className="text-sm">节点描述</Text>
-            <Tooltip title="详细描述此节点的功能和用途">
-              <InfoCircleOutlined className="text-gray-400 text-xs" />
+      {/* 属性配置区域 */}
+      <div className="p-4 space-y-4">
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <Text strong className="text-sm">节点名称</Text>
+            <Tooltip title="为节点设置一个易于识别的名称">
+              <InfoCircleOutlined className="text-black text-xs" />
             </Tooltip>
           </div>
-          <Text className="text-xs text-gray-500">
-            {(nodeData.description || '').length}/200
-          </Text>
+          <Input
+            value={nodeData.label || ''}
+            onChange={(e) => handleLabelChange(e.target.value)}
+            placeholder="输入节点名称"
+            size="large"
+            className="rounded-lg"
+          />
         </div>
-        <TextArea
-          value={nodeData.description || ''}
-          onChange={(e) => handlePropertyChange('description', e.target.value)}
-          placeholder="输入节点描述，例如：此节点用于处理用户查询并返回AI回答"
-          rows={3}
-          className="rounded-lg"
-          maxLength={200}
-          showCount={false}
-        />
-        <div className="mt-1 text-xs text-gray-500">
-          清晰的描述有助于团队协作和流程维护
+
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <Text strong className="text-sm">输入参数</Text>
+            <Tooltip title="选择此节点的输入数据来源">
+              <InfoCircleOutlined className="text-black text-xs" />
+            </Tooltip>
+          </div>
+          <Select
+            value={nodeData.inputSource || 'userInput'}
+            onChange={(value) => handlePropertyChange('inputSource', value)}
+            className="w-full"
+            size="large"
+            placeholder="选择输入数据来源"
+          >
+            <Option value="userInput">
+              <div className="py-1">
+                <div className="font-medium">用户输入</div>
+              </div>
+            </Option>
+            <Option value="previousResult">
+              <div className="py-1">
+                <div className="font-medium">上一步结果</div>
+              </div>
+            </Option>
+            <Option value="contextData">
+              <div className="py-1">
+                <div className="font-medium">上下文数据</div>
+              </div>
+            </Option>
+          </Select>
+        </div>
+
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Text strong className="text-sm">节点描述</Text>
+              <Tooltip title="详细描述此节点的功能和用途">
+                <InfoCircleOutlined className="text-black text-xs" />
+              </Tooltip>
+            </div>
+            <Text className="text-xs text-gray-500">
+              {(nodeData.description || '').length}/200
+            </Text>
+          </div>
+          <TextArea
+            value={nodeData.description || ''}
+            onChange={(e) => handlePropertyChange('description', e.target.value)}
+            placeholder="输入节点描述，例如：此节点用于处理用户查询并返回AI回答"
+            rows={3}
+            className="rounded-lg"
+            maxLength={200}
+            showCount={false}
+          />
+          <div className="mt-1 text-xs text-gray-500">
+            清晰的描述有助于团队协作和流程维护
+          </div>
         </div>
       </div>
     </div>
@@ -246,252 +305,225 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ node, edges, onChange
   // 渲染AI对话节点属性
   const renderAIDialogProperties = () => (
     <div className="space-y-4">
-      {/* AI模型选择 */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
-            <Text strong className="text-sm">AI模型</Text>
-            <Tooltip title="选择不同的AI模型会影响响应质量和速度">
-              <InfoCircleOutlined className="text-gray-400 text-xs" />
-            </Tooltip>
-          </div>
-          <Badge
-            count={nodeData.model === 'gpt-4' ? 'PRO' : nodeData.model === 'gpt-4-turbo' ? 'TURBO' : ''}
-            color={nodeData.model === 'gpt-4' ? 'gold' : 'blue'}
-            size="small"
-          />
+      {/* AI模型配置 */}
+      <div className="bg-gray-50 rounded-lg border border-gray-200">
+        {/* 标题栏 */}
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200 bg-gray-100 rounded-t-lg">
+          <RobotOutlined className="text-gray-600" />
+          <Text strong className="text-sm">AI模型配置</Text>
         </div>
-        <Select
-          value={nodeData.model || 'gpt-3.5-turbo'}
-          onChange={(value) => handlePropertyChange('model', value)}
-          className="w-full"
-          size="large"
-          placeholder="选择AI模型"
-        >
-          <Option value="gpt-3.5-turbo">
-            <div className="py-1">
-              <div className="font-medium">GPT-3.5 Turbo</div>
+
+        {/* 配置区域 */}
+        <div className="p-4">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Text strong className="text-sm">AI模型</Text>
+                <span className="text-red-500">*</span>
+                <Tooltip title="选择不同的AI模型会影响响应质量和速度">
+                  <InfoCircleOutlined className="text-black text-xs" />
+                </Tooltip>
+              </div>
             </div>
-          </Option>
-          <Option value="gpt-4">
-            <div className="py-1">
-              <div className="font-medium">GPT-4</div>
-            </div>
-          </Option>
-          <Option value="gpt-4-turbo">
-            <div className="py-1">
-              <div className="font-medium">GPT-4 Turbo</div>
-            </div>
-          </Option>
-          <Option value="claude-3">
-            <div className="py-1">
-              <div className="font-medium">Claude-3</div>
-            </div>
-          </Option>
-        </Select>
+            <Select
+              value={nodeData.model}
+              onChange={(value) => handlePropertyChange('model', value)}
+              className="w-full"
+              size="large"
+              placeholder="请选择AI模型"
+              loading={aiModelsLoading}
+              status={!nodeData.model ? 'error' : ''}
+            >
+              {aiModels.map((model) => (
+                <Option key={model.aiModelId} value={model.aiModelId}>
+                  <div className="py-1">
+                    <div className="font-medium">{model.aiModelName}</div>
+                  </div>
+                </Option>
+              ))}
+            </Select>
+            {!nodeData.model && (
+              <div className="text-red-500 text-xs mt-1">请选择AI模型</div>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* 系统提示词 */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
-            <Text strong className="text-sm">系统提示词</Text>
-            <Tooltip title="定义AI的角色、行为和回答风格">
-              <InfoCircleOutlined className="text-gray-400 text-xs" />
-            </Tooltip>
-          </div>
-          <Text className="text-xs text-gray-500">
-            {(nodeData.systemPrompt || '').length}/2000
-          </Text>
+      {/* 提示词配置 */}
+      <div className="bg-gray-50 rounded-lg border border-gray-200">
+        {/* 标题栏 */}
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200 bg-gray-100 rounded-t-lg">
+          <EditOutlined className="text-gray-600" />
+          <Text strong className="text-sm">提示词配置</Text>
         </div>
-        <TextArea
-          value={nodeData.systemPrompt || ''}
-          onChange={(e) => handlePropertyChange('systemPrompt', e.target.value)}
-          placeholder="例如：你是一个专业的客服助手，需要友好、耐心地回答用户问题..."
-          rows={4}
-          className="rounded-lg font-mono text-sm"
-          maxLength={2000}
-          showCount={false}
-        />
-      </div>
 
-      {/* 用户消息模板 */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
-            <Text strong className="text-sm">用户消息模板</Text>
-            <Tooltip title="用户输入的消息模板，支持变量替换">
-              <InfoCircleOutlined className="text-gray-400 text-xs" />
-            </Tooltip>
+        {/* 配置区域 */}
+        <div className="p-4 space-y-4">
+          {/* 系统提示词 */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Text strong className="text-sm">系统提示词</Text>
+                <Tooltip title="定义AI的角色、行为和回答风格">
+                  <InfoCircleOutlined className="text-black text-xs" />
+                </Tooltip>
+              </div>
+              <Text className="text-xs text-gray-500">
+                {(nodeData.systemPrompt || '').length}/2000
+              </Text>
+            </div>
+            <TextArea
+              value={nodeData.systemPrompt || ''}
+              onChange={(e) => handlePropertyChange('systemPrompt', e.target.value)}
+              placeholder="例如：你是一个专业的客服助手，需要友好、耐心地回答用户问题..."
+              rows={4}
+              className="rounded-lg font-mono text-sm"
+              maxLength={2000}
+              showCount={false}
+            />
           </div>
-          <Text className="text-xs text-gray-500">
-            {(nodeData.userMessage || '').length}/1000
-          </Text>
-        </div>
-        <TextArea
-          value={nodeData.userMessage || ''}
-          onChange={(e) => handlePropertyChange('userMessage', e.target.value)}
-          placeholder="用户问题：{{input}}\n上下文：{{context}}"
-          rows={3}
-          className="rounded-lg font-mono text-sm"
-          maxLength={1000}
-          showCount={false}
-        />
-        <div className="mt-1 text-xs text-gray-500">
-          支持变量：<code className="bg-gray-100 px-1 rounded">{`{{input}}`}</code>、
-          <code className="bg-gray-100 px-1 rounded">{`{{context}}`}</code>、
-          <code className="bg-gray-100 px-1 rounded">{`{{user}}`}</code>
+
+          {/* 用户消息模板 */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Text strong className="text-sm">用户消息模板</Text>
+                <Tooltip title="用户输入的消息模板，支持变量替换">
+                  <InfoCircleOutlined className="text-black text-xs" />
+                </Tooltip>
+              </div>
+              <Text className="text-xs text-gray-500">
+                {(nodeData.userMessage || '').length}/1000
+              </Text>
+            </div>
+            <TextArea
+              value={nodeData.userMessage || ''}
+              onChange={(e) => handlePropertyChange('userMessage', e.target.value)}
+              placeholder="用户问题：{{input}}\n上下文：{{context}}"
+              rows={3}
+              className="rounded-lg font-mono text-sm"
+              maxLength={1000}
+              showCount={false}
+            />
+            <div className="mt-1 text-xs text-gray-500">
+              支持变量：<code className="bg-gray-100 px-1 rounded">{`{{input}}`}</code>、
+              <code className="bg-gray-100 px-1 rounded">{`{{context}}`}</code>、
+              <code className="bg-gray-100 px-1 rounded">{`{{user}}`}</code>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* 高级参数 */}
-      <div className="bg-gray-50 p-4 rounded-lg space-y-4">
-        <div className="flex items-center gap-2 mb-3">
+      <div className="bg-gray-50 rounded-lg border border-gray-200">
+        {/* 标题栏 */}
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200 bg-gray-100 rounded-t-lg">
           <SettingOutlined className="text-gray-600" />
           <Text strong className="text-sm">高级参数</Text>
         </div>
 
-        {/* 创造性调节 */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Text strong className="text-sm">创造性 (Temperature)</Text>
-              <Tooltip title="控制AI回答的随机性，数值越高越创意">
-                <InfoCircleOutlined className="text-gray-400 text-xs" />
-              </Tooltip>
-            </div>
-            <div className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
-              {nodeData.temperature || 0.7}
-            </div>
-          </div>
-          <Slider
-            min={0}
-            max={1}
-            step={0.1}
-            value={nodeData.temperature || 0.7}
-            onChange={(value) => handlePropertyChange('temperature', value)}
-            marks={{
-              0: { label: <span className="text-xs">精确</span>, style: { fontSize: '10px' } },
-              0.5: { label: <span className="text-xs">平衡</span>, style: { fontSize: '10px' } },
-              1: { label: <span className="text-xs">创意</span>, style: { fontSize: '10px' } }
-            }}
-            tooltip={{
-              formatter: (value) => {
-                if (!value) return '0.7';
-                if (value < 0.3) return `${value} - 更精确`;
-                if (value > 0.7) return `${value} - 更创意`;
-                return `${value} - 平衡`;
-              }
-            }}
-            trackStyle={{ backgroundColor: '#1677ff' }}
-            handleStyle={{ borderColor: '#1677ff' }}
-          />
-        </div>
-
-        {/* 最大令牌数 */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <Text strong className="text-sm">最大令牌数</Text>
-              <Tooltip title="控制AI回答的最大长度">
-                <InfoCircleOutlined className="text-gray-400 text-xs" />
-              </Tooltip>
-            </div>
-            <Text className="text-xs text-gray-500">
-              约 {Math.round((nodeData.maxTokens || 1000) * 0.75)} 字
-            </Text>
-          </div>
-          <InputNumber
-            min={1}
-            max={4000}
-            value={nodeData.maxTokens || 1000}
-            onChange={(value) => handlePropertyChange('maxTokens', value)}
-            className="w-full"
-            placeholder="1000"
-            formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-            size="large"
-            addonAfter="tokens"
-          />
-        </div>
-
-        {/* 流式输出 */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Text strong className="text-sm">流式输出</Text>
-              <Tooltip title="是否逐字输出响应结果">
-                <InfoCircleOutlined className="text-gray-400 text-xs" />
-              </Tooltip>
-            </div>
-            <Text className="text-xs text-gray-500">
-              {nodeData.stream ? '已启用' : '已禁用'}
-            </Text>
-          </div>
-          <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
-            <div>
-              <Text className="text-sm font-medium">
-                {nodeData.stream ? '逐字输出' : '完整输出'}
-              </Text>
-              <div className="text-xs text-gray-500 mt-1">
-                {nodeData.stream
-                  ? '启用后将实时显示AI生成的内容'
-                  : '等待AI完成后一次性显示完整回答'
-                }
+        {/* 参数配置区域 */}
+        <div className="p-4 space-y-6">
+          {/* 创造性调节 */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Text strong className="text-sm">创造性 (Temperature)</Text>
+                <Tooltip title="控制AI回答的随机性，数值越高越创意">
+                  <InfoCircleOutlined className="text-black text-xs" />
+                </Tooltip>
+              </div>
+              <div className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium min-w-[40px] text-center">
+                {nodeData.temperature || 0.7}
               </div>
             </div>
-            <Switch
-              checked={nodeData.stream || false}
-              onChange={(checked) => handlePropertyChange('stream', checked)}
-              size="default"
+            <div className="px-2">
+              <Slider
+                min={0}
+                max={1}
+                step={0.1}
+                value={nodeData.temperature || 0.7}
+                onChange={(value) => handlePropertyChange('temperature', value)}
+                marks={{
+                  0: { label: <span className="text-xs text-gray-500">精确</span>, style: { fontSize: '10px' } },
+                  0.5: { label: <span className="text-xs text-gray-500">平衡</span>, style: { fontSize: '10px' } },
+                  1: { label: <span className="text-xs text-gray-500">创意</span>, style: { fontSize: '10px' } }
+                }}
+                tooltip={{
+                  formatter: (value) => {
+                    if (!value) return '0.7';
+                    if (value < 0.3) return `${value} - 更精确`;
+                    if (value > 0.7) return `${value} - 更创意`;
+                    return `${value} - 平衡`;
+                  }
+                }}
+                trackStyle={{ backgroundColor: '#1677ff' }}
+                handleStyle={{ borderColor: '#1677ff' }}
+              />
+            </div>
+          </div>
+
+          {/* 最大令牌数 */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Text strong className="text-sm">最大令牌数</Text>
+                <Tooltip title="控制AI回答的最大长度">
+                  <InfoCircleOutlined className="text-black text-xs" />
+                </Tooltip>
+              </div>
+              <Text className="text-xs text-gray-500">
+                约 {Math.round((nodeData.maxTokens || 8000) * 0.75)} 字
+              </Text>
+            </div>
+            <InputNumber
+              min={1}
+              max={8000}
+              value={nodeData.maxTokens || 8000}
+              onChange={(value) => handlePropertyChange('maxTokens', value)}
+              className="w-full"
+              placeholder="8000"
+              formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+              size="middle"
+              addonAfter="tokens"
             />
           </div>
-        </div>
 
-        {/* 配置预设 */}
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <Text strong className="text-sm">快速配置</Text>
-            <Tooltip title="使用预设配置快速设置参数">
-              <InfoCircleOutlined className="text-gray-400 text-xs" />
-            </Tooltip>
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            <Button
-              size="small"
-              type={nodeData.temperature === 0.1 && nodeData.maxTokens === 500 ? "primary" : "default"}
-              onClick={() => {
-                handlePropertyChange('temperature', 0.1);
-                handlePropertyChange('maxTokens', 500);
-                handlePropertyChange('stream', false);
-              }}
-              className="text-xs"
-            >
-              精确模式
-            </Button>
-            <Button
-              size="small"
-              type={nodeData.temperature === 0.7 && nodeData.maxTokens === 1000 ? "primary" : "default"}
-              onClick={() => {
-                handlePropertyChange('temperature', 0.7);
-                handlePropertyChange('maxTokens', 1000);
-                handlePropertyChange('stream', false);
-              }}
-              className="text-xs"
-            >
-              平衡模式
-            </Button>
-            <Button
-              size="small"
-              type={nodeData.temperature === 0.9 && nodeData.maxTokens === 2000 ? "primary" : "default"}
-              onClick={() => {
-                handlePropertyChange('temperature', 0.9);
-                handlePropertyChange('maxTokens', 2000);
-                handlePropertyChange('stream', true);
-              }}
-              className="text-xs"
-            >
-              创意模式
-            </Button>
+          {/* 流式输出 */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Text strong className="text-sm">流式输出</Text>
+                <Tooltip title="是否逐字输出响应结果">
+                  <InfoCircleOutlined className="text-black text-xs" />
+                </Tooltip>
+              </div>
+              <Text className="text-xs text-gray-500">
+                {nodeData.stream ? '已启用' : '已禁用'}
+              </Text>
+            </div>
+            <div className="p-3 bg-white rounded-lg border border-gray-200 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <Text className="text-sm font-medium">
+                    {nodeData.stream ? '逐字输出' : '完整输出'}
+                  </Text>
+                  <div className="text-xs text-gray-500 mt-1 max-w-[200px]">
+                    {nodeData.stream
+                      ? '启用后将实时显示AI生成的内容'
+                      : '等待AI完成后一次性显示完整回答'
+                    }
+                  </div>
+                </div>
+                <div className="ml-3">
+                  <Switch
+                    checked={nodeData.stream || false}
+                    onChange={(checked) => handlePropertyChange('stream', checked)}
+                    size="default"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -506,7 +538,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ node, edges, onChange
         <div className="flex items-center gap-2 mb-2">
           <Text strong className="text-sm">数据库类型</Text>
           <Tooltip title="选择要连接的数据库类型">
-            <InfoCircleOutlined className="text-gray-400 text-xs" />
+            <InfoCircleOutlined className="text-black text-xs" />
           </Tooltip>
         </div>
         <Select
@@ -528,7 +560,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ node, edges, onChange
         <div className="flex items-center gap-2 mb-2">
           <Text strong className="text-sm">连接字符串</Text>
           <Tooltip title="数据库连接配置">
-            <InfoCircleOutlined className="text-gray-400 text-xs" />
+            <InfoCircleOutlined className="text-black text-xs" />
           </Tooltip>
         </div>
         <TextArea
@@ -545,7 +577,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ node, edges, onChange
         <div className="flex items-center gap-2 mb-2">
           <Text strong className="text-sm">SQL查询</Text>
           <Tooltip title="要执行的SQL查询语句">
-            <InfoCircleOutlined className="text-gray-400 text-xs" />
+            <InfoCircleOutlined className="text-black text-xs" />
           </Tooltip>
         </div>
         <TextArea
@@ -567,7 +599,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ node, edges, onChange
         <div className="flex items-center gap-2 mb-2">
           <Text strong className="text-sm">知识库</Text>
           <Tooltip title="选择要查询的知识库">
-            <InfoCircleOutlined className="text-gray-400 text-xs" />
+            <InfoCircleOutlined className="text-black text-xs" />
           </Tooltip>
         </div>
         <Select
@@ -589,7 +621,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ node, edges, onChange
           <div className="flex items-center gap-2">
             <Text strong className="text-sm">返回数量 (Top-K)</Text>
             <Tooltip title="检索结果的最大数量">
-              <InfoCircleOutlined className="text-gray-400 text-xs" />
+              <InfoCircleOutlined className="text-black text-xs" />
             </Tooltip>
           </div>
           <Text className="text-xs text-gray-500">{nodeData.topK || 5} 条</Text>
@@ -609,7 +641,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ node, edges, onChange
           <div className="flex items-center gap-2">
             <Text strong className="text-sm">相似度阈值</Text>
             <Tooltip title="只返回相似度高于此阈值的结果">
-              <InfoCircleOutlined className="text-gray-400 text-xs" />
+              <InfoCircleOutlined className="text-black text-xs" />
             </Tooltip>
           </div>
           <Text className="text-xs text-gray-500">{nodeData.similarityThreshold || 0.7}</Text>
@@ -634,7 +666,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ node, edges, onChange
         <div className="flex items-center gap-2 mb-2">
           <Text strong className="text-sm">条件类型</Text>
           <Tooltip title="选择条件判断的方式">
-            <InfoCircleOutlined className="text-gray-400 text-xs" />
+            <InfoCircleOutlined className="text-black text-xs" />
           </Tooltip>
         </div>
         <Select
@@ -654,7 +686,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ node, edges, onChange
         <div className="flex items-center gap-2 mb-2">
           <Text strong className="text-sm">条件表达式</Text>
           <Tooltip title="输入条件判断表达式">
-            <InfoCircleOutlined className="text-gray-400 text-xs" />
+            <InfoCircleOutlined className="text-black text-xs" />
           </Tooltip>
         </div>
         <TextArea
@@ -676,7 +708,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ node, edges, onChange
         <div className="flex items-center gap-2 mb-2">
           <Text strong className="text-sm">响应格式</Text>
           <Tooltip title="选择响应数据的格式">
-            <InfoCircleOutlined className="text-gray-400 text-xs" />
+            <InfoCircleOutlined className="text-black text-xs" />
           </Tooltip>
         </div>
         <Select
@@ -697,7 +729,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ node, edges, onChange
         <div className="flex items-center gap-2 mb-2">
           <Text strong className="text-sm">响应模板</Text>
           <Tooltip title="定义响应内容的模板">
-            <InfoCircleOutlined className="text-gray-400 text-xs" />
+            <InfoCircleOutlined className="text-black text-xs" />
           </Tooltip>
         </div>
         <TextArea
@@ -714,7 +746,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ node, edges, onChange
         <div className="flex items-center gap-2 mb-2">
           <Text strong className="text-sm">HTTP状态码</Text>
           <Tooltip title="设置响应的HTTP状态码">
-            <InfoCircleOutlined className="text-gray-400 text-xs" />
+            <InfoCircleOutlined className="text-black text-xs" />
           </Tooltip>
         </div>
         <InputNumber

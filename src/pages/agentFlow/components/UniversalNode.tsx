@@ -160,7 +160,7 @@ const UniversalNode: React.FC<UniversalNodeProps> = ({
               </div>
             )}
             {/* 调试模式下显示执行时间 */}
-            {isDebugMode && debugResult && debugResult.status !== 'pending' && (
+            {isDebugMode && debugResult && ['running', 'completed', 'failed', 'waiting_input'].includes(debugResult.status) && (
               <div className="text-xs text-gray-400 truncate mt-1">
                 {debugResult.duration}ms
               </div>

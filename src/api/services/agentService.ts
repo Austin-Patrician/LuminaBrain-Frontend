@@ -9,7 +9,7 @@ enum AgentApi {
   AddAgent = "/agent/add",
   UpdateAgent = "/agent/update",
   DeleteAgent = "/agent/delete",
-  GetAiModelsByTypeId = "/aiModel/getByTypeId{id}" , // 根据类型ID获取AI模型列表
+  GetAiModelsByTypeId = "/aiModel/getByTypeId/{id}" , // 根据类型ID获取AI模型列表
 }
 
 

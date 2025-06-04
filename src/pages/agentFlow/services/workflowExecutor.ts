@@ -19,6 +19,7 @@ export interface DebugNodeResult {
   output?: any;
   markdownOutput?: string;
   error?: string;
+  timestamp: number;
 }
 
 // 调试执行状态接口
@@ -33,12 +34,39 @@ export interface DebugExecutionState {
   results?: Record<string, DebugNodeResult>;
 }
 
+// 执行统计接口
+export interface ExecutionStats {
+  totalExecutions: number;
+  successfulExecutions: number;
+  failedExecutions: number;
+  averageExecutionTime: number;
+  totalExecutionTime: number;
+  nodeExecutionCounts: Record<string, number>;
+  nodeAverageExecutionTimes: Record<string, number>;
+  lastExecutionTime?: number;
+  peakMemoryUsage: number;
+  currentMemoryUsage: number;
+}
+
+// 节点性能统计接口
+export interface NodePerformanceStats {
+  nodeId: string;
+  nodeType: string;
+  executionCount: number;
+  totalExecutionTime: number;
+  averageExecutionTime: number;
+  minExecutionTime: number;
+  maxExecutionTime: number;
+  successCount: number;
+  failureCount: number;
+  lastExecutionTime?: number;
+}
+
 // 节点执行器基类
 abstract class NodeExecutor {
   abstract execute(input: any, context: ExecutionContext): Promise<any>;
   
   protected logExecution(nodeId: string, input: any, context: ExecutionContext): void {
-    // 避免未使用参数的警告，同时保持接口一致性
     console.log(`Executing node ${nodeId}`, { input, context });
   }
 }
@@ -376,24 +404,55 @@ class WorkflowExecutor {
   private userInputResolvers: ((input: string) => void)[] = [];
   private abortController?: AbortController;
   
+  // 执行统计数据
+  private executionStats: ExecutionStats = {
+    totalExecutions: 0,
+    successfulExecutions: 0,
+    failedExecutions: 0,
+    averageExecutionTime: 0,
+    totalExecutionTime: 0,
+    nodeExecutionCounts: {},
+    nodeAverageExecutionTimes: {},
+    peakMemoryUsage: 0,
+    currentMemoryUsage: 0
+  };
+  
+  // 节点性能统计
+  private nodePerformanceStats: Map<string, NodePerformanceStats> = new Map();
+  
+  // 执行历史记录
+  private executionHistory: Array<{
+    id: string;
+    startTime: number;
+    endTime?: number;
+    status: string;
+    nodeCount: number;
+    duration?: number;
+  }> = [];
+
   constructor() {
+    // 注册节点执行器
+    this.initializeNodeExecutors();
+  }
+
+  private initializeNodeExecutors(): void {
     // 注册节点执行器 - 映射节点类型到对应的执行器
     this.nodeExecutors.set('startNode', new StartNodeExecutor());
     this.nodeExecutors.set('endNode', new EndNodeExecutor());
     this.nodeExecutors.set('aiDialogNode', new AIDialogNodeExecutor());
-    this.nodeExecutors.set('aiSummaryNode', new AIDialogNodeExecutor()); // 复用AI对话执行器
-    this.nodeExecutors.set('aiExtractNode', new AIDialogNodeExecutor()); // 复用AI对话执行器
-    this.nodeExecutors.set('aiJsonNode', new AIDialogNodeExecutor()); // 复用AI对话执行器
+    this.nodeExecutors.set('aiSummaryNode', new AIDialogNodeExecutor());
+    this.nodeExecutors.set('aiExtractNode', new AIDialogNodeExecutor());
+    this.nodeExecutors.set('aiJsonNode', new AIDialogNodeExecutor());
     this.nodeExecutors.set('databaseNode', new DatabaseNodeExecutor());
     this.nodeExecutors.set('knowledgeBaseNode', new KnowledgeBaseNodeExecutor());
-    this.nodeExecutors.set('bingNode', new KnowledgeBaseNodeExecutor()); // 复用知识库执行器，模拟搜索
+    this.nodeExecutors.set('bingNode', new KnowledgeBaseNodeExecutor());
     this.nodeExecutors.set('responseNode', new ResponseNodeExecutor());
     this.nodeExecutors.set('conditionNode', new ConditionExecutor());
-    this.nodeExecutors.set('decisionNode', new ConditionExecutor()); // 复用条件执行器
-    this.nodeExecutors.set('jsonExtractor', new DataProcessExecutor()); // 复用数据处理执行器
-    this.nodeExecutors.set('basicNode', new DataProcessExecutor()); // 复用数据处理执行器
+    this.nodeExecutors.set('decisionNode', new ConditionExecutor());
+    this.nodeExecutors.set('jsonExtractor', new DataProcessExecutor());
+    this.nodeExecutors.set('basicNode', new DataProcessExecutor());
     this.nodeExecutors.set('processNode', new DataProcessExecutor());
-    this.nodeExecutors.set('customNode', new DataProcessExecutor()); // 复用数据处理执行器
+    this.nodeExecutors.set('customNode', new DataProcessExecutor());
     
     // 兼容旧的命名方式
     this.nodeExecutors.set('ai-conversation', new AIConversationExecutor());
@@ -439,6 +498,197 @@ class WorkflowExecutor {
     this.notifyStateChange();
   }
   
+  // 获取执行统计信息
+  getExecutionStats(): ExecutionStats {
+    return { ...this.executionStats };
+  }
+
+  // 获取节点性能统计
+  getNodePerformanceStats(): NodePerformanceStats[] {
+    return Array.from(this.nodePerformanceStats.values());
+  }
+
+  // 获取执行历史
+  getExecutionHistory(): Array<{
+    id: string;
+    startTime: number;
+    endTime?: number;
+    status: string;
+    nodeCount: number;
+    duration?: number;
+  }> {
+    return [...this.executionHistory];
+  }
+
+  // 重置统计数据
+  resetStats(): void {
+    this.executionStats = {
+      totalExecutions: 0,
+      successfulExecutions: 0,
+      failedExecutions: 0,
+      averageExecutionTime: 0,
+      totalExecutionTime: 0,
+      nodeExecutionCounts: {},
+      nodeAverageExecutionTimes: {},
+      peakMemoryUsage: 0,
+      currentMemoryUsage: 0
+    };
+    this.nodePerformanceStats.clear();
+    this.executionHistory.length = 0;
+  }
+
+  // 执行单个节点
+  private async executeNode(
+    node: Node,
+    allNodes: Node[],
+    allEdges: Edge[],
+    context: ExecutionContext
+  ): Promise<any> {
+    const startTime = Date.now();
+    const nodeType = node.type || 'unknown';
+    
+    try {
+      // 更新调试状态 - 节点开始执行
+      const debugResult: DebugNodeResult = {
+        nodeId: node.id,
+        nodeType,
+        status: 'running',
+        startTime,
+        duration: 0,
+        timestamp: startTime
+      };
+
+      // 更新调试状态中的节点结果
+      this.updateDebugState({
+        results: {
+          ...this.debugState.results,
+          [node.id]: debugResult
+        }
+      });
+
+      // 获取节点执行器
+      const executor = this.nodeExecutors.get(nodeType);
+      if (!executor) {
+        throw new Error(`Unknown node type: ${nodeType}`);
+      }
+
+      // 准备输入数据
+      const input = this.prepareNodeInput(node, context);
+
+      // 执行节点
+      const output = await executor.execute(input, context);
+      
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+
+      // 更新节点执行结果
+      const completedResult: DebugNodeResult = {
+        nodeId: node.id,
+        nodeType,
+        status: 'completed',
+        startTime,
+        endTime,
+        duration,
+        input,
+        output,
+        markdownOutput: output?.markdownOutput,
+        timestamp: startTime
+      };
+
+      // 更新调试状态
+      this.updateDebugState({
+        results: {
+          ...this.debugState.results,
+          [node.id]: completedResult
+        }
+      });
+
+      // 更新节点性能统计
+      this.updateNodePerformanceStats(node.id, nodeType, duration, true);
+
+      return output;
+
+    } catch (error) {
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+      
+      // 处理特殊错误（等待用户输入）
+      if (error instanceof Error && error.message === 'WAITING_FOR_USER_INPUT') {
+        const waitingResult: DebugNodeResult = {
+          nodeId: node.id,
+          nodeType,
+          status: 'waiting_input',
+          startTime,
+          duration,
+          timestamp: startTime
+        };
+
+        this.updateDebugState({
+          status: 'waiting_input',
+          currentNode: node.id,
+          results: {
+            ...this.debugState.results,
+            [node.id]: waitingResult
+          }
+        });
+
+        // 等待用户输入
+        const userInput = await this.waitForUserInput();
+        context.userInput = userInput;
+
+        // 重新执行节点
+        return this.executeNode(node, allNodes, allEdges, context);
+      }
+
+      // 记录执行失败
+      const failedResult: DebugNodeResult = {
+        nodeId: node.id,
+        nodeType,
+        status: 'failed',
+        startTime,
+        endTime,
+        duration,
+        error: error instanceof Error ? error.message : String(error),
+        timestamp: startTime
+      };
+
+      this.updateDebugState({
+        results: {
+          ...this.debugState.results,
+          [node.id]: failedResult
+        }
+      });
+
+      // 更新节点性能统计
+      this.updateNodePerformanceStats(node.id, nodeType, duration, false);
+
+      throw error;
+    }
+  }
+
+  // 准备节点输入数据
+  private prepareNodeInput(node: Node, context: ExecutionContext): any {
+    // 合并节点配置数据和上下文数据
+    const nodeData = node.data || {};
+    const contextData = {
+      variables: context.variables,
+      nodeResults: context.nodeResults,
+      userInput: context.userInput
+    };
+
+    return {
+      ...nodeData,
+      context: contextData
+    };
+  }
+
+  // 等待用户输入
+  private async waitForUserInput(): Promise<string> {
+    return new Promise((resolve) => {
+      this.userInputResolvers.push(resolve);
+    });
+  }
+
   // 开始调试执行
   async startDebugExecution(nodes: Node[], edges: Edge[]): Promise<void> {
     console.log('WorkflowExecutor: Starting debug execution', { nodes, edges });
@@ -527,194 +777,196 @@ class WorkflowExecutor {
   
   // 执行工作流
   private async executeWorkflow(nodes: Node[], edges: Edge[]): Promise<void> {
-    const context: ExecutionContext = {
-      variables: {},
-      nodeResults: {}
-    };
+    const startTime = Date.now();
+    let success = false;
     
-    // 找到起始节点（没有入边的节点）
-    const startNodes = nodes.filter(node => 
-      !edges.some(edge => edge.target === node.id)
-    );
-    
-    if (startNodes.length === 0) {
-      throw new Error('没有找到起始节点');
-    }
-    
-    // 从起始节点开始执行
-    for (const startNode of startNodes) {
-      await this.executeNode(startNode, nodes, edges, context);
+    try {
+      this.updateDebugState({
+        status: 'running',
+        startTime,
+        totalNodes: nodes.length,
+        error: undefined
+      });
+
+      const context: ExecutionContext = {
+        variables: {},
+        nodeResults: {}
+      };
+
+      // 找到开始节点
+      const startNode = nodes.find(node => node.type === 'startNode');
+      if (!startNode) {
+        throw new Error('找不到开始节点');
+      }
+
+      // 从开始节点开始执行
+      await this.executeFromNode(startNode, nodes, edges, context);
+
+      // 执行完成
+      success = true;
+      this.updateDebugState({
+        status: 'completed',
+        endTime: Date.now()
+      });
+
+    } catch (error) {
+      console.error('Workflow execution failed:', error);
+      success = false;
+      this.updateDebugState({
+        status: 'failed',
+        error: error instanceof Error ? error.message : String(error),
+        endTime: Date.now()
+      });
+    } finally {
+      // 更新执行统计
+      const duration = Date.now() - startTime;
+      this.updateExecutionStats(success, duration, nodes.length);
     }
   }
-  
-  // 执行单个节点
-  private async executeNode(
-    node: Node, 
+
+  // 从指定节点开始执行
+  private async executeFromNode(
+    startNode: Node, 
     allNodes: Node[], 
     allEdges: Edge[], 
     context: ExecutionContext
-  ): Promise<any> {
-    if (this.abortController?.signal.aborted) {
-      throw new Error('执行已被中止');
-    }
+  ): Promise<void> {
+    const visited = new Set<string>();
+    const executing = new Set<string>();
     
-    console.log('WorkflowExecutor: Executing node:', node.id, 'type:', node.type);
-    console.log('WorkflowExecutor: Available executors:', Array.from(this.nodeExecutors.keys()));
-    
-    const startTime = Date.now();
-    
-    this.updateDebugState({
-      currentNode: node.id
-    });
-    
-    try {
-      // 获取节点类型，如果没有类型则使用默认值
-      const nodeType = node.type || 'startNode';
-      console.log('WorkflowExecutor: Looking for executor for type:', nodeType);
-      
-      let executor = this.nodeExecutors.get(nodeType);
-      
-      // 如果找不到执行器，尝试使用默认的开始节点执行器
-      if (!executor) {
-        console.warn(`WorkflowExecutor: No executor found for type ${nodeType}, using StartNodeExecutor as fallback`);
-        executor = new StartNodeExecutor();
-        // 动态注册这个类型的执行器
-        this.nodeExecutors.set(nodeType, executor);
+    // 递归执行节点
+    const executeNodeRecursive = async (node: Node): Promise<void> => {
+      // 检查是否被中断
+      if (this.abortController?.signal.aborted) {
+        throw new Error('执行被用户中断');
       }
-      
-      // 准备输入数据
-      const input = this.prepareNodeInput(node, context);
-      
-      let result;
+
+      // 防止重复执行同一个节点
+      if (visited.has(node.id) || executing.has(node.id)) {
+        return;
+      }
+
+      executing.add(node.id);
+
       try {
-        result = await executor.execute(input, context);
-      } catch (error) {
-        if (error instanceof Error && error.message === 'WAITING_FOR_USER_INPUT') {
-          // 等待用户输入
-          this.updateDebugState({ status: 'waiting_input' });
-          
-          const userInput = await new Promise<string>((resolve) => {
-            this.userInputResolvers.push(resolve);
-          });
-          
-          if (this.abortController?.signal.aborted) {
-            throw new Error('执行已被中止');
+        // 更新当前执行节点
+        this.updateDebugState({
+          currentNode: node.id
+        });
+
+        // 执行当前节点
+        const result = await this.executeNode(node, allNodes, allEdges, context);
+        
+        // 记录节点执行结果
+        context.nodeResults[node.id] = result;
+        
+        // 标记节点完成
+        visited.add(node.id);
+        executing.delete(node.id);
+        
+        // 更新完成的节点列表
+        const newCompletedNodes = [...this.debugState.completedNodes];
+        if (!newCompletedNodes.includes(node.id)) {
+          newCompletedNodes.push(node.id);
+        }
+        
+        this.updateDebugState({
+          completedNodes: newCompletedNodes
+        });
+
+        // 执行后续节点
+        const outgoingEdges = allEdges.filter(edge => edge.source === node.id);
+        for (const edge of outgoingEdges) {
+          const nextNode = allNodes.find(n => n.id === edge.target);
+          if (nextNode) {
+            await executeNodeRecursive(nextNode);
           }
-          
-          // 更新上下文并重新执行
-          context.userInput = userInput;
-          this.updateDebugState({ status: 'running' });
-          result = await executor.execute(input, context);
-        } else {
-          throw error;
         }
+
+      } catch (error) {
+        executing.delete(node.id);
+        throw error;
       }
-      
-      const endTime = Date.now();
-      const duration = endTime - startTime;
-      
-      // 保存节点结果
-      context.nodeResults[node.id] = result;
-      
-      // 更新调试结果
-      const nodeResult: DebugNodeResult = {
-        nodeId: node.id,
-        nodeType: node.type || 'ai-conversation',
-        status: 'completed',
-        startTime,
-        endTime,
-        duration,
-        input,
-        output: result,
-        markdownOutput: result.markdownOutput
-      };
-      
-      this.updateDebugState({
-        completedNodes: [...this.debugState.completedNodes, node.id],
-        results: {
-          ...this.debugState.results,
-          [node.id]: nodeResult
-        }
-      });
-      
-      // 执行后续节点
-      const nextNodes = this.getNextNodes(node.id, allNodes, allEdges);
-      for (const nextNode of nextNodes) {
-        await this.executeNode(nextNode, allNodes, allEdges, context);
-      }
-      
-      return result;
-      
-    } catch (error) {
-      const endTime = Date.now();
-      const duration = endTime - startTime;
-      
-      console.error(`节点 ${node.id} 执行失败:`, error);
-      
-      const nodeResult: DebugNodeResult = {
-        nodeId: node.id,
-        nodeType: node.type || 'ai-conversation',
-        status: 'failed',
-        startTime,
-        endTime,
-        duration,
-        error: error instanceof Error ? error.message : '执行失败'
-      };
-      
-      this.updateDebugState({
-        results: {
-          ...this.debugState.results,
-          [node.id]: nodeResult
-        }
-      });
-      
-      throw error;
+    };
+
+    // 开始执行
+    await executeNodeRecursive(startNode);
+  }
+
+  // 更新执行统计
+  private updateExecutionStats(success: boolean, duration: number, nodeCount: number): void {
+    this.executionStats.totalExecutions++;
+    this.executionStats.totalExecutionTime += duration;
+    this.executionStats.averageExecutionTime = this.executionStats.totalExecutionTime / this.executionStats.totalExecutions;
+    this.executionStats.lastExecutionTime = Date.now();
+
+    if (success) {
+      this.executionStats.successfulExecutions++;
+    } else {
+      this.executionStats.failedExecutions++;
+    }
+
+    // 更新内存使用情况（模拟）
+    this.executionStats.currentMemoryUsage = Math.random() * 100;
+    if (this.executionStats.currentMemoryUsage > this.executionStats.peakMemoryUsage) {
+      this.executionStats.peakMemoryUsage = this.executionStats.currentMemoryUsage;
+    }
+
+    // 添加到执行历史
+    const executionId = `exec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    this.executionHistory.unshift({
+      id: executionId,
+      startTime: Date.now() - duration,
+      endTime: Date.now(),
+      status: success ? 'completed' : 'failed',
+      nodeCount,
+      duration
+    });
+
+    // 保持历史记录不超过50条
+    if (this.executionHistory.length > 50) {
+      this.executionHistory = this.executionHistory.slice(0, 50);
     }
   }
-  
-  // 准备节点输入数据
-  private prepareNodeInput(node: Node, context: ExecutionContext): any {
-    const nodeData = node.data || {};
+
+  // 更新节点性能统计
+  private updateNodePerformanceStats(nodeId: string, nodeType: string, duration: number, success: boolean): void {
+    let stats = this.nodePerformanceStats.get(nodeId);
     
-    // 合并节点配置数据和上下文数据
-    return {
-      ...nodeData,
-      previousResults: context.nodeResults,
-      variables: context.variables
-    };
-  }
-  
-  // 获取下一个要执行的节点
-  private getNextNodes(currentNodeId: string, allNodes: Node[], allEdges: Edge[]): Node[] {
-    const outgoingEdges = allEdges.filter(edge => edge.source === currentNodeId);
+    if (!stats) {
+      stats = {
+        nodeId,
+        nodeType,
+        executionCount: 0,
+        totalExecutionTime: 0,
+        averageExecutionTime: 0,
+        minExecutionTime: Infinity,
+        maxExecutionTime: 0,
+        successCount: 0,
+        failureCount: 0
+      };
+      this.nodePerformanceStats.set(nodeId, stats);
+    }
+
+    stats.executionCount++;
+    stats.totalExecutionTime += duration;
+    stats.averageExecutionTime = stats.totalExecutionTime / stats.executionCount;
+    stats.minExecutionTime = Math.min(stats.minExecutionTime, duration);
+    stats.maxExecutionTime = Math.max(stats.maxExecutionTime, duration);
+    stats.lastExecutionTime = Date.now();
+
+    if (success) {
+      stats.successCount++;
+    } else {
+      stats.failureCount++;
+    }
+
+    // 更新全局节点统计
+    this.executionStats.nodeExecutionCounts[nodeType] = (this.executionStats.nodeExecutionCounts[nodeType] || 0) + 1;
     
-    return outgoingEdges
-      .map(edge => allNodes.find(node => node.id === edge.target))
-      .filter((node): node is Node => node !== undefined);
-  }
-  
-  // 获取执行统计信息
-  getExecutionStats() {
-    const results = this.debugState.results || {};
-    const completedResults = Object.values(results).filter(r => r.status === 'completed');
-    
-    const totalDuration = this.debugState.startTime && this.debugState.endTime
-      ? this.debugState.endTime - this.debugState.startTime
-      : undefined;
-      
-    const averageNodeDuration = completedResults.length > 0
-      ? completedResults.reduce((sum, r) => sum + r.duration, 0) / completedResults.length
-      : undefined;
-    
-    return {
-      totalCount: this.debugState.totalNodes,
-      completedCount: this.debugState.completedNodes.length,
-      progressPercentage: this.debugState.totalNodes > 0 
-        ? (this.debugState.completedNodes.length / this.debugState.totalNodes) * 100 
-        : 0,
-      totalDuration,
-      averageNodeDuration
-    };
+    const totalTime = this.executionStats.nodeAverageExecutionTimes[nodeType] || 0;
+    const count = this.executionStats.nodeExecutionCounts[nodeType];
+    this.executionStats.nodeAverageExecutionTimes[nodeType] = (totalTime * (count - 1) + duration) / count;
   }
 }
 
