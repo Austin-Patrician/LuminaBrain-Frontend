@@ -1,6 +1,5 @@
 import React, { useCallback, useState, useEffect } from "react";
 import {
-  Card,
   Typography,
   Input,
   Select,
@@ -8,11 +7,8 @@ import {
   Switch,
   Button,
   Collapse,
-  Badge,
   Tooltip,
-  InputNumber,
-  Tag,
-  Spin
+  InputNumber
 } from "antd";
 import {
   SettingOutlined,
@@ -28,6 +24,7 @@ import {
 import type { Node, Edge } from "@xyflow/react";
 import { flowService } from "../../../api/services/flowService";
 import type { AiModelItem } from "#/entity";
+import { INPUT_SOURCE_OPTIONS, DEFAULT_INPUT_SOURCE } from "../constants/inputSource";
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -249,27 +246,20 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ node, edges, onChange
             </Tooltip>
           </div>
           <Select
-            value={nodeData.inputSource || 'userInput'}
+            value={nodeData.inputSource || DEFAULT_INPUT_SOURCE}
             onChange={(value) => handlePropertyChange('inputSource', value)}
             className="w-full"
             size="large"
             placeholder="选择输入数据来源"
           >
-            <Option value="userInput">
-              <div className="py-1">
-                <div className="font-medium">用户输入</div>
-              </div>
-            </Option>
-            <Option value="previousResult">
-              <div className="py-1">
-                <div className="font-medium">上一步结果</div>
-              </div>
-            </Option>
-            <Option value="contextData">
-              <div className="py-1">
-                <div className="font-medium">上下文数据</div>
-              </div>
-            </Option>
+            {INPUT_SOURCE_OPTIONS.map((option) => (
+              <Option key={option.value} value={option.value}>
+                <div className="py-1">
+                  <div className="font-medium">{option.label}</div>
+                  <div className="text-xs text-gray-500">{option.description}</div>
+                </div>
+              </Option>
+            ))}
           </Select>
         </div>
 
@@ -334,7 +324,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ node, edges, onChange
               loading={aiModelsLoading}
               status={!nodeData.model ? 'error' : ''}
             >
-              {aiModels.map((model) => (
+              {(aiModels || []).map((model) => (
                 <Option key={model.aiModelId} value={model.aiModelId}>
                   <div className="py-1">
                     <div className="font-medium">{model.aiModelName}</div>
@@ -822,14 +812,6 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ node, edges, onChange
                 size="small"
                 icon={debugVisible ? <EyeInvisibleOutlined /> : <BugOutlined />}
                 onClick={() => setDebugVisible(!debugVisible)}
-              />
-            </Tooltip>
-            <Tooltip title="保存配置">
-              <Button
-                type="text"
-                size="small"
-                icon={<SaveOutlined />}
-                onClick={() => console.log('Save configuration')}
               />
             </Tooltip>
           </div>

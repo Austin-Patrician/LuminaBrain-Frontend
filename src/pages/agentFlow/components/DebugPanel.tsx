@@ -18,6 +18,8 @@ import {
 import { Node, Edge } from '@xyflow/react';
 
 import WorkflowExecutor, { DebugExecutionState } from '../services/workflowExecutor';
+import UserInputModal from './UserInputModal';
+import { UserInputRequest, UserInputResponse } from '@/types/executionPlan';
 import Scrollbar from '@/components/scrollbar';
 
 const { TextArea } = Input;
@@ -44,13 +46,36 @@ const DebugPanel: React.FC<DebugPanelProps> = ({
   const [expandedNodeIds, setExpandedNodeIds] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState('overview');
 
+  // 用户输入模态框状态
+  const [userInputModalVisible, setUserInputModalVisible] = useState(false);
+  const [currentUserInputRequest, setCurrentUserInputRequest] = useState<UserInputRequest | null>(null);
+
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   // 监听执行状态变化
   useEffect(() => {
     const handleStateChange = (newState: DebugExecutionState) => {
-      console.log('DebugPanel: Received state change:', newState);
       setDebugState(newState);
+
+      // 处理用户输入请求
+      if (newState.status === 'waiting_input' && newState.currentUserInputRequest) {
+        setCurrentUserInputRequest(newState.currentUserInputRequest);
+        setUserInputModalVisible(true);
+      } else if (newState.status !== 'waiting_input') {
+        setUserInputModalVisible(false);
+        setCurrentUserInputRequest(null);
+      }
+
+      // 特殊情况：如果状态是 waiting_input 但没有 currentUserInputRequest，延迟检查
+      if (newState.status === 'waiting_input' && !newState.currentUserInputRequest) {
+        setTimeout(() => {
+          const currentState = executor.getDebugState();
+          if (currentState.status === 'waiting_input' && currentState.currentUserInputRequest) {
+            setCurrentUserInputRequest(currentState.currentUserInputRequest);
+            setUserInputModalVisible(true);
+          }
+        }, 100);
+      }
 
       // 通知主页面状态变化
       if (onExecutionStateChange) {
@@ -79,6 +104,11 @@ const DebugPanel: React.FC<DebugPanelProps> = ({
       executor.removeExecutionStateChangeListener(handleStateChange);
     };
   }, [activeTab, executor, onExecutionStateChange]);
+
+  // 监控用户输入模态框状态变化
+  useEffect(() => {
+    // Monitor user input modal state changes for debugging purposes
+  }, [userInputModalVisible, currentUserInputRequest, debugState.status]);
 
   // 验证工作流完整性
   const validateWorkflow = (nodes: Node[], edges: Edge[]): boolean => {
@@ -145,7 +175,7 @@ const DebugPanel: React.FC<DebugPanelProps> = ({
 
     // 7. 检查多链路执行问题
     nodes.forEach(node => {
-      const nodeType = node.type;
+      const nodeType = node.type || 'unknown';
       const nodeLabel = node.data?.label || node.id;
 
       // 检查非条件节点是否被多个节点连入（会造成执行歧义）
@@ -337,33 +367,60 @@ const DebugPanel: React.FC<DebugPanelProps> = ({
       return;
     }
 
-    console.log('DebugPanel: Starting debug execution');
     await executor.startDebugExecution(nodes, edges);
   };
 
   // 停止执行
   const handleStopExecution = async () => {
-    console.log('DebugPanel: Stopping execution');
     await executor.stopExecution();
   };
 
   // 重置状态
   const handleReset = () => {
-    console.log('DebugPanel: Resetting state');
     executor.resetState();
     setExpandedNodeIds(new Set());
     setUserInput('');
     setActiveTab('overview');
   };
 
-  // 提交用户输入
+  // 处理用户输入提交
+  const handleUserInputSubmit = async (response: UserInputResponse) => {
+    try {
+      await executor.submitUserInput(response);
+      setUserInputModalVisible(false);
+      setCurrentUserInputRequest(null);
+    } catch (error) {
+      console.error('Failed to submit user input:', error);
+      Modal.error({
+        title: '提交失败',
+        content: '用户输入提交失败，请重试'
+      });
+    }
+  };
+
+  // 处理用户输入取消
+  const handleUserInputCancel = () => {
+    setUserInputModalVisible(false);
+    setCurrentUserInputRequest(null);
+
+    // 停止执行
+    handleStopExecution();
+  };
+
+  // 提交用户输入（保留兼容性）
   const handleSubmitUserInput = async () => {
     if (!debugState.currentNode || !userInput.trim()) {
       return;
     }
 
-    console.log('DebugPanel: Submitting user input:', userInput);
-    await executor.submitUserInput(debugState.currentNode, userInput.trim());
+    // 创建兼容的响应格式
+    const response: UserInputResponse = {
+      stepId: currentUserInputRequest?.stepId || '',
+      value: { userInput: userInput.trim() },
+      timestamp: Date.now()
+    };
+
+    await handleUserInputSubmit(response);
     setUserInput('');
   };
 
@@ -386,463 +443,484 @@ const DebugPanel: React.FC<DebugPanelProps> = ({
   };
 
   const statusDisplay = getStatusDisplay(debugState.status);
-  const stats = executor.getExecutionStats();
+
+  // 计算执行统计
+  const executionStats = {
+    completedCount: debugState.completedNodes.length,
+    totalCount: debugState.totalNodes,
+    progressPercentage: debugState.totalNodes > 0 ? Math.round((debugState.completedNodes.length / debugState.totalNodes) * 100) : 0,
+    totalDuration: debugState.startTime && debugState.endTime ? debugState.endTime - debugState.startTime :
+      debugState.startTime ? Date.now() - debugState.startTime : undefined,
+    averageNodeDuration: debugState.completedNodes.length > 0 && debugState.results ?
+      Object.values(debugState.results).reduce((sum, result) => sum + result.duration, 0) / debugState.completedNodes.length :
+      undefined
+  };
 
   if (!visible) return null;
 
   return (
-    <Modal
-      title={
-        <div className="flex items-center gap-2">
-          <div className={`w-3 h-3 rounded-full ${statusDisplay.color}`} />
-          <span className="font-semibold">调试面板</span>
-          <Badge>{statusDisplay.text}</Badge>
-        </div>
-      }
-      open={visible}
-      onCancel={onClose}
-      footer={null}
-      width={1000}
-      style={{ top: 50 }}
-      bodyStyle={{ height: '70vh', padding: 0 }}
-      destroyOnClose={false}
-      maskClosable={false}
-      className="debug-panel-modal"
-    >
-      <div className="h-full flex flex-col">
-        <Tabs
-          activeKey={activeTab}
-          onChange={setActiveTab}
-          className="h-full flex flex-col"
-          style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
-          tabBarStyle={{ flexShrink: 0, marginBottom: 0, paddingLeft: 16, paddingRight: 16 }}
-          size="small"
-        >
-          <Tabs.TabPane tab="概览" key="overview" className="h-full overflow-hidden">
-            <div className="h-full overflow-y-auto p-4 space-y-4">
-              {/* 控制按钮 */}
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleStartDebug}
-                  disabled={debugState.status === 'running'}
-                  size="small"
-                  className="flex-1"
-                  icon={<PlayCircleOutlined />}
-                >
-                  开始调试
-                </Button>
-                <Button
-                  onClick={handleStopExecution}
-                  disabled={debugState.status !== 'running' && debugState.status !== 'waiting_input'}
-                  danger
-                  size="small"
-                  icon={<StopOutlined />}
-                />
-                <Button
-                  onClick={handleReset}
-                  disabled={debugState.status === 'running'}
-                  type="dashed"
-                  size="small"
-                  icon={<ReloadOutlined />}
-                />
-              </div>
-
-              {/* 执行进度 */}
-              {debugState.totalNodes > 0 && (
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>执行进度</span>
-                    <span>{stats.completedCount}/{stats.totalCount}</span>
-                  </div>
-                  <Progress percent={stats.progressPercentage} className="w-full" />
-                </div>
-              )}
-
-              {/* 执行统计 */}
-              {(debugState.startTime || stats.totalDuration) && (
-                <div className="grid grid-cols-2 gap-4">
-                  {stats.totalDuration && (
-                    <div className="text-center p-3 bg-gray-50 rounded">
-                      <div className="text-xs text-gray-500">总耗时</div>
-                      <div className="font-semibold">{Math.round(stats.totalDuration)}ms</div>
-                    </div>
-                  )}
-                  {stats.averageNodeDuration && (
-                    <div className="text-center p-3 bg-gray-50 rounded">
-                      <div className="text-xs text-gray-500">平均耗时</div>
-                      <div className="font-semibold">{Math.round(stats.averageNodeDuration)}ms</div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* 当前节点信息 */}
-              {debugState.currentNode && (
-                <div className="p-3 bg-blue-50 rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
-                    {statusDisplay.icon}
-                    <span className="font-medium">当前节点</span>
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    ID: {debugState.currentNode}
-                  </div>
-                  {debugState.results?.[debugState.currentNode] && (
-                    <div className="text-sm text-gray-600">
-                      类型: {debugState.results[debugState.currentNode].nodeType}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* 用户输入区域 */}
-              {debugState.status === 'waiting_input' && debugState.currentNode && (
-                <div className="space-y-2 p-3 bg-yellow-50 rounded-lg border">
-                  <div className="flex items-center gap-2">
-                    <UserOutlined className="text-yellow-600" />
-                    <span className="font-medium text-yellow-800">需要用户输入</span>
-                  </div>
-                  <TextArea
-                    value={userInput}
-                    onChange={(e) => setUserInput(e.target.value)}
-                    placeholder="请输入内容..."
-                    rows={2}
-                    className="resize-none"
+    <>
+      <Modal
+        title={
+          <div className="flex items-center gap-2">
+            <div className={`w-3 h-3 rounded-full ${statusDisplay.color}`} />
+            <span className="font-semibold">调试面板</span>
+            <Badge>{statusDisplay.text}</Badge>
+          </div>
+        }
+        open={visible}
+        onCancel={onClose}
+        footer={null}
+        width={1000}
+        style={{ top: 50 }}
+        bodyStyle={{ height: '70vh', padding: 0 }}
+        destroyOnClose={false}
+        maskClosable={false}
+        className="debug-panel-modal"
+      >
+        <div className="h-full flex flex-col">
+          <Tabs
+            activeKey={activeTab}
+            onChange={setActiveTab}
+            className="h-full flex flex-col"
+            style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+            tabBarStyle={{ flexShrink: 0, marginBottom: 0, paddingLeft: 16, paddingRight: 16 }}
+            size="small"
+          >
+            <Tabs.TabPane tab="概览" key="overview" style={{ height: '100%', overflow: 'hidden' }}>
+              <div className="h-full overflow-y-auto p-4 space-y-4">
+                {/* 控制按钮 */}
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleStartDebug}
+                    disabled={debugState.status === 'running'}
+                    size="small"
+                    className="flex-1"
+                    icon={<PlayCircleOutlined />}
+                  >
+                    开始调试
+                  </Button>
+                  <Button
+                    onClick={handleStopExecution}
+                    disabled={debugState.status !== 'running' && debugState.status !== 'waiting_input'}
+                    danger
+                    size="small"
+                    icon={<StopOutlined />}
                   />
                   <Button
-                    onClick={handleSubmitUserInput}
-                    disabled={!userInput.trim()}
+                    onClick={handleReset}
+                    disabled={debugState.status === 'running'}
+                    type="dashed"
                     size="small"
-                    className="w-full"
-                    icon={<SendOutlined />}
-                  >
-                    提交输入
-                  </Button>
+                    icon={<ReloadOutlined />}
+                  />
                 </div>
-              )}
 
-              {/* 错误信息 */}
-              {debugState.error && (
-                <div className="p-3 bg-red-50 rounded-lg border border-red-200">
-                  <div className="flex items-center gap-2 mb-2">
-                    <ExclamationCircleOutlined className="text-red-600" />
-                    <span className="font-medium text-red-800">执行错误</span>
+                {/* 执行进度 */}
+                {debugState.totalNodes > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>执行进度</span>
+                      <span>{executionStats.completedCount}/{executionStats.totalCount}</span>
+                    </div>
+                    <Progress percent={executionStats.progressPercentage} className="w-full" />
                   </div>
-                  <div className="text-sm text-red-700 whitespace-pre-wrap break-words">{debugState.error}</div>
-                </div>
-              )}
-            </div>
-          </Tabs.TabPane>
+                )}
 
-          <Tabs.TabPane tab="执行日志" key="logs" className="h-full overflow-hidden">
-            <div className="h-full flex flex-col">
-              <div
-                className="flex-1 overflow-hidden"
-                style={{ height: 'calc(70vh - 120px)' }}
-              >
-                <Scrollbar style={{ height: '100%' }} ref={scrollAreaRef}>
-                  <div className="p-4">
-                    <div className="space-y-2">
-                      {debugState.completedNodes.map((nodeId) => {
-                        const result = debugState.results?.[nodeId];
-                        if (!result) return null;
+                {/* 执行统计 */}
+                {(debugState.startTime || executionStats.totalDuration) && (
+                  <div className="grid grid-cols-2 gap-4">
+                    {executionStats.totalDuration && (
+                      <div className="text-center p-3 bg-gray-50 rounded">
+                        <div className="text-xs text-gray-500">总耗时</div>
+                        <div className="font-semibold">{Math.round(executionStats.totalDuration)}ms</div>
+                      </div>
+                    )}
+                    {executionStats.averageNodeDuration && (
+                      <div className="text-center p-3 bg-gray-50 rounded">
+                        <div className="text-xs text-gray-500">平均耗时</div>
+                        <div className="font-semibold">{Math.round(executionStats.averageNodeDuration)}ms</div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
-                        const nodeStatusDisplay = getStatusDisplay(result.status);
+                {/* 当前节点信息 */}
+                {debugState.currentNode && (
+                  <div className="p-3 bg-blue-50 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      {statusDisplay.icon}
+                      <span className="font-medium">当前节点</span>
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      ID: {debugState.currentNode}
+                    </div>
+                    {debugState.results?.[debugState.currentNode] && (
+                      <div className="text-sm text-gray-600">
+                        类型: {debugState.results[debugState.currentNode].nodeType}
+                      </div>
+                    )}
+                  </div>
+                )}
 
-                        return (
-                          <div
-                            key={nodeId}
-                            className={`rounded-lg border ${expandedNodeIds.has(nodeId) ? 'bg-blue-50 border-blue-200' : 'bg-gray-50'}`}
-                          >
-                            {/* 节点基本信息 */}
+                {/* 用户输入区域 */}
+                {debugState.status === 'waiting_input' && debugState.currentNode && (
+                  <div className="space-y-2 p-3 bg-yellow-50 rounded-lg border">
+                    <div className="flex items-center gap-2">
+                      <UserOutlined className="text-yellow-600" />
+                      <span className="font-medium text-yellow-800">需要用户输入</span>
+                    </div>
+                    <TextArea
+                      value={userInput}
+                      onChange={(e) => setUserInput(e.target.value)}
+                      placeholder="请输入内容..."
+                      rows={2}
+                      className="resize-none"
+                    />
+                    <Button
+                      onClick={handleSubmitUserInput}
+                      disabled={!userInput.trim()}
+                      size="small"
+                      className="w-full"
+                      icon={<SendOutlined />}
+                    >
+                      提交输入
+                    </Button>
+                  </div>
+                )}
+
+                {/* 错误信息 */}
+                {debugState.error && (
+                  <div className="p-3 bg-red-50 rounded-lg border border-red-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <ExclamationCircleOutlined className="text-red-600" />
+                      <span className="font-medium text-red-800">执行错误</span>
+                    </div>
+                    <div className="text-sm text-red-700 whitespace-pre-wrap break-words">{debugState.error}</div>
+                  </div>
+                )}
+              </div>
+            </Tabs.TabPane>
+
+            <Tabs.TabPane tab="执行日志" key="logs" style={{ height: '100%', overflow: 'hidden' }}>
+              <div className="h-full flex flex-col overflow-hidden">
+                <div className="flex-1 min-h-0 overflow-hidden">
+                  <Scrollbar style={{ height: '100%', width: '100%' }} ref={scrollAreaRef}>
+                    <div className="p-4">
+                      <div className="space-y-2">
+                        {debugState.completedNodes.map((nodeId) => {
+                          const result = debugState.results?.[nodeId];
+                          if (!result) return null;
+
+                          const nodeStatusDisplay = getStatusDisplay(result.status);
+
+                          return (
                             <div
-                              className="p-3 cursor-pointer transition-colors hover:bg-gray-100"
-                              onClick={() => {
-                                const newExpandedNodeIds = new Set(expandedNodeIds);
-                                if (newExpandedNodeIds.has(nodeId)) {
-                                  newExpandedNodeIds.delete(nodeId);
-                                } else {
-                                  newExpandedNodeIds.add(nodeId);
-                                }
-                                setExpandedNodeIds(newExpandedNodeIds);
-                              }}
+                              key={nodeId}
+                              className={`rounded-lg border ${expandedNodeIds.has(nodeId) ? 'bg-blue-50 border-blue-200' : 'bg-gray-50'}`}
                             >
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  {nodeStatusDisplay.icon}
-                                  <span className="font-medium text-sm">{nodeId}</span>
-                                  <Badge className="text-xs">
-                                    {result.nodeType}
-                                  </Badge>
+                              {/* 节点基本信息 */}
+                              <div
+                                className="p-3 cursor-pointer transition-colors hover:bg-gray-100"
+                                onClick={() => {
+                                  const newExpandedNodeIds = new Set(expandedNodeIds);
+                                  if (newExpandedNodeIds.has(nodeId)) {
+                                    newExpandedNodeIds.delete(nodeId);
+                                  } else {
+                                    newExpandedNodeIds.add(nodeId);
+                                  }
+                                  setExpandedNodeIds(newExpandedNodeIds);
+                                }}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    {nodeStatusDisplay.icon}
+                                    <span className="font-medium text-sm">{nodeId}</span>
+                                    <Badge className="text-xs">
+                                      {result.nodeType}
+                                    </Badge>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs text-gray-500">
+                                      {result.duration}ms
+                                    </span>
+                                    <Button
+                                      type="text"
+                                      size="small"
+                                      icon={expandedNodeIds.has(nodeId) ? <UpOutlined /> : <DownOutlined />}
+                                      className="text-gray-400"
+                                    />
+                                  </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs text-gray-500">
-                                    {result.duration}ms
-                                  </span>
-                                  <Button
-                                    type="text"
-                                    size="small"
-                                    icon={expandedNodeIds.has(nodeId) ? <UpOutlined /> : <DownOutlined />}
-                                    className="text-gray-400"
-                                  />
-                                </div>
+
+                                {result.error && (
+                                  <div className="mt-2 text-sm text-red-600 whitespace-pre-wrap break-words">
+                                    错误: {result.error}
+                                  </div>
+                                )}
                               </div>
 
-                              {result.error && (
-                                <div className="mt-2 text-sm text-red-600 whitespace-pre-wrap break-words">
-                                  错误: {result.error}
+                              {/* 折叠的执行结果详情 */}
+                              {expandedNodeIds.has(nodeId) && (
+                                <div className="border-t border-gray-200 p-3 bg-white">
+                                  <div className="space-y-3">
+                                    {/* 节点详细信息 */}
+                                    <div className="grid grid-cols-2 gap-4 text-sm">
+                                      <div>
+                                        <span className="text-gray-500">节点ID:</span>
+                                        <div className="font-medium break-all">{result.nodeId}</div>
+                                      </div>
+                                      <div>
+                                        <span className="text-gray-500">节点类型:</span>
+                                        <div className="font-medium">{result.nodeType}</div>
+                                      </div>
+                                      <div>
+                                        <span className="text-gray-500">执行状态:</span>
+                                        <div className="flex items-center gap-1">
+                                          {getStatusDisplay(result.status).icon}
+                                          <span>{getStatusDisplay(result.status).text}</span>
+                                        </div>
+                                      </div>
+                                      <div>
+                                        <span className="text-gray-500">执行时间:</span>
+                                        <div className="font-medium">{result.duration}ms</div>
+                                      </div>
+                                    </div>
+
+                                    {/* 输入数据 */}
+                                    {result.input && (
+                                      <div>
+                                        <span className="text-gray-500 text-sm font-medium">输入数据:</span>
+                                        <div className="mt-1 border rounded-lg overflow-hidden">
+                                          <div className="max-h-32 overflow-auto">
+                                            <pre className="p-2 bg-gray-100 text-xs font-mono whitespace-pre-wrap word-break-all"
+                                              style={{ overflowWrap: 'anywhere', wordBreak: 'break-all' }}>
+                                              {JSON.stringify(result.input, null, 2)}
+                                            </pre>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {/* 输出结果 */}
+                                    {result.markdownOutput && (
+                                      <div>
+                                        <span className="text-gray-500 text-sm font-medium">输出结果:</span>
+                                        <div className="mt-1 border rounded-lg">
+                                          <div className="max-h-32 overflow-y-auto">
+                                            <div className="p-2 bg-gray-50 prose prose-sm max-w-none">
+                                              <div dangerouslySetInnerHTML={{ __html: result.markdownOutput }} />
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {result.output && !result.markdownOutput && (
+                                      <div>
+                                        <span className="text-gray-500 text-sm font-medium">输出数据:</span>
+                                        <div className="mt-1 border rounded-lg overflow-hidden">
+                                          <div className="max-h-32 overflow-auto">
+                                            <pre className="p-2 bg-gray-100 text-xs font-mono whitespace-pre-wrap word-break-all"
+                                              style={{ overflowWrap: 'anywhere', wordBreak: 'break-all' }}>
+                                              {JSON.stringify(result.output, null, 2)}
+                                            </pre>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {/* 错误信息详情 */}
+                                    {result.error && (
+                                      <div>
+                                        <span className="text-gray-500 text-sm font-medium">错误详情:</span>
+                                        <div className="mt-1 border border-red-200 rounded-lg">
+                                          <div className="max-h-24 overflow-y-auto">
+                                            <div className="p-2 bg-red-50 text-sm text-red-700 whitespace-pre-wrap break-words">
+                                              {result.error}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                               )}
                             </div>
+                          );
+                        })}
 
-                            {/* 折叠的执行结果详情 */}
-                            {expandedNodeIds.has(nodeId) && (
-                              <div className="border-t border-gray-200 p-3 bg-white">
-                                <div className="space-y-3">
-                                  {/* 节点详细信息 */}
-                                  <div className="grid grid-cols-2 gap-4 text-sm">
-                                    <div>
-                                      <span className="text-gray-500">节点ID:</span>
-                                      <div className="font-medium break-all">{result.nodeId}</div>
-                                    </div>
-                                    <div>
-                                      <span className="text-gray-500">节点类型:</span>
-                                      <div className="font-medium">{result.nodeType}</div>
-                                    </div>
-                                    <div>
-                                      <span className="text-gray-500">执行状态:</span>
-                                      <div className="flex items-center gap-1">
-                                        {getStatusDisplay(result.status).icon}
-                                        <span>{getStatusDisplay(result.status).text}</span>
-                                      </div>
-                                    </div>
-                                    <div>
-                                      <span className="text-gray-500">执行时间:</span>
-                                      <div className="font-medium">{result.duration}ms</div>
+                        {debugState.currentNode && !debugState.completedNodes.includes(debugState.currentNode) && (
+                          <div className="p-3 rounded-lg border bg-blue-50 border-blue-200">
+                            <div className="flex items-center gap-2">
+                              <LoadingOutlined className="text-blue-600" spin />
+                              <span className="font-medium text-sm">正在执行: {debugState.currentNode}</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </Scrollbar>
+                </div>
+              </div>
+            </Tabs.TabPane>
+
+            <Tabs.TabPane tab="结果" key="results" style={{ height: '100%', overflow: 'hidden' }}>
+              <div className="h-full flex flex-col overflow-hidden">
+                <div className="flex-1 min-h-0 overflow-hidden">
+                  <Scrollbar style={{ height: '100%', width: '100%' }}>
+                    {(() => {
+                      // 获取最后一个完成的节点结果
+                      const lastCompletedNodeId = debugState.completedNodes[debugState.completedNodes.length - 1];
+                      const lastResult = lastCompletedNodeId ? debugState.results?.[lastCompletedNodeId] : null;
+
+                      if (!lastResult) {
+                        return (
+                          <div className="flex items-center justify-center h-full">
+                            <div className="text-center text-gray-500 py-8">
+                              <RobotOutlined className="text-4xl mb-4 opacity-50" />
+                              <p>暂无执行结果</p>
+                              <p className="text-sm text-gray-400 mt-2">
+                                执行工作流后，这里将显示最后一个节点的执行结果
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="p-4 space-y-4">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-medium">最终执行结果</h4>
+                            <Badge color="blue" className="text-sm">
+                              {lastResult.nodeType}
+                            </Badge>
+                          </div>
+
+                          <div className="space-y-4">
+                            {/* 节点基本信息 */}
+                            <div className="grid grid-cols-2 gap-4 text-sm bg-gray-50 p-3 rounded-lg">
+                              <div>
+                                <span className="text-gray-500">节点ID:</span>
+                                <div className="font-medium break-all">{lastResult.nodeId}</div>
+                              </div>
+                              <div>
+                                <span className="text-gray-500">节点类型:</span>
+                                <div className="font-medium">{lastResult.nodeType}</div>
+                              </div>
+                              <div>
+                                <span className="text-gray-500">执行状态:</span>
+                                <div className="flex items-center gap-1">
+                                  {getStatusDisplay(lastResult.status).icon}
+                                  <span>{getStatusDisplay(lastResult.status).text}</span>
+                                </div>
+                              </div>
+                              <div>
+                                <span className="text-gray-500">执行时间:</span>
+                                <div className="font-medium">{lastResult.duration}ms</div>
+                              </div>
+                            </div>
+
+                            {/* 最终输出结果 - 重点展示 */}
+                            {lastResult.markdownOutput && (
+                              <div>
+                                <span className="text-gray-500 text-sm font-medium">最终输出结果:</span>
+                                <div className="mt-2 border rounded-lg overflow-hidden">
+                                  <div className="max-h-96 overflow-y-auto">
+                                    <div className="p-4 bg-white prose prose-sm max-w-none">
+                                      <div dangerouslySetInnerHTML={{ __html: lastResult.markdownOutput }} />
                                     </div>
                                   </div>
-
-                                  {/* 输入数据 */}
-                                  {result.input && (
-                                    <div>
-                                      <span className="text-gray-500 text-sm font-medium">输入数据:</span>
-                                      <div className="mt-1 border rounded-lg">
-                                        <div className="max-h-24 overflow-y-auto">
-                                          <pre className="p-2 bg-gray-100 text-xs whitespace-pre-wrap break-words">
-                                            {JSON.stringify(result.input, null, 2)}
-                                          </pre>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  )}
-
-                                  {/* 输出结果 */}
-                                  {result.markdownOutput && (
-                                    <div>
-                                      <span className="text-gray-500 text-sm font-medium">输出结果:</span>
-                                      <div className="mt-1 border rounded-lg">
-                                        <div className="max-h-32 overflow-y-auto">
-                                          <div className="p-2 bg-gray-50 prose prose-sm max-w-none">
-                                            <div dangerouslySetInnerHTML={{ __html: result.markdownOutput }} />
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  )}
-
-                                  {result.output && !result.markdownOutput && (
-                                    <div>
-                                      <span className="text-gray-500 text-sm font-medium">输出数据:</span>
-                                      <div className="mt-1 border rounded-lg">
-                                        <div className="max-h-32 overflow-y-auto">
-                                          <pre className="p-2 bg-gray-100 text-xs whitespace-pre-wrap break-words">
-                                            {JSON.stringify(result.output, null, 2)}
-                                          </pre>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  )}
-
-                                  {/* 错误信息详情 */}
-                                  {result.error && (
-                                    <div>
-                                      <span className="text-gray-500 text-sm font-medium">错误详情:</span>
-                                      <div className="mt-1 border border-red-200 rounded-lg">
-                                        <div className="max-h-24 overflow-y-auto">
-                                          <div className="p-2 bg-red-50 text-sm text-red-700 whitespace-pre-wrap break-words">
-                                            {result.error}
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  )}
                                 </div>
                               </div>
                             )}
-                          </div>
-                        );
-                      })}
 
-                      {debugState.currentNode && !debugState.completedNodes.includes(debugState.currentNode) && (
-                        <div className="p-3 rounded-lg border bg-blue-50 border-blue-200">
-                          <div className="flex items-center gap-2">
-                            <LoadingOutlined className="text-blue-600" spin />
-                            <span className="font-medium text-sm">正在执行: {debugState.currentNode}</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </Scrollbar>
-              </div>
-            </div>
-          </Tabs.TabPane>
+                            {lastResult.output && !lastResult.markdownOutput && (
+                              <div>
+                                <span className="text-gray-500 text-sm font-medium">最终输出数据:</span>
+                                <div className="mt-2 border rounded-lg overflow-hidden">
+                                  <div className="max-h-96 overflow-auto">
+                                    <pre className="p-4 bg-gray-100 text-sm font-mono whitespace-pre-wrap word-break-all"
+                                      style={{ overflowWrap: 'anywhere', wordBreak: 'break-all' }}>
+                                      {JSON.stringify(lastResult.output, null, 2)}
+                                    </pre>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
 
-          <Tabs.TabPane tab="结果" key="results" className="h-full overflow-hidden">
-            <div className="h-full flex flex-col">
-              <div
-                className="flex-1 overflow-hidden"
-                style={{ height: 'calc(70vh - 120px)' }}
-              >
-                <Scrollbar style={{ height: '100%' }}>
-                  {(() => {
-                    // 获取最后一个完成的节点结果
-                    const lastCompletedNodeId = debugState.completedNodes[debugState.completedNodes.length - 1];
-                    const lastResult = lastCompletedNodeId ? debugState.results?.[lastCompletedNodeId] : null;
+                            {/* 输入数据 - 折叠显示 */}
+                            {lastResult.input && (
+                              <Collapse size="small" ghost>
+                                <Collapse.Panel header="查看输入数据" key="input">
+                                  <div className="border rounded-lg overflow-hidden">
+                                    <div className="max-h-32 overflow-auto">
+                                      <pre className="p-3 bg-gray-100 text-xs font-mono whitespace-pre-wrap word-break-all"
+                                        style={{ overflowWrap: 'anywhere', wordBreak: 'break-all' }}>
+                                        {JSON.stringify(lastResult.input, null, 2)}
+                                      </pre>
+                                    </div>
+                                  </div>
+                                </Collapse.Panel>
+                              </Collapse>
+                            )}
 
-                    if (!lastResult) {
-                      return (
-                        <div className="flex items-center justify-center h-full">
-                          <div className="text-center text-gray-500 py-8">
-                            <RobotOutlined className="text-4xl mb-4 opacity-50" />
-                            <p>暂无执行结果</p>
-                            <p className="text-sm text-gray-400 mt-2">
-                              执行工作流后，这里将显示最后一个节点的执行结果
-                            </p>
+                            {/* 错误信息 */}
+                            {lastResult.error && (
+                              <div>
+                                <span className="text-gray-500 text-sm font-medium">错误信息:</span>
+                                <div className="mt-2 border border-red-200 rounded-lg overflow-hidden">
+                                  <div className="max-h-32 overflow-y-auto">
+                                    <div className="p-3 bg-red-50 text-sm text-red-700 whitespace-pre-wrap break-words">
+                                      {lastResult.error}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* 执行统计 */}
+                            <div className="bg-blue-50 p-3 rounded-lg">
+                              <div className="text-sm text-blue-800 mb-2 font-medium">执行统计</div>
+                              <div className="grid grid-cols-3 gap-4 text-sm">
+                                <div className="text-center">
+                                  <div className="text-blue-600 font-semibold">{debugState.completedNodes.length}</div>
+                                  <div className="text-blue-500">已完成节点</div>
+                                </div>
+                                <div className="text-center">
+                                  <div className="text-blue-600 font-semibold">
+                                    {executionStats.totalDuration ? Math.round(executionStats.totalDuration) : 0}ms
+                                  </div>
+                                  <div className="text-blue-500">总执行时间</div>
+                                </div>
+                                <div className="text-center">
+                                  <div className="text-blue-600 font-semibold">
+                                    {executionStats.averageNodeDuration ? Math.round(executionStats.averageNodeDuration) : 0}ms
+                                  </div>
+                                  <div className="text-blue-500">平均耗时</div>
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         </div>
                       );
-                    }
-
-                    return (
-                      <div className="p-4 space-y-4">
-                        <div className="flex items-center justify-between">
-                          <h4 className="font-medium">最终执行结果</h4>
-                          <Badge color="blue" className="text-sm">
-                            {lastResult.nodeType}
-                          </Badge>
-                        </div>
-
-                        <div className="space-y-4">
-                          {/* 节点基本信息 */}
-                          <div className="grid grid-cols-2 gap-4 text-sm bg-gray-50 p-3 rounded-lg">
-                            <div>
-                              <span className="text-gray-500">节点ID:</span>
-                              <div className="font-medium break-all">{lastResult.nodeId}</div>
-                            </div>
-                            <div>
-                              <span className="text-gray-500">节点类型:</span>
-                              <div className="font-medium">{lastResult.nodeType}</div>
-                            </div>
-                            <div>
-                              <span className="text-gray-500">执行状态:</span>
-                              <div className="flex items-center gap-1">
-                                {getStatusDisplay(lastResult.status).icon}
-                                <span>{getStatusDisplay(lastResult.status).text}</span>
-                              </div>
-                            </div>
-                            <div>
-                              <span className="text-gray-500">执行时间:</span>
-                              <div className="font-medium">{lastResult.duration}ms</div>
-                            </div>
-                          </div>
-
-                          {/* 最终输出结果 - 重点展示 */}
-                          {lastResult.markdownOutput && (
-                            <div>
-                              <span className="text-gray-500 text-sm font-medium">最终输出结果:</span>
-                              <div className="mt-2 border rounded-lg overflow-hidden">
-                                <div className="max-h-96 overflow-y-auto">
-                                  <div className="p-4 bg-white prose prose-sm max-w-none">
-                                    <div dangerouslySetInnerHTML={{ __html: lastResult.markdownOutput }} />
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          {lastResult.output && !lastResult.markdownOutput && (
-                            <div>
-                              <span className="text-gray-500 text-sm font-medium">最终输出数据:</span>
-                              <div className="mt-2 border rounded-lg overflow-hidden">
-                                <div className="max-h-96 overflow-y-auto">
-                                  <pre className="p-4 bg-gray-100 text-sm whitespace-pre-wrap break-words">
-                                    {JSON.stringify(lastResult.output, null, 2)}
-                                  </pre>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* 输入数据 - 折叠显示 */}
-                          {lastResult.input && (
-                            <Collapse size="small" ghost>
-                              <Collapse.Panel header="查看输入数据" key="input">
-                                <div className="border rounded-lg max-h-32 overflow-y-auto">
-                                  <pre className="p-3 bg-gray-100 text-xs whitespace-pre-wrap break-words">
-                                    {JSON.stringify(lastResult.input, null, 2)}
-                                  </pre>
-                                </div>
-                              </Collapse.Panel>
-                            </Collapse>
-                          )}
-
-                          {/* 错误信息 */}
-                          {lastResult.error && (
-                            <div>
-                              <span className="text-gray-500 text-sm font-medium">错误信息:</span>
-                              <div className="mt-2 border border-red-200 rounded-lg overflow-hidden">
-                                <div className="max-h-32 overflow-y-auto">
-                                  <div className="p-3 bg-red-50 text-sm text-red-700 whitespace-pre-wrap break-words">
-                                    {lastResult.error}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* 执行统计 */}
-                          <div className="bg-blue-50 p-3 rounded-lg">
-                            <div className="text-sm text-blue-800 mb-2 font-medium">执行统计</div>
-                            <div className="grid grid-cols-3 gap-4 text-sm">
-                              <div className="text-center">
-                                <div className="text-blue-600 font-semibold">{debugState.completedNodes.length}</div>
-                                <div className="text-blue-500">已完成节点</div>
-                              </div>
-                              <div className="text-center">
-                                <div className="text-blue-600 font-semibold">
-                                  {stats.totalDuration ? Math.round(stats.totalDuration) : 0}ms
-                                </div>
-                                <div className="text-blue-500">总执行时间</div>
-                              </div>
-                              <div className="text-center">
-                                <div className="text-blue-600 font-semibold">
-                                  {stats.averageNodeDuration ? Math.round(stats.averageNodeDuration) : 0}ms
-                                </div>
-                                <div className="text-blue-500">平均耗时</div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </Scrollbar>
+                    })()}
+                  </Scrollbar>
+                </div>
               </div>
-            </div>
-          </Tabs.TabPane>
-        </Tabs>
-      </div>
-    </Modal>
+            </Tabs.TabPane>
+          </Tabs>
+        </div>
+      </Modal>
+
+      {/* 用户输入模态框 */}
+      <UserInputModal
+        visible={userInputModalVisible}
+        request={currentUserInputRequest}
+        onSubmit={handleUserInputSubmit}
+        onCancel={handleUserInputCancel}
+      />
+    </>
   );
 };
 

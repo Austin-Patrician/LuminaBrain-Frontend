@@ -46,6 +46,9 @@ import { useNavigate, useSearchParams } from "react-router";
 import DebugPanel from "./components/DebugPanel";
 import WorkflowExecutor, { DebugNodeResult } from "./services/workflowExecutor";
 import ReactMarkdown from 'react-markdown';
+import {
+  type FlowStatus
+} from '../../constant/flowStatus';
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -322,9 +325,7 @@ const AgentFlowPage: React.FC = () => {
     if (initialized && currentFlow) {
       setIsFlowModified(true);
     }
-  }, [nodes, edges, initialized]);
-
-  // 加载流程数据
+  }, [nodes, edges, initialized]);  // 加载流程数据
   const loadFlow = async (id: string) => {
     setLoading(true);
     try {
@@ -418,6 +419,9 @@ const AgentFlowPage: React.FC = () => {
       return;
     }
 
+    // 确定流程状态：新建流程为draft，现有流程保持原状态
+    const flowStatus = currentFlow?.status || 'draft';
+
     const saveData: FlowDataRaw = {
       name: flowData.name,
       description: flowData.description || '',
@@ -427,29 +431,29 @@ const AgentFlowPage: React.FC = () => {
       nodeCount: flowObject.nodes.length,
       connectionCount: flowObject.edges.length,
       tags: flowData.tags || [],
+      status: flowStatus, // 新建为draft，现有保持原状态
     };
 
     setLoading(true);
     try {
       let result;
       if (currentFlow?.id) {
-        // 更新现有流程
+        // 更新现有流程 - 保持原有状态
         result = await flowService.updateFlow(currentFlow.id, saveData);
         message.success('流程保存成功');
       } else {
-        // 创建新流程
+        // 创建新流程 - 使用draft状态
         result = await flowService.createFlow(saveData);
         message.success('流程创建成功');
 
-        console.log('New flow created with ID:', result);
         // 更新URL，添加流程ID
-        navigate(`/agentFlow/editor?id=${result}`, { replace: true });
+        navigate(`/agentFlow/editor?id=${result.id}`, { replace: true });
       }
 
       setCurrentFlow(result);
       setIsFlowModified(false);
 
-      // 保存成功后更新历史记录，防止继续显示未保存状态
+      // 保存成功后更新历史记录
       setHistory([{ nodes: flowObject.nodes, edges: flowObject.edges }]);
       setHistoryIndex(0);
 
@@ -830,9 +834,7 @@ const AgentFlowPage: React.FC = () => {
 
   // 切换调试面板显示/隐藏
   const toggleDebugPanel = () => {
-    console.log('Toggle debug panel clicked, current state:', debugPanelVisible);
     setDebugPanelVisible(!debugPanelVisible);
-    console.log('Debug panel state will change to:', !debugPanelVisible);
   };
 
   // 显示Markdown结果
@@ -1023,7 +1025,7 @@ const AgentFlowPage: React.FC = () => {
 
   // 配置WorkflowExecutor
   useEffect(() => {
-    console.log('Configuring executor for main page integration');
+    // Configure executor for main page integration
   }, []);
 
   // 创建带有调试数据的节点

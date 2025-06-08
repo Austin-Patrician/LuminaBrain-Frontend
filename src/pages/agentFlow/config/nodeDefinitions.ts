@@ -4,6 +4,7 @@ import {
   PropertyConfig,
   NODE_REGISTRY 
 } from '@/types/agentFlow';
+import { INPUT_SOURCE_OPTIONS, INPUT_SOURCE } from '../constants/inputSource';
 
 // 为每个节点添加通用的"输入参数"选择器
 const createInputSourceProperty = (): PropertyConfig => ({
@@ -11,11 +12,11 @@ const createInputSourceProperty = (): PropertyConfig => ({
   label: '输入参数',
   type: 'select',
   required: true,
-  defaultValue: '1',
-  options: [
-    { label: '用户输入', value: '1' },
-    { label: '上一步结果', value: '2' }
-  ]
+  defaultValue: INPUT_SOURCE.PREVIOUS_RESULT,
+  options: INPUT_SOURCE_OPTIONS.map(option => ({
+    label: option.label,
+    value: option.value
+  }))
 });
 
 // 扩展现有的节点配置，添加输入参数选择器

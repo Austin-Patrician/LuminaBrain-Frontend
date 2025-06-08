@@ -1,26 +1,20 @@
-import { apiClient } from '../apiClient';
+import apiClient from '../apiClient';
+import type { 
+  NodeExecutionRequest, 
+  NodeExecutionResponse 
+} from './flowService';
 
-export interface NodeExecutionRequest {
-  nodeType: string;
-  nodeId: string;
-  nodeData: any;
-  input: any;
-  context?: any;
-}
-
-export interface NodeExecutionResponse {
-  success: boolean;
-  output: any;
-  markdownOutput: string;
-  error?: string;
-  duration: number;
-}
+// 重新导出接口以保持向后兼容性
+export type { NodeExecutionRequest, NodeExecutionResponse };
 
 export const nodeExecutionService = {
   // Execute a single node
   executeNode: async (request: NodeExecutionRequest): Promise<NodeExecutionResponse> => {
     try {
-      const response = await apiClient.post('/api/workflow/execute-node', request);
+      const response = await apiClient.post({
+        url: '/api/workflow/execute-node',
+        data: request
+      });
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Node execution failed');
@@ -30,7 +24,10 @@ export const nodeExecutionService = {
   // Execute AI dialog node
   executeAIDialogNode: async (request: NodeExecutionRequest): Promise<NodeExecutionResponse> => {
     try {
-      const response = await apiClient.post('/api/workflow/execute-ai-dialog', request);
+      const response = await apiClient.post({
+        url: '/api/workflow/execute-ai-dialog',
+        data: request
+      });
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'AI dialog execution failed');
@@ -40,7 +37,10 @@ export const nodeExecutionService = {
   // Execute database node
   executeDatabaseNode: async (request: NodeExecutionRequest): Promise<NodeExecutionResponse> => {
     try {
-      const response = await apiClient.post('/api/workflow/execute-database', request);
+      const response = await apiClient.post({
+        url: '/api/workflow/execute-database',
+        data: request
+      });
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Database execution failed');
@@ -50,7 +50,10 @@ export const nodeExecutionService = {
   // Execute knowledge base node
   executeKnowledgeBaseNode: async (request: NodeExecutionRequest): Promise<NodeExecutionResponse> => {
     try {
-      const response = await apiClient.post('/api/workflow/execute-knowledge-base', request);
+      const response = await apiClient.post({
+        url: '/api/workflow/execute-knowledge-base',
+        data: request
+      });
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Knowledge base execution failed');
@@ -60,7 +63,10 @@ export const nodeExecutionService = {
   // Validate workflow before execution
   validateWorkflow: async (nodes: any[], edges: any[]): Promise<{ valid: boolean; errors: string[] }> => {
     try {
-      const response = await apiClient.post('/api/workflow/validate', { nodes, edges });
+      const response = await apiClient.post({
+        url: '/api/workflow/validate',
+        data: { nodes, edges }
+      });
       return response.data;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Workflow validation failed');
