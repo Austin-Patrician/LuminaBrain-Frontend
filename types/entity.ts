@@ -188,3 +188,56 @@ export interface AiModelListResponse {
   message: string;
   data: AiModelItem[];
 }
+
+// 数据字典基础实体
+export interface AuditEntity {
+  id: string;
+  creationTime?: Date;
+  creator?: string;
+  modificationTime?: Date;
+  modifier?: string;
+}
+
+// 字典实体
+export interface Dictionary extends AuditEntity {
+  name: string;
+  description?: string;
+  sort: number;
+  enabled: boolean;
+}
+
+// 字典项实体
+export interface DictionaryItem extends AuditEntity {
+  dictionaryId: string;
+  value: string;
+  label: string;
+  description?: string;
+  sort: number;
+  enabled: boolean;
+  parentId?: string;
+  // 辅助字段
+  dictionaryName?: string;
+  children?: DictionaryItem[];
+}
+
+// 字典列表响应类型
+export interface DictionaryListResponse {
+  success: boolean;
+  statusCode: number;
+  message: string;
+  data: {
+    total: number;
+    data: Dictionary[];
+  };
+}
+
+// 字典项列表响应类型
+export interface DictionaryItemListResponse {
+  success: boolean;
+  statusCode: number;
+  message: string;
+  data: {
+    total: number;
+    data: DictionaryItem[];
+  };
+}
