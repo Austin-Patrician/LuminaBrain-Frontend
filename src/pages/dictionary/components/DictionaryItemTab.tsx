@@ -17,7 +17,6 @@ import {
   Select,
   InputNumber,
   TreeSelect,
-  Alert,
 } from "antd";
 import { useState, useEffect } from "react";
 import { PlusOutlined } from "@ant-design/icons";
@@ -25,7 +24,7 @@ import type { ColumnsType } from "antd/es/table";
 
 import dictionaryService from "@/api/services/dictionaryService";
 import { IconButton, Iconify } from "@/components/icon";
-import type { Dictionary, DictionaryItem } from "#/entity";
+import type { DictionaryItem } from "#/entity";
 
 interface DictionaryItemTabProps {
   selectedDictionaryId?: string;
@@ -58,7 +57,7 @@ export default function DictionaryItemTab({ selectedDictionaryId }: DictionaryIt
     queryFn: dictionaryService.getDictionaryDropdown,
   });
 
-  // 获取字典项列表
+  // 获取字典项列表 - 移除enabled条件，默认显示所有字典项
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["dictionaryItems", searchParams, pagination],
     queryFn: () =>
@@ -67,7 +66,7 @@ export default function DictionaryItemTab({ selectedDictionaryId }: DictionaryIt
         pageNumber: pagination.current,
         pageSize: pagination.pageSize,
       }),
-    enabled: !!searchParams.dictionaryId,
+    // 移除enabled条件，允许默认加载所有字典项
   });
 
   // 获取当前字典的树形数据（用于父级选择）
@@ -82,8 +81,7 @@ export default function DictionaryItemTab({ selectedDictionaryId }: DictionaryIt
     mutationFn: dictionaryService.createDictionaryItem,
     onSuccess: () => {
       message.success("字典项创建成功");
-      setModal({ visible: false, mode: 'create' });
-      modalForm.resetFields();
+      handleModalClose();
       refetch();
     },
     onError: () => {
@@ -96,8 +94,7 @@ export default function DictionaryItemTab({ selectedDictionaryId }: DictionaryIt
     mutationFn: dictionaryService.updateDictionaryItem,
     onSuccess: () => {
       message.success("字典项更新成功");
-      setModal({ visible: false, mode: 'create' });
-      modalForm.resetFields();
+      handleModalClose();
       refetch();
     },
     onError: () => {
@@ -142,6 +139,20 @@ export default function DictionaryItemTab({ selectedDictionaryId }: DictionaryIt
   const treeSelectData = treeData?.data ? buildTreeSelectData(treeData.data) : [];
 
   const columns: ColumnsType<DictionaryItem> = [
+    {
+      title: "字典名称",
+      dataIndex: "dictionaryName",
+      key: "dictionaryName",
+      width: 150,
+      render: (dictionaryName: string, record: DictionaryItem) => {
+        // 如果没有字典名称，从下拉选项中查找
+        if (!dictionaryName && record.dictionaryId) {
+          const dict = dictionaries.find((d: any) => d.value === record.dictionaryId);
+          return dict ? dict.label : "-";
+        }
+        return dictionaryName || "-";
+      },
+    },
     {
       title: "值",
       dataIndex: "value",
@@ -236,18 +247,35 @@ export default function DictionaryItemTab({ selectedDictionaryId }: DictionaryIt
   };
 
   const handleCreate = () => {
-    if (!searchParams.dictionaryId) {
-      message.warning("请先选择字典");
-      return;
-    }
     setModal({ visible: true, mode: 'create' });
     modalForm.resetFields();
-    modalForm.setFieldsValue({ dictionaryId: searchParams.dictionaryId });
+    modalForm.setFieldsValue({
+      enabled: true,
+      sort: 0
+    });
+    // 如果当前有选中的字典，自动填充
+    if (searchParams.dictionaryId) {
+      modalForm.setFieldsValue({
+        dictionaryId: searchParams.dictionaryId,
+        enabled: true,
+        sort: 0
+      });
+    }
   };
 
   const handleEdit = (record: DictionaryItem) => {
     setModal({ visible: true, mode: 'edit', data: record });
-    modalForm.setFieldsValue(record);
+    modalForm.setFieldsValue({
+      ...record,
+      enabled: record.enabled ?? true,
+      sort: record.sort ?? 0
+    });
+  };
+
+  // 新增：统一的模态框关闭处理函数
+  const handleModalClose = () => {
+    setModal({ visible: false, mode: 'create', data: undefined });
+    modalForm.resetFields();
   };
 
   const handleModalOk = () => {
@@ -261,8 +289,7 @@ export default function DictionaryItemTab({ selectedDictionaryId }: DictionaryIt
   };
 
   const handleModalCancel = () => {
-    setModal({ visible: false, mode: 'create' });
-    modalForm.resetFields();
+    handleModalClose();
   };
 
   const handlePageChange = (page: number, pageSize: number) => {
@@ -325,16 +352,6 @@ export default function DictionaryItemTab({ selectedDictionaryId }: DictionaryIt
           </Button>
         }
       >
-        {!searchParams.dictionaryId && (
-          <Alert
-            message="请先选择字典"
-            description="选择字典后才能查看和管理字典项"
-            type="info"
-            showIcon
-            className="mb-4"
-          />
-        )}
-
         <Table
           columns={columns}
           dataSource={dictionaryItems}

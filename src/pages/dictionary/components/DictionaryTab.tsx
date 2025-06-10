@@ -63,8 +63,7 @@ export default function DictionaryTab({ onDictionarySelect }: DictionaryTabProps
     mutationFn: dictionaryService.createDictionary,
     onSuccess: () => {
       message.success("字典创建成功");
-      setModal({ visible: false, mode: 'create' });
-      modalForm.resetFields();
+      handleModalClose();
       refetch();
     },
     onError: () => {
@@ -77,8 +76,7 @@ export default function DictionaryTab({ onDictionarySelect }: DictionaryTabProps
     mutationFn: dictionaryService.updateDictionary,
     onSuccess: () => {
       message.success("字典更新成功");
-      setModal({ visible: false, mode: 'create' });
-      modalForm.resetFields();
+      handleModalClose();
       refetch();
     },
     onError: () => {
@@ -98,7 +96,7 @@ export default function DictionaryTab({ onDictionarySelect }: DictionaryTabProps
     },
   });
 
-  const dictionaries = data?.data?.data || [];
+  const dictionaries = data?.data || [];
   const totalCount = data?.data?.total || 0;
 
   const columns: ColumnsType<Dictionary> = [
@@ -190,11 +188,25 @@ export default function DictionaryTab({ onDictionarySelect }: DictionaryTabProps
   const handleCreate = () => {
     setModal({ visible: true, mode: 'create' });
     modalForm.resetFields();
+    modalForm.setFieldsValue({
+      enabled: true,
+      sort: 0
+    });
   };
 
   const handleEdit = (record: Dictionary) => {
     setModal({ visible: true, mode: 'edit', data: record });
-    modalForm.setFieldsValue(record);
+    modalForm.setFieldsValue({
+      ...record,
+      enabled: record.enabled ?? true,
+      sort: record.sort ?? 0
+    });
+  };
+
+  // 新增：统一的模态框关闭处理函数
+  const handleModalClose = () => {
+    setModal({ visible: false, mode: 'create', data: undefined });
+    modalForm.resetFields();
   };
 
   const handleModalOk = () => {
@@ -208,8 +220,7 @@ export default function DictionaryTab({ onDictionarySelect }: DictionaryTabProps
   };
 
   const handleModalCancel = () => {
-    setModal({ visible: false, mode: 'create' });
-    modalForm.resetFields();
+    handleModalClose();
   };
 
   const handlePageChange = (page: number, pageSize: number) => {

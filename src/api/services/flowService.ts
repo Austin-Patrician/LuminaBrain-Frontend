@@ -548,8 +548,6 @@ export const flowService = {
         data: request,
         headers: {
           'Content-Type': 'application/json',
-          'X-Execution-Timeout': (request.timeout || 30000).toString(),
-          'X-Retry-Count': (request.retryCount || 2).toString(),
         }
       });
 

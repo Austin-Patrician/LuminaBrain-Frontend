@@ -518,6 +518,59 @@ class EndNodeExecutor extends NodeExecutor {
   protected getNodeType(): string {
     return 'endNode';
   }
+
+  // 重写执行方法，跳过后端API调用，进行本地处理
+  async execute(input: any, context: ExecutionContext): Promise<any> {
+    const nodeType = this.getNodeType();
+    
+    // 结束节点只需要进行本地处理，不调用后端API
+    // 获取上一个节点的结果
+    const previousResults = Object.values(context.nodeResults);
+    const lastResult = previousResults[previousResults.length - 1];
+    
+    // 构建结束节点的输出，展示上一节点的结果
+    const output = {
+      message: '工作流已完成',
+      previousResult: lastResult,
+      finalOutput: lastResult?.output || lastResult?.result || lastResult,
+      outputFormat: input.config?.outputFormat || 'json',
+      returnCode: input.config?.returnCode || 0,
+      timestamp: Date.now()
+    };
+
+    // 生成Markdown输出
+    let markdownOutput = '### 工作流完成\n\n';
+    markdownOutput += `- **完成时间**: ${new Date().toLocaleString()}\n`;
+    markdownOutput += `- **返回码**: ${input.config?.returnCode || 0}\n`;
+    markdownOutput += `- **输出格式**: ${input.config?.outputFormat || 'json'}\n\n`;
+    
+    if (lastResult) {
+      markdownOutput += '#### 最终结果\n\n';
+      if (lastResult.markdownOutput) {
+        markdownOutput += lastResult.markdownOutput;
+      } else if (lastResult.output) {
+        markdownOutput += '```json\n' + JSON.stringify(lastResult.output, null, 2) + '\n```';
+      } else if (lastResult.result) {
+        markdownOutput += '```json\n' + JSON.stringify(lastResult.result, null, 2) + '\n```';
+      } else {
+        markdownOutput += '```json\n' + JSON.stringify(lastResult, null, 2) + '\n```';
+      }
+    } else {
+      markdownOutput += '#### 最终结果\n\n无前置节点结果';
+    }
+
+    if (input.config?.finalMessage) {
+      markdownOutput += `\n\n#### 结束消息\n\n${input.config.finalMessage}`;
+    }
+    
+    return this.normalizeOutput(output, {
+      success: true,
+      output: markdownOutput,
+      nodeId: input.nodeId,
+      nodeType,
+      timestamp: Date.now()
+    });
+  }
 }
 
 // AI对话节点执行器
@@ -1159,10 +1212,163 @@ class WorkflowExecutor {
     });
 
     try {
-      // 执行节点
-      const result = await this.executeNode(node, [], [], context);
+      const nodeType = node.type || 'unknown';
+      let result: any;
+
+      // 开始节点和结束节点不需要执行executeNode，进行特殊处理
+      if (nodeType === 'startNode') {
+        // 开始节点：设置初始数据到上下文中
+        const startTime = Date.now();
+        
+        const debugResult: DebugNodeResult = {
+          nodeId: node.id,
+          nodeType,
+          status: 'running',
+          startTime,
+          duration: 0,
+          timestamp: startTime
+        };
+
+        this.updateDebugState({
+          results: {
+            ...this.debugState.results,
+            [node.id]: debugResult
+          }
+        });
+
+        // 设置初始数据
+        if (node.data?.initialData) {
+          context.variables = { ...context.variables, ...node.data.initialData };
+        }
+        
+        // 如果有用户输入，将其添加到上下文中
+        if (context.userInput) {
+          context.variables = { 
+            ...context.variables, 
+            userInput: context.userInput 
+          };
+        }
+
+        const endTime = Date.now();
+        const duration = endTime - startTime;
+
+        result = {
+          message: '工作流已开始',
+          initialData: node.data?.initialData || {},
+          userInput: context.userInput,
+          timestamp: endTime
+        };
+
+        // 更新执行结果
+        const completedResult: DebugNodeResult = {
+          nodeId: node.id,
+          nodeType,
+          status: 'completed',
+          startTime,
+          endTime,
+          duration,
+          input: { nodeType, label: node.data?.label },
+          output: result,
+          markdownOutput: `### 工作流开始\n\n- **触发类型**: ${node.data?.triggerType || 'manual'}\n- **开始时间**: ${new Date().toLocaleString()}\n- **初始数据**: ${JSON.stringify(node.data?.initialData || {}, null, 2)}\n- **用户输入**: ${context.userInput || '无'}`,
+          timestamp: startTime
+        };
+
+        this.updateDebugState({
+          results: {
+            ...this.debugState.results,
+            [node.id]: completedResult
+          }
+        });
+
+      } else if (nodeType === 'endNode') {
+        // 结束节点：展示上一节点的结果
+        const startTime = Date.now();
+        
+        const debugResult: DebugNodeResult = {
+          nodeId: node.id,
+          nodeType,
+          status: 'running',
+          startTime,
+          duration: 0,
+          timestamp: startTime
+        };
+
+        this.updateDebugState({
+          results: {
+            ...this.debugState.results,
+            [node.id]: debugResult
+          }
+        });
+
+        // 获取上一个节点的结果
+        const previousResults = Object.values(context.nodeResults);
+        const lastResult = previousResults[previousResults.length - 1];
+        
+        const endTime = Date.now();
+        const duration = endTime - startTime;
+
+        // 构建结束节点的输出，展示上一节点的结果
+        result = {
+          message: '工作流已完成',
+          previousResult: lastResult,
+          finalOutput: lastResult?.output || lastResult?.result || lastResult,
+          outputFormat: node.data?.outputFormat || 'json',
+          returnCode: node.data?.returnCode || 0,
+          timestamp: endTime
+        };
+
+        // 生成Markdown输出
+        let markdownOutput = '### 工作流完成\n\n';
+        markdownOutput += `- **完成时间**: ${new Date().toLocaleString()}\n`;
+        markdownOutput += `- **返回码**: ${node.data?.returnCode || 0}\n`;
+        markdownOutput += `- **输出格式**: ${node.data?.outputFormat || 'json'}\n\n`;
+        
+        if (lastResult) {
+          markdownOutput += '#### 最终结果\n\n';
+          if (lastResult.markdownOutput) {
+            markdownOutput += lastResult.markdownOutput;
+          } else if (lastResult.output) {
+            markdownOutput += '```json\n' + JSON.stringify(lastResult.output, null, 2) + '\n```';
+          } else if (lastResult.result) {
+            markdownOutput += '```json\n' + JSON.stringify(lastResult.result, null, 2) + '\n```';
+          } else {
+            markdownOutput += '```json\n' + JSON.stringify(lastResult, null, 2) + '\n```';
+          }
+        } else {
+          markdownOutput += '#### 最终结果\n\n无前置节点结果';
+        }
+
+        if (node.data?.finalMessage) {
+          markdownOutput += `\n\n#### 结束消息\n\n${node.data.finalMessage}`;
+        }
+
+        // 更新执行结果
+        const completedResult: DebugNodeResult = {
+          nodeId: node.id,
+          nodeType,
+          status: 'completed',
+          startTime,
+          endTime,
+          duration,
+          input: { nodeType, label: node.data?.label, previousResult: lastResult },
+          output: result,
+          markdownOutput,
+          timestamp: startTime
+        };
+
+        this.updateDebugState({
+          results: {
+            ...this.debugState.results,
+            [node.id]: completedResult
+          }
+        });
+
+      } else {
+        // 其他节点正常执行
+        result = await this.executeNode(node, [], [], context);
+      }
       
-      // 记录节点执行结果
+      // 记录节点执行结果到上下文
       context.nodeResults[node.id] = result;
       
     } catch (error) {

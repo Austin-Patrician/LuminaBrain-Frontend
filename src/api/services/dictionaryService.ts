@@ -54,7 +54,7 @@ export enum DictionaryApi {
   GetDictionaryDropdown = "/dictionary/dropdown",
   
   // 字典项API
-  QueryDictionaryItemList = "/dictionaryItem/paged",
+  QueryDictionaryItemList = "/dictionaryItem/page",
   QueryDictionaryItemById = "/dictionaryItem",
   AddDictionaryItem = "/dictionaryItem/add",
   UpdateDictionaryItem = "/dictionaryItem/update",
@@ -103,7 +103,7 @@ const dictionaryService = {
    */
   updateDictionary: (data: Dictionary) => {
     return apiClient.put<Dictionary>({
-      url: `${DictionaryApi.UpdateDictionary}/${data.id}`,
+      url: DictionaryApi.UpdateDictionary,
       data,
     });
   },
@@ -132,6 +132,7 @@ const dictionaryService = {
    * 获取字典项列表（分页）
    */
   getDictionaryItemList: (params?: DictionaryItemSearchParams) => {
+    console.log("getDictionaryItemList params:", params);
     return apiClient.post<DictionaryItemListResponse>({
       url: DictionaryApi.QueryDictionaryItemList,
       data: params,
