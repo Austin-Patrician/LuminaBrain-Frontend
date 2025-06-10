@@ -24,7 +24,12 @@ import type { ColumnsType } from "antd/es/table";
 import dictionaryService from "@/api/services/dictionaryService";
 import { IconButton, Iconify } from "@/components/icon";
 import type { Dictionary } from "#/entity";
+import type {
 
+  DictionaryItem,
+  DictionaryListResponse,
+  DictionaryItemListResponse
+} from "#/entity";
 interface DictionaryTabProps {
   onDictionarySelect: (dictionaryId: string) => void;
 }
@@ -48,7 +53,7 @@ export default function DictionaryTab({ onDictionarySelect }: DictionaryTabProps
   const [modal, setModal] = useState<DictionaryModalData>({ visible: false, mode: 'create' });
 
   // 获取字典列表
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading, refetch } = useQuery<DictionaryListResponse>({
     queryKey: ["dictionaries", searchParams, pagination],
     queryFn: () =>
       dictionaryService.getDictionaryList({
@@ -276,7 +281,8 @@ export default function DictionaryTab({ onDictionarySelect }: DictionaryTabProps
           scroll={{ x: 'max-content' }}
         />
 
-        {totalCount > 0 && (
+        {/* 分页组件 - 当有数据时显示 */}
+        {(totalCount > 0 || dictionaries.length > 0) && (
           <div className="flex justify-end mt-4">
             <Pagination
               current={pagination.current}
@@ -286,6 +292,7 @@ export default function DictionaryTab({ onDictionarySelect }: DictionaryTabProps
               showSizeChanger
               showQuickJumper
               showTotal={(total, range) => `第 ${range[0]}-${range[1]} 条，共 ${total} 条`}
+              pageSizeOptions={['10', '20', '50', '100']}
             />
           </div>
         )}

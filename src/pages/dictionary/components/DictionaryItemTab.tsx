@@ -16,12 +16,15 @@ import {
   Pagination,
   Select,
   InputNumber,
-  TreeSelect,
 } from "antd";
 import { useState, useEffect } from "react";
 import { PlusOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
-
+import type {
+  Dictionary,
+  DictionaryListResponse,
+  DictionaryItemListResponse
+} from "#/entity";
 import dictionaryService from "@/api/services/dictionaryService";
 import { IconButton, Iconify } from "@/components/icon";
 import type { DictionaryItem } from "#/entity";
@@ -58,7 +61,7 @@ export default function DictionaryItemTab({ selectedDictionaryId }: DictionaryIt
   });
 
   // 获取字典项列表 - 移除enabled条件，默认显示所有字典项
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading, refetch } = useQuery<DictionaryItemListResponse>({
     queryKey: ["dictionaryItems", searchParams, pagination],
     queryFn: () =>
       dictionaryService.getDictionaryItemList({
@@ -66,14 +69,16 @@ export default function DictionaryItemTab({ selectedDictionaryId }: DictionaryIt
         pageNumber: pagination.current,
         pageSize: pagination.pageSize,
       }),
-    // 移除enabled条件，允许默认加载所有字典项
   });
 
-  // 获取当前字典的树形数据（用于父级选择）
-  const { data: treeData } = useQuery({
-    queryKey: ["dictionaryItemTree", searchParams.dictionaryId],
-    queryFn: () => dictionaryService.getDictionaryItemTree(searchParams.dictionaryId!),
-    enabled: !!searchParams.dictionaryId,
+  // 获取当前字典下的所有字典项（用于父级选择）
+  // 监听模态框中的字典选择变化
+  const [selectedDictionaryForParent, setSelectedDictionaryForParent] = useState<string>();
+
+  const { data: parentOptions } = useQuery({
+    queryKey: ["dictionaryItemsByDictionary", selectedDictionaryForParent],
+    queryFn: () => dictionaryService.getDictionaryItemsByDictionaryId(selectedDictionaryForParent!),
+    enabled: !!selectedDictionaryForParent,
   });
 
   // 创建字典项
@@ -114,9 +119,9 @@ export default function DictionaryItemTab({ selectedDictionaryId }: DictionaryIt
     },
   });
 
-  const dictionaryItems = data?.data?.data || [];
+  const dictionaryItems = data?.data || [];
   const totalCount = data?.data?.total || 0;
-  const dictionaries = dictionaryOptions?.data || [];
+  const dictionaries = dictionaryOptions || [];
 
   // 当选中的字典ID变化时，更新搜索参数
   useEffect(() => {
@@ -126,17 +131,23 @@ export default function DictionaryItemTab({ selectedDictionaryId }: DictionaryIt
     }
   }, [selectedDictionaryId, searchForm]);
 
-  // 转换树形数据格式
-  const buildTreeSelectData = (items: DictionaryItem[]): any[] => {
-    return items.map(item => ({
-      title: item.label,
-      value: item.id,
-      key: item.id,
-      children: item.children ? buildTreeSelectData(item.children) : undefined,
-    }));
+  // 转换父级选择数据格式，排除当前编辑的字典项
+  const getParentSelectData = () => {
+    if (!parentOptions) return [];
+
+    // 根据API返回的数据结构访问实际的字典项数组
+    const allItems = Array.isArray(parentOptions) ? parentOptions : [];
+    const excludeId = modal.mode === 'edit' && modal.data ? modal.data.id : undefined;
+
+    return allItems
+      .filter((item: DictionaryItem) => item.id !== excludeId) // 排除当前编辑的字典项
+      .map((item: DictionaryItem) => ({
+        value: item.id,
+        label: item.label,
+      }));
   };
 
-  const treeSelectData = treeData?.data ? buildTreeSelectData(treeData.data) : [];
+  const parentSelectData = getParentSelectData();
 
   const columns: ColumnsType<DictionaryItem> = [
     {
@@ -260,6 +271,7 @@ export default function DictionaryItemTab({ selectedDictionaryId }: DictionaryIt
         enabled: true,
         sort: 0
       });
+      setSelectedDictionaryForParent(searchParams.dictionaryId);
     }
   };
 
@@ -270,12 +282,15 @@ export default function DictionaryItemTab({ selectedDictionaryId }: DictionaryIt
       enabled: record.enabled ?? true,
       sort: record.sort ?? 0
     });
+    // 设置字典ID用于加载父级选项
+    setSelectedDictionaryForParent(record.dictionaryId);
   };
 
   // 新增：统一的模态框关闭处理函数
   const handleModalClose = () => {
     setModal({ visible: false, mode: 'create', data: undefined });
     modalForm.resetFields();
+    setSelectedDictionaryForParent(undefined);
   };
 
   const handleModalOk = () => {
@@ -361,7 +376,8 @@ export default function DictionaryItemTab({ selectedDictionaryId }: DictionaryIt
           scroll={{ x: 'max-content' }}
         />
 
-        {totalCount > 0 && (
+        {/* 分页组件 - 当有数据时显示 */}
+        {(totalCount > 0 || dictionaryItems.length > 0) && (
           <div className="flex justify-end mt-4">
             <Pagination
               current={pagination.current}
@@ -371,6 +387,7 @@ export default function DictionaryItemTab({ selectedDictionaryId }: DictionaryIt
               showSizeChanger
               showQuickJumper
               showTotal={(total, range) => `第 ${range[0]}-${range[1]} 条，共 ${total} 条`}
+              pageSizeOptions={['10', '20', '50', '100']}
             />
           </div>
         )}
@@ -397,7 +414,15 @@ export default function DictionaryItemTab({ selectedDictionaryId }: DictionaryIt
                 name="dictionaryId"
                 rules={[{ required: true, message: '请选择字典' }]}
               >
-                <Select placeholder="选择字典" disabled={modal.mode === 'edit'}>
+                <Select
+                  placeholder="选择字典"
+                  disabled={modal.mode === 'edit'}
+                  onChange={(value) => {
+                    setSelectedDictionaryForParent(value);
+                    // 清空父级选择
+                    modalForm.setFieldValue('parentId', undefined);
+                  }}
+                >
                   {dictionaries.map((dict: any) => (
                     <Select.Option key={dict.value} value={dict.value}>
                       {dict.label}
@@ -411,12 +436,16 @@ export default function DictionaryItemTab({ selectedDictionaryId }: DictionaryIt
                 label="父级"
                 name="parentId"
               >
-                <TreeSelect
+                <Select
                   placeholder="选择父级字典项"
                   allowClear
-                  treeData={treeSelectData}
-                  treeDefaultExpandAll
-                />
+                >
+                  {parentSelectData.map((item: any) => (
+                    <Select.Option key={item.value} value={item.value}>
+                      {item.label}
+                    </Select.Option>
+                  ))}
+                </Select>
               </Form.Item>
             </Col>
           </Row>

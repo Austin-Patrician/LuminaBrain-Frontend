@@ -132,7 +132,6 @@ const dictionaryService = {
    * 获取字典项列表（分页）
    */
   getDictionaryItemList: (params?: DictionaryItemSearchParams) => {
-    console.log("getDictionaryItemList params:", params);
     return apiClient.post<DictionaryItemListResponse>({
       url: DictionaryApi.QueryDictionaryItemList,
       data: params,
@@ -181,7 +180,7 @@ const dictionaryService = {
    */
   updateDictionaryItem: (data: DictionaryItem) => {
     return apiClient.put<DictionaryItem>({
-      url: `${DictionaryApi.UpdateDictionaryItem}/${data.id}`,
+      url: `${DictionaryApi.UpdateDictionaryItem}`,
       data,
     });
   },
