@@ -132,20 +132,12 @@ export interface OptimizedNodeExecutionRequest {
   // 节点配置（强类型）
   config: NodeConfig;
   
-  // 运行时数据（合并原 context 和 runtimeData）
+  // 运行时数据
   variables: Record<string, any>;
-  nodeResults: Record<string, any>;
   userInput?: string;
   userMessage?: string; // AI对话节点专用
   inputData?: any; // 数据处理节点专用
-  previousResult?: any;
-  
-  // 执行选项（扁平化）
-  timeout?: number; // 默认 30000
-  retryCount?: number; // 默认 2
-  async?: boolean; // 默认 false
-  enableLogging?: boolean; // 默认 true
-  enableMetrics?: boolean; // 默认 true
+  previousdata?: string; // 上一节点结果的字符串格式
 }
 
 // ======= 向后兼容的接口（保留用于渐进迁移） =======
@@ -156,6 +148,7 @@ export interface NodeExecutionContext {
   nodeResults: Record<string, any>; // 历史节点执行结果
   userInput?: string; // 当前用户输入（为兼容性保留）
   previousResult?: any; // 前一个节点的结果摘要
+  previousdata?: string; // 新增：上一节点结果的字符串格式
   executionId?: string; // 执行计划ID
   stepId?: string; // 当前步骤ID
   workflowId?: string; // 工作流ID
@@ -563,7 +556,7 @@ export const flowService = {
         timestamp: response.timestamp ?? Date.now(),
         metadata: {
           retryCount: response.metadata?.retryCount ?? 0,
-          actualTimeout: response.metadata?.actualTimeout ?? (request.timeout || 30000),
+          actualTimeout: response.metadata?.actualTimeout ?? 30000,
           memoryUsage: response.metadata?.memoryUsage,
           ...response.metadata
         }
@@ -578,7 +571,7 @@ export const flowService = {
         timestamp: Date.now(),
         metadata: {
           retryCount: 0,
-          actualTimeout: request.timeout || 30000
+          actualTimeout: 30000
         }
       };
     }
@@ -688,7 +681,7 @@ export const flowService = {
 
   // ===== 优化后的旧版本到新版本的转换方法 =====
   convertToOptimizedRequest: (legacyRequest: NodeExecutionRequest): OptimizedNodeExecutionRequest => {
-    const { input, context, executionConfig } = legacyRequest;
+    const { input, context } = legacyRequest;
     
     return {
       // 节点标识（扁平化）
@@ -707,18 +700,10 @@ export const flowService = {
       
       // 运行时数据（扁平化）
       variables: context.variables || {},
-      nodeResults: context.nodeResults || {},
       userInput: context.userInput,
       userMessage: input.runtimeData?.userMessage,
       inputData: input.runtimeData?.data,
-      previousResult: context.previousResult,
-      
-      // 执行选项（扁平化）
-      timeout: executionConfig.timeout,
-      retryCount: executionConfig.retryCount,
-      async: executionConfig.async,
-      enableLogging: executionConfig.enableLogging,
-      enableMetrics: executionConfig.enableMetrics
+      previousdata: context.previousdata
     };
   },
 
@@ -731,16 +716,10 @@ export const flowService = {
     stepId: string;
     workflowId: string;
     variables?: Record<string, any>;
-    nodeResults?: Record<string, any>;
     userInput?: string;
     userMessage?: string;
     inputData?: any;
-    previousResult?: any;
-    timeout?: number;
-    retryCount?: number;
-    async?: boolean;
-    enableLogging?: boolean;
-    enableMetrics?: boolean;
+    previousdata?: string;
     label?: string;
     description?: string;
   }): OptimizedNodeExecutionRequest => {
@@ -761,18 +740,10 @@ export const flowService = {
       
       // 运行时数据
       variables: params.variables || {},
-      nodeResults: params.nodeResults || {},
       userInput: params.userInput,
       userMessage: params.userMessage,
       inputData: params.inputData,
-      previousResult: params.previousResult,
-      
-      // 执行选项
-      timeout: params.timeout || 30000,
-      retryCount: params.retryCount || 2,
-      async: params.async || false,
-      enableLogging: params.enableLogging ?? true,
-      enableMetrics: params.enableMetrics ?? true
+      previousdata: params.previousdata
     };
   },
 

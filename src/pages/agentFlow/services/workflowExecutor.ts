@@ -18,6 +18,40 @@ export interface ExecutionContext {
   usingExecutionPlan?: boolean; // 是否正在使用执行计划模式
 }
 
+// 优化的调试输入数据接口
+export interface DebugNodeInput {
+  // 节点基本信息
+  nodeInfo: {
+    nodeId: string;
+    nodeType: string;
+    label?: string;
+    description?: string;
+    inputSource?: string;
+  };
+  
+  // 节点核心配置（分类显示）
+  nodeConfig: Record<string, any>;
+  
+  // 运行时上下文数据（分类显示）
+  contextData: {
+    userInput?: string;           // 用户输入（单独显示）
+    previousNodeResults?: Record<string, {
+      output?: any;
+      result?: any;
+      markdownOutput?: string;
+    }>;                          // 前置节点结果（精简版）
+    systemVariables?: Record<string, any>;  // 系统变量
+  };
+  
+  // 执行环境信息
+  executionMeta: {
+    executionId?: string;
+    stepId?: string;
+    workflowId?: string;
+    timestamp: number;
+  };
+}
+
 // 调试节点结果接口
 export interface DebugNodeResult {
   nodeId: string;
@@ -26,7 +60,7 @@ export interface DebugNodeResult {
   startTime?: number;
   endTime?: number;
   duration: number;
-  input?: any;
+  input?: DebugNodeInput;    // 使用优化的输入数据结构
   output?: any;
   markdownOutput?: string;
   error?: string;
@@ -103,18 +137,10 @@ abstract class NodeExecutor {
         ...context.variables,
         ...(context.userInput ? { userInput: context.userInput } : {})
       },
-      nodeResults: this.limitNodeResults(context.nodeResults || {}, 5), // 限制历史结果数量
-      userInput: context.userInput,
+      userInput: context.userInput || context.variables?.userInput,
       userMessage: input.userMessage,
       inputData: input.data,
-      previousResult: this.getMinimalPreviousResult(context.nodeResults || {}),
-      
-      // 执行选项（扁平化）
-      timeout: this.getNodeTimeout(nodeType),
-      retryCount: this.getNodeRetryCount(nodeType),
-      async: false,
-      enableLogging: true,
-      enableMetrics: true
+      previousdata: this.getPreviousDataAsString(context.nodeResults || {}) // 获取上一个节点的执行结果
     };
 
     try {
@@ -242,21 +268,6 @@ abstract class NodeExecutor {
   }
 
   // ===== 新增：辅助方法 =====
-  
-  // 限制节点结果数量，减少payload大小
-  protected limitNodeResults(nodeResults: Record<string, any>, limit: number = 5): Record<string, any> {
-    const entries = Object.entries(nodeResults);
-    if (entries.length <= limit) {
-      return nodeResults;
-    }
-    
-    // 保留最近的结果
-    const recentEntries = entries
-      .sort(([, a], [, b]) => (b.timestamp || 0) - (a.timestamp || 0))
-      .slice(0, limit);
-    
-    return Object.fromEntries(recentEntries);
-  }
 
   // 创建结果摘要，减少数据传输
   protected createResultSummary(result: any): any {
@@ -315,8 +326,8 @@ abstract class NodeExecutor {
     return {
       ...input,
       inputSource: input?.inputSource,
-      userInput: context.userInput,
-      previousResult: this.getMinimalPreviousResult(context.nodeResults || {}),
+      userInput: context.userInput || context.variables?.userInput,
+      previousdata: this.getPreviousDataAsString(context.nodeResults || {}), // 获取上一个节点的执行结果
       hasContext: !!Object.keys(context.nodeResults || {}).length
     };
   }
@@ -343,47 +354,7 @@ abstract class NodeExecutor {
     };
   }
 
-  // 获取节点超时时间（毫秒）
-  protected getNodeTimeout(nodeType: string): number {
-    // 根据节点类型返回不同的超时时间
-    const timeouts: Record<string, number> = {
-      'aiDialogNode': 30000,
-      'aiSummaryNode': 45000,
-      'aiExtractNode': 30000,
-      'aiJsonNode': 30000,
-      'databaseNode': 15000,
-      'knowledgeBaseNode': 20000,
-      'httpNode': 10000,
-      'startNode': 1000,
-      'endNode': 1000,
-      'userInputNode': 1000,
-      'dataProcessNode': 5000,
-      'conditionNode': 3000,
-      'responseNode': 2000
-    };
-    return timeouts[nodeType] || 10000; // 默认10秒
-  }
-
-  // 获取节点重试次数
-  protected getNodeRetryCount(nodeType: string): number {
-    // 根据节点类型返回不同的重试次数
-    const retryCounts: Record<string, number> = {
-      'aiDialogNode': 2,
-      'aiSummaryNode': 2,
-      'aiExtractNode': 2,
-      'aiJsonNode': 2,
-      'databaseNode': 1,
-      'knowledgeBaseNode': 1,
-      'httpNode': 3,
-      'startNode': 0,
-      'endNode': 0,
-      'userInputNode': 0,
-      'dataProcessNode': 1,
-      'conditionNode': 0,
-      'responseNode': 0
-    };
-    return retryCounts[nodeType] || 1; // 默认重试1次
-  }
+  // 获取节点超时时间（毫秒）- 已移除，接口已精简不再需要
 
   // 子类需要实现的方法：返回节点类型，默认实现通过构造函数名推导
   protected getNodeType(): string {
@@ -397,25 +368,74 @@ abstract class NodeExecutor {
     return 'unknown';
   }
 
-  // 获取最小化的前一个节点结果
-  protected getMinimalPreviousResult(nodeResults: Record<string, any>): any {
+  // 获取最小化的前一个节点结果 - 已移除，现使用 getPreviousDataAsString
+
+  // 新增：获取上一节点结果的字符串格式，用于传递给后台
+  protected getPreviousDataAsString(nodeResults: Record<string, any>): string {
     if (!nodeResults || Object.keys(nodeResults).length === 0) {
-      return undefined;
+      return '';
     }
     
-    // 获取最后一个执行完成的节点结果
-    const results = Object.values(nodeResults);
+    // 获取所有节点的执行结果，排除开始节点
+    const results = Object.entries(nodeResults)
+      .filter(([nodeId, result]) => {
+        // 排除开始节点的结果，因为它只是系统消息
+        return result && typeof result === 'object' && 
+               !result.message?.includes('工作流已开始') &&
+               !nodeId.includes('start');
+      })
+      .map(([_, result]) => result);
+    
+    // 如果没有有效的节点结果，返回空字符串
+    if (results.length === 0) {
+      return '';
+    }
+    
+    // 获取最后一个执行完成的有效节点结果
     const lastResult = results[results.length - 1];
     
-    if (!lastResult) return undefined;
+    if (!lastResult) return '';
     
-    // 只保留输出相关的核心字段
-    return {
-      output: lastResult.output,
-      response: lastResult.response,
-      result: lastResult.result,
-      data: lastResult.data
-    };
+    try {
+      // 提取主要的输出内容
+      let outputContent = '';
+      
+      // 优先使用 output 字段
+      if (lastResult.output !== undefined) {
+        if (typeof lastResult.output === 'string') {
+          outputContent = lastResult.output;
+        } else {
+          outputContent = JSON.stringify(lastResult.output, null, 2);
+        }
+      }
+      // 其次使用 result 字段
+      else if (lastResult.result !== undefined) {
+        if (typeof lastResult.result === 'string') {
+          outputContent = lastResult.result;
+        } else {
+          outputContent = JSON.stringify(lastResult.result, null, 2);
+        }
+      }
+      // 最后使用 response 字段
+      else if (lastResult.response !== undefined) {
+        if (typeof lastResult.response === 'string') {
+          outputContent = lastResult.response;
+        } else {
+          outputContent = JSON.stringify(lastResult.response, null, 2);
+        }
+      }
+      // 如果都没有，则序列化整个结果对象（但排除系统字段）
+      else {
+        const { timestamp, duration, startTime, endTime, message, ...cleanResult } = lastResult;
+        outputContent = JSON.stringify(cleanResult, null, 2);
+      }
+      
+      return outputContent;
+    } catch (error) {
+      // 如果序列化失败，返回空字符串
+      console.error('Failed to serialize previous node result:', error);
+      return '';
+    }
   }
 
   protected logExecution(_nodeId: string, _input: any, _context: ExecutionContext): void {
@@ -795,7 +815,7 @@ class WorkflowExecutor {
       const endTime = Date.now();
       const duration = endTime - startTime;
 
-      // 更新节点执行结果 - 创建输入数据的深拷贝以避免后续修改影响调试日志
+      // 更新节点执行结果 - 创建优化的调试输入数据
       const completedResult: DebugNodeResult = {
         nodeId: node.id,
         nodeType,
@@ -803,7 +823,7 @@ class WorkflowExecutor {
         startTime,
         endTime,
         duration,
-        input: JSON.parse(JSON.stringify(input)), // 深拷贝输入数据
+        input: this.buildDebugNodeInput(node, context), // 使用优化的调试输入数据
         output,
         markdownOutput: output?.markdownOutput,
         timestamp: startTime
@@ -906,7 +926,63 @@ class WorkflowExecutor {
     }
   }
 
-  // 准备节点输入数据
+  // 构建优化的调试输入数据
+  private buildDebugNodeInput(node: Node, context: ExecutionContext): DebugNodeInput {
+    const nodeData = node.data || {};
+    const nodeType = node.type || 'unknown';
+    const inputSource = typeof nodeData.inputSource === 'string' ? nodeData.inputSource : undefined;
+    
+    // 过滤节点配置，只保留核心配置字段
+    const filteredNodeData = this.filterNodeDataForInput(nodeData);
+    const nodeConfig = this.buildNodeConfig(filteredNodeData, nodeType);
+    
+    // 构建前置节点结果的精简版本
+    const previousNodeResults: Record<string, any> = {};
+    if (context.nodeResults && Object.keys(context.nodeResults).length > 0) {
+      Object.entries(context.nodeResults).forEach(([nodeId, result]) => {
+        if (result && typeof result === 'object') {
+          previousNodeResults[nodeId] = {
+            output: result.output,
+            result: result.result,
+            markdownOutput: result.markdownOutput
+          };
+        }
+      });
+    }
+    
+    // 构建系统变量（排除用户输入）
+    const systemVariables: Record<string, any> = {};
+    if (context.variables) {
+      const { userInput, ...otherVars } = context.variables;
+      if (Object.keys(otherVars).length > 0) {
+        Object.assign(systemVariables, otherVars);
+      }
+    }
+    
+    return {
+      nodeInfo: {
+        nodeId: node.id,
+        nodeType,
+        label: typeof nodeData.label === 'string' ? nodeData.label : undefined,
+        description: typeof nodeData.description === 'string' ? nodeData.description : undefined,
+        inputSource
+      },
+      nodeConfig,
+      contextData: {
+        ...(context.userInput ? { userInput: context.userInput } : {}),
+        ...(Object.keys(previousNodeResults).length > 0 ? { previousNodeResults } : {}),
+        ...(Object.keys(systemVariables).length > 0 ? { systemVariables } : {})
+      },
+      executionMeta: {
+        executionId: context.executionPlan?.id,
+        stepId: context.currentStep?.id,
+        workflowId: context.executionPlan?.workflowId,
+        timestamp: Date.now()
+      }
+    };
+  }
+
+  // 准备节点输入数据（用于实际执行）
   private prepareNodeInput(node: Node, context: ExecutionContext): any {
     // 合并节点配置数据和上下文数据
     const nodeData = node.data || {};
@@ -1267,7 +1343,7 @@ class WorkflowExecutor {
           startTime,
           endTime,
           duration,
-          input: { nodeType, label: node.data?.label },
+          input: this.buildDebugNodeInput(node, context),
           output: result,
           markdownOutput: `### 工作流开始\n\n- **触发类型**: ${node.data?.triggerType || 'manual'}\n- **开始时间**: ${new Date().toLocaleString()}\n- **初始数据**: ${JSON.stringify(node.data?.initialData || {}, null, 2)}\n- **用户输入**: ${context.userInput || '无'}`,
           timestamp: startTime
@@ -1350,7 +1426,7 @@ class WorkflowExecutor {
           startTime,
           endTime,
           duration,
-          input: { nodeType, label: node.data?.label, previousResult: lastResult },
+          input: this.buildDebugNodeInput(node, context),
           output: result,
           markdownOutput,
           timestamp: startTime
@@ -1389,9 +1465,17 @@ class WorkflowExecutor {
       });
     }
     
-    // 添加全局变量
+    // 单独提取用户输入，使其更易理解
+    if (context.userInput) {
+      previousData.userInput = context.userInput;
+    }
+    
+    // 添加其他变量（排除用户输入，避免重复）
     if (context.variables) {
-      previousData._variables = context.variables;
+      const { userInput, ...otherVariables } = context.variables;
+      if (Object.keys(otherVariables).length > 0) {
+        previousData._variables = otherVariables;
+      }
     }
     
     return previousData;

@@ -160,8 +160,53 @@ const UserInputModal: React.FC<UserInputModalProps> = ({
 
     const { previousData, inputConfig } = request;
 
-    // 过滤要显示的数据
-    let dataToShow = previousData;
+    // 构建优化后的显示数据结构
+    const displayData: any = {};
+
+    // 1. 优先显示用户输入（如果存在）
+    if (previousData.userInput !== undefined) {
+      displayData.用户输入 = previousData.userInput;
+    }
+
+    // 2. 显示依赖节点的执行结果
+    Object.keys(previousData).forEach(key => {
+      // 跳过特殊字段：userInput 和 _variables
+      if (key !== 'userInput' && key !== '_variables') {
+        const nodeResult = previousData[key];
+        if (nodeResult && typeof nodeResult === 'object') {
+          // 提取节点结果的关键信息
+          const nodeDisplay: any = {};
+
+          // 优先显示格式化输出，其次是 output，最后是 result
+          if (nodeResult.markdownOutput !== undefined) {
+            nodeDisplay.输出 = nodeResult.markdownOutput;
+          } else if (nodeResult.output !== undefined) {
+            nodeDisplay.输出 = nodeResult.output;
+          } else if (nodeResult.result !== undefined) {
+            nodeDisplay.输出 = nodeResult.result;
+          }
+
+          // 如果有有用的信息，则添加到显示数据中
+          if (Object.keys(nodeDisplay).length > 0) {
+            displayData[`节点_${key}`] = nodeDisplay;
+          } else {
+            // 如果没有标准的输出字段，显示整个结果（但排除调试信息）
+            const { timestamp, duration, startTime, endTime, ...cleanResult } = nodeResult;
+            if (Object.keys(cleanResult).length > 0) {
+              displayData[`节点_${key}`] = cleanResult;
+            }
+          }
+        }
+      }
+    });
+
+    // 3. 最后显示其他系统变量（如果存在且不为空）
+    if (previousData._variables && Object.keys(previousData._variables).length > 0) {
+      displayData.系统变量 = previousData._variables;
+    }
+
+    // 如果配置了特定的显示字段，则按配置过滤
+    let dataToShow = displayData;
     if (inputConfig.previousDataKeys && inputConfig.previousDataKeys.length > 0) {
       dataToShow = {};
       inputConfig.previousDataKeys.forEach(key => {

@@ -19,6 +19,7 @@ import { Node, Edge } from '@xyflow/react';
 
 import WorkflowExecutor, { DebugExecutionState } from '../services/workflowExecutor';
 import UserInputModal from './UserInputModal';
+import OptimizedDebugInputDisplay from './OptimizedDebugInputDisplay';
 import { UserInputRequest, UserInputResponse } from '@/types/executionPlan';
 import Scrollbar from '@/components/scrollbar';
 
@@ -687,16 +688,13 @@ const DebugPanel: React.FC<DebugPanelProps> = ({
                                       </div>
                                     </div>
 
-                                    {/* 输入数据 */}
+                                    {/* 输入数据 - 使用优化的显示组件 */}
                                     {result.input && (
                                       <div>
                                         <span className="text-gray-500 text-sm font-medium">输入数据:</span>
-                                        <div className="mt-1 border rounded-lg overflow-hidden">
-                                          <div className="max-h-32 overflow-auto">
-                                            <pre className="p-2 bg-gray-100 text-xs font-mono whitespace-pre-wrap word-break-all"
-                                              style={{ overflowWrap: 'anywhere', wordBreak: 'break-all' }}>
-                                              {JSON.stringify(result.input, null, 2)}
-                                            </pre>
+                                        <div className="mt-2 border rounded-lg overflow-hidden">
+                                          <div className="p-3 bg-white">
+                                            <OptimizedDebugInputDisplay input={result.input} />
                                           </div>
                                         </div>
                                       </div>
@@ -849,16 +847,13 @@ const DebugPanel: React.FC<DebugPanelProps> = ({
                               </div>
                             )}
 
-                            {/* 输入数据 - 折叠显示 */}
+                            {/* 输入数据 - 使用优化的折叠显示 */}
                             {lastResult.input && (
                               <Collapse size="small" ghost>
                                 <Collapse.Panel header="查看输入数据" key="input">
                                   <div className="border rounded-lg overflow-hidden">
-                                    <div className="max-h-32 overflow-auto">
-                                      <pre className="p-3 bg-gray-100 text-xs font-mono whitespace-pre-wrap word-break-all"
-                                        style={{ overflowWrap: 'anywhere', wordBreak: 'break-all' }}>
-                                        {JSON.stringify(lastResult.input, null, 2)}
-                                      </pre>
+                                    <div className="p-3 bg-white">
+                                      <OptimizedDebugInputDisplay input={lastResult.input} />
                                     </div>
                                   </div>
                                 </Collapse.Panel>
