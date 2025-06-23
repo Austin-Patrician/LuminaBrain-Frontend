@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { List, Typography, Button, Dropdown, Input, Modal, message } from 'antd';
+import type { MenuProps } from 'antd';
 import {
   MessageOutlined,
   DeleteOutlined,
@@ -9,7 +10,6 @@ import {
   PushpinOutlined,
   PushpinFilled
 } from '@ant-design/icons';
-import type { MenuProps } from 'antd';
 
 const { Text } = Typography;
 const { confirm } = Modal;
@@ -199,16 +199,15 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
       onClick={() => onSelectSession(session.id)}
     >
       <div className="chat-history-content">
-        {editingSession === session.id ? (
-          <Input
-            value={editTitle}
-            onChange={(e) => setEditTitle(e.target.value)}
-            onPressEnter={() => handleSaveEdit(session.id)}
-            onBlur={() => handleSaveEdit(session.id)}
-            autoFocus
-            size="small"
-            onClick={(e) => e.stopPropagation()}
-          />
+        {editingSession === session.id ? (<Input
+          value={editTitle}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditTitle(e.target.value)}
+          onPressEnter={() => handleSaveEdit(session.id)}
+          onBlur={() => handleSaveEdit(session.id)}
+          autoFocus
+          size="small"
+          onClick={(e: React.MouseEvent) => e.stopPropagation()}
+        />
         ) : (
           <div className="flex items-start justify-between">
             <div className="flex items-start space-x-2 flex-1 min-w-0">
@@ -230,9 +229,6 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
                     {formatTime(session.updatedAt)}
                   </Text>
                 </div>
-                <Text type="secondary" className="chat-item-model">
-                  {session.model}
-                </Text>
               </div>
             </div>
 
@@ -248,7 +244,7 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
                   size="small"
                   icon={<MoreOutlined />}
                   className="chat-item-more-btn"
-                  onClick={(e) => e.stopPropagation()}
+                  onClick={(e: React.MouseEvent) => e.stopPropagation()}
                 />
               </Dropdown>
             </div>

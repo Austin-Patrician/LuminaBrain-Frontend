@@ -12,31 +12,33 @@ import {
   Divider,
   type MenuProps,
 } from 'antd';
-import {
-  BulbOutlined,
-  PlusOutlined,
-  ShareAltOutlined,
-  MenuOutlined,
-  UserOutlined,
-  RobotOutlined,
-  DeleteOutlined,
-  EditOutlined,
-  CodeOutlined,
-  MoreOutlined,
-  HistoryOutlined,
-  SettingOutlined,
-  LogoutOutlined,
-  TeamOutlined,
-  BugOutlined,
-  QuestionCircleOutlined,
-  SendOutlined,
-} from '@ant-design/icons';
+import BulbOutlined from '@ant-design/icons/BulbOutlined';
+import PlusOutlined from '@ant-design/icons/PlusOutlined';
+import ShareAltOutlined from '@ant-design/icons/ShareAltOutlined';
+import MenuOutlined from '@ant-design/icons/MenuOutlined';
+import UserOutlined from '@ant-design/icons/UserOutlined';
+import RobotOutlined from '@ant-design/icons/RobotOutlined';
+import DeleteOutlined from '@ant-design/icons/DeleteOutlined';
+import EditOutlined from '@ant-design/icons/EditOutlined';
+import CodeOutlined from '@ant-design/icons/CodeOutlined';
+import MoreOutlined from '@ant-design/icons/MoreOutlined';
+import HistoryOutlined from '@ant-design/icons/HistoryOutlined';
+import SettingOutlined from '@ant-design/icons/SettingOutlined';
+import LogoutOutlined from '@ant-design/icons/LogoutOutlined';
+import TeamOutlined from '@ant-design/icons/TeamOutlined';
+import BugOutlined from '@ant-design/icons/BugOutlined';
+import QuestionCircleOutlined from '@ant-design/icons/QuestionCircleOutlined';
+import SendOutlined from '@ant-design/icons/SendOutlined';
 import { Bubble, Prompts, Sender, Welcome } from '@ant-design/x';
 import { useUserInfo } from '@/store/userStore';
 import Canvas from './components/Canvas';
 import ModelSelector from './components/ModelSelector';
 import AttachmentUpload from './components/AttachmentUpload';
 import ChatHistory from './components/ChatHistory';
+import StaticStreamingBubble from './components/StaticStreamingBubble';
+import ThinkingBubble from './components/ThinkingBubble';
+import LiveStreamingBubble from './components/LiveStreamingBubble';
+import { chatService, type ChatMessage as APIChatMessage } from '@/api/services/chatService';
 import './index.css';
 
 const { Sider, Content } = Layout;
@@ -55,6 +57,7 @@ interface ChatMessage {
     type: string;
   }>;
   thinking?: boolean;
+  streaming?: boolean; // 新增：标识是否是流式生成的消息
 }
 
 // 对话会话类型
@@ -86,6 +89,8 @@ const ChatPage: React.FC = () => {
   const [selectedModel, setSelectedModel] = useState('gpt-4o');
   const [thinkingMode, setThinkingMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [streamingMessage, setStreamingMessage] = useState<string>('');
+  const [isStreaming, setIsStreaming] = useState(false);
   const [showCanvas, setShowCanvas] = useState(false);
   const [canvasContent, setCanvasContent] = useState('');
   const [shareModalVisible, setShareModalVisible] = useState(false);
@@ -226,24 +231,74 @@ const ChatPage: React.FC = () => {
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
     updateSessionMessages(activeSessionId, newMessages);
+
     setInputValue('');
     setIsLoading(true);
 
-    // 模拟AI回复
-    setTimeout(() => {
-      const assistantMessage: ChatMessage = {
-        id: `msg_${Date.now()}_assistant`,
-        role: 'assistant',
-        content: `这是一个模拟的AI回复，回答您的问题："${inputValue}"。我正在使用 ${selectedModel} 模型来处理您的请求。您可以继续与我对话，我会记住我们的聊天历史。`,
-        timestamp: new Date(),
-        thinking: thinkingMode,
-      };
+    try {
+      // 转换消息格式为API格式
+      const apiMessages: APIChatMessage[] = newMessages.map(msg => ({
+        role: msg.role,
+        content: msg.content,
+      }));
 
-      const finalMessages = [...newMessages, assistantMessage];
-      setMessages(finalMessages);
-      updateSessionMessages(activeSessionId, finalMessages);
+      let fullResponse = '';
+
+      // 显示思考状态
+      setTimeout(() => {
+        setIsLoading(false);
+        setIsStreaming(true);
+        setStreamingMessage(''); // 重置流式消息
+      }, 800);
+
+      // 调用流式API
+      await chatService.simulateStreamingResponse(
+        {
+          model: selectedModel,
+          messages: apiMessages,
+          temperature: 0.7,
+          max_tokens: 2048,
+        },
+        (chunk) => {
+          const content = chunk.choices[0]?.delta?.content;
+          if (content) {
+            fullResponse += content;
+            // 直接设置累积的内容，不要每次都重新开始动画
+            setStreamingMessage(fullResponse);
+          }
+        },
+        () => {
+          // 流式输出完成
+          const assistantMessage: ChatMessage = {
+            id: `msg_${Date.now()}_assistant`,
+            role: 'assistant',
+            content: fullResponse,
+            timestamp: new Date(),
+            thinking: thinkingMode,
+            streaming: true,
+          };
+
+          const finalMessages = [...newMessages, assistantMessage];
+          setMessages(finalMessages);
+          updateSessionMessages(activeSessionId, finalMessages);
+          setIsStreaming(false);
+          setStreamingMessage('');
+        },
+        (error) => {
+          console.error('Chat error:', error);
+          message.error('消息发送失败，请重试');
+          setIsLoading(false);
+          setIsStreaming(false);
+          setStreamingMessage('');
+        }
+      );
+    } catch (error) {
+      console.error('Send message error:', error);
+      message.error('消息发送失败，请重试');
       setIsLoading(false);
-    }, 1500);
+      setIsStreaming(false);
+      setStreamingMessage('');
+    }
   }, [inputValue, selectedModel, thinkingMode, currentSession, sessions, messages, updateSessionMessages, saveSessions, saveCurrentSession]);
 
   // 更新会话信息
@@ -594,15 +649,15 @@ const ChatPage: React.FC = () => {
       <Layout className="h-full">
         {/* 侧边栏 */}
         <Sider
-          width={280}
+          width={240}
           collapsed={sidebarCollapsed}
           collapsible
           trigger={null}
           className="chat-sidebar"
-          collapsedWidth={60}
+          collapsedWidth={50}
           theme="light"
           breakpoint="md"
-          onBreakpoint={(broken) => {
+          onBreakpoint={(broken: boolean) => {
             setSidebarCollapsed(broken);
           }}
         >
@@ -681,55 +736,77 @@ const ChatPage: React.FC = () => {
                   </div>
                 ) : (
                   <div className="chat-messages-content">
-                    {messages.map((message) => (
-                      <div
-                        key={message.id}
-                        className={`message-bubble-container ${message.role} fade-in`}
-                      >
-                        <div className="message-bubble-wrapper">
-                          <div className="message-bubble">
-                            <Bubble
-                              content={message.content}
-                              avatar={{
-                                src: message.role === 'user' ? userInfo?.avatar : undefined,
-                                icon: message.role === 'user' ? <UserOutlined /> : <RobotOutlined />,
-                              }}
-                              variant={message.role === 'user' ? 'filled' : 'outlined'}
-                              placement={message.role === 'user' ? 'end' : 'start'}
-                              typing={message.id === messages[messages.length - 1]?.id && isLoading}
-                            />
-                            <div className="message-footer">
-                              <Text type="secondary" className="message-time">
-                                {message.timestamp.toLocaleTimeString()}
-                              </Text>
-                              <div className="message-actions">
-                                <Dropdown
-                                  menu={{ items: getMessageMenuItems(message) }}
-                                  trigger={['click']}
-                                  placement="bottomRight"
-                                >
-                                  <Button
-                                    type="text"
-                                    size="small"
-                                    icon={<MoreOutlined />}
-                                  />
-                                </Dropdown>
+                    {messages.map((message) => {
+                      // 如果是流式生成的助手消息，使用StaticStreamingBubble
+                      if (message.role === 'assistant' && message.streaming) {
+                        return (
+                          <StaticStreamingBubble
+                            key={message.id}
+                            content={message.content}
+                            thinking={message.thinking}
+                            timestamp={message.timestamp}
+                            messageActions={getMessageMenuItems(message)}
+                            className="fade-in"
+                          />
+                        );
+                      }
+
+                      // 其他消息使用原来的Bubble组件
+                      return (
+                        <div
+                          key={message.id}
+                          className={`message-bubble-container ${message.role} fade-in`}
+                        >
+                          <div className="message-bubble-wrapper">
+                            <div className="message-bubble">
+                              <Bubble
+                                content={message.content}
+                                avatar={{
+                                  src: message.role === 'user' ? userInfo?.avatar : undefined,
+                                  icon: message.role === 'user' ? <UserOutlined /> : <RobotOutlined />,
+                                }}
+                                variant={message.role === 'user' ? 'filled' : 'outlined'}
+                                placement={message.role === 'user' ? 'end' : 'start'}
+                              />
+                              <div className="message-footer">
+                                <Text type="secondary" className="message-time">
+                                  {message.timestamp.toLocaleTimeString()}
+                                </Text>
+                                <div className="message-actions">
+                                  <Dropdown
+                                    menu={{ items: getMessageMenuItems(message) }}
+                                    trigger={['click']}
+                                    placement="bottomRight"
+                                  >
+                                    <Button
+                                      type="text"
+                                      size="small"
+                                      icon={<MoreOutlined />}
+                                    />
+                                  </Dropdown>
+                                </div>
                               </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
-                    {isLoading && (
-                      <div className="message-bubble-container assistant fade-in">
-                        <div className="message-bubble-wrapper">
-                          <Bubble
-                            avatar={{ icon: <RobotOutlined /> }}
-                            typing
-                            content="正在思考..."
-                          />
-                        </div>
-                      </div>
+                      );
+                    })}
+
+                    {/* 流式输出消息 */}
+                    {isStreaming && streamingMessage && (
+                      <LiveStreamingBubble
+                        content={streamingMessage}
+                        thinking={thinkingMode}
+                        onComplete={() => {
+                          // 流式输出完成的回调处理
+                          console.log('Streaming completed');
+                        }}
+                      />
+                    )}
+
+                    {/* 加载状态 - 使用自定义的思考组件 */}
+                    {isLoading && !isStreaming && (
+                      <ThinkingBubble thinkingMode={thinkingMode} />
                     )}
                   </div>
                 )}
@@ -745,7 +822,15 @@ const ChatPage: React.FC = () => {
                       <Sender
                         value={inputValue}
                         onChange={setInputValue}
-                        onSubmit={() => { }} // 禁用内置发送功能
+                        onSubmit={handleSendMessage}
+                        onFocus={() => { }}
+                        onBlur={() => { }}
+                        onKeyPress={(e: React.KeyboardEvent) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSendMessage();
+                          }
+                        }}
                         placeholder="输入消息... (Shift + Enter 换行)"
                         loading={isLoading}
                         disabled={isLoading}
