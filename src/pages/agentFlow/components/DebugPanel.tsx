@@ -604,7 +604,7 @@ const DebugPanel: React.FC<DebugPanelProps> = ({
             </Tabs.TabPane>
 
             <Tabs.TabPane tab="执行日志" key="logs" style={{ height: '100%', overflow: 'hidden' }}>
-              <div className="h-full flex flex-col overflow-hidden">
+              <div className="h-[600px] flex flex-col overflow-hidden">
                 <div className="flex-1 min-h-0 overflow-hidden">
                   <Scrollbar style={{ height: '100%', width: '100%' }} ref={scrollAreaRef}>
                     <div className="p-4">
