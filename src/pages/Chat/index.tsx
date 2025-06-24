@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   Layout,
   Button,
@@ -37,8 +37,9 @@ import AttachmentUpload from './components/AttachmentUpload';
 import ChatHistory from './components/ChatHistory';
 import StaticStreamingBubble from './components/StaticStreamingBubble';
 import ThinkingBubble from './components/ThinkingBubble';
-import LiveStreamingBubble from './components/LiveStreamingBubble';
+import SSEStreamingBubble from './components/SSEStreamingBubble';
 import { chatService, type ChatMessage as APIChatMessage } from '@/api/services/chatService';
+import UserMessageBubble from './components/UserMessageBubble';
 import './index.css';
 
 const { Sider, Content } = Layout;
@@ -73,6 +74,7 @@ interface ChatSession {
 
 // 模型选项
 const modelOptions = [
+  { label: 'GPT-4.1', value: 'gpt-4.1', provider: 'OpenAI' },
   { label: 'GPT-4o', value: 'gpt-4o', provider: 'OpenAI' },
   { label: 'GPT-4', value: 'gpt-4', provider: 'OpenAI' },
   { label: 'Claude-3.5 Sonnet', value: 'claude-3.5-sonnet', provider: 'Anthropic' },
@@ -86,7 +88,7 @@ const ChatPage: React.FC = () => {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
-  const [selectedModel, setSelectedModel] = useState('gpt-4o');
+  const [selectedModel, setSelectedModel] = useState('gpt-4.1');
   const [thinkingMode, setThinkingMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState<string>('');
@@ -94,6 +96,20 @@ const ChatPage: React.FC = () => {
   const [showCanvas, setShowCanvas] = useState(false);
   const [canvasContent, setCanvasContent] = useState('');
   const [shareModalVisible, setShareModalVisible] = useState(false);
+
+  // 添加滚动容器的引用
+  const messagesScrollRef = useRef<HTMLDivElement>(null);
+
+  // 自动滚动到底部的函数
+  const scrollToBottom = useCallback((smooth = true) => {
+    if (messagesScrollRef.current) {
+      const scrollElement = messagesScrollRef.current;
+      scrollElement.scrollTo({
+        top: scrollElement.scrollHeight,
+        behavior: smooth ? 'smooth' : 'auto'
+      });
+    }
+  }, []);
 
   // 从localStorage加载聊天记录
   useEffect(() => {
@@ -251,8 +267,8 @@ const ChatPage: React.FC = () => {
         setStreamingMessage(''); // 重置流式消息
       }, 800);
 
-      // 调用流式API
-      await chatService.simulateStreamingResponse(
+      // 直接调用真实的流式API
+      await chatService.createStreamingChatCompletion(
         {
           model: selectedModel,
           messages: apiMessages,
@@ -263,7 +279,7 @@ const ChatPage: React.FC = () => {
           const content = chunk.choices[0]?.delta?.content;
           if (content) {
             fullResponse += content;
-            // 直接设置累积的内容，不要每次都重新开始动画
+            // 直接设置累积的内容
             setStreamingMessage(fullResponse);
           }
         },
@@ -286,7 +302,7 @@ const ChatPage: React.FC = () => {
         },
         (error) => {
           console.error('Chat error:', error);
-          message.error('消息发送失败，请重试');
+          message.error(`消息发送失败：${error.message}`);
           setIsLoading(false);
           setIsStreaming(false);
           setStreamingMessage('');
@@ -300,6 +316,101 @@ const ChatPage: React.FC = () => {
       setStreamingMessage('');
     }
   }, [inputValue, selectedModel, thinkingMode, currentSession, sessions, messages, updateSessionMessages, saveSessions, saveCurrentSession]);
+
+  // 编辑用户消息
+  const handleEditUserMessage = useCallback(async (messageId: string, newContent: string) => {
+    // 找到消息在列表中的位置
+    const messageIndex = messages.findIndex(msg => msg.id === messageId);
+    if (messageIndex === -1) return;
+
+    // 更新消息内容
+    const updatedMessages = [...messages];
+    updatedMessages[messageIndex] = {
+      ...updatedMessages[messageIndex],
+      content: newContent,
+      timestamp: new Date(), // 更新时间戳
+    };
+
+    // 删除该消息之后的所有消息（包括AI回复）
+    const messagesToKeep = updatedMessages.slice(0, messageIndex + 1);
+
+    setMessages(messagesToKeep);
+
+    // 如果有当前会话，同步更新会话数据
+    if (currentSession) {
+      updateSessionMessages(currentSession, messagesToKeep);
+    }
+
+    // 重新发送请求
+    setIsLoading(true);
+
+    try {
+      // 转换消息格式为API格式
+      const apiMessages: APIChatMessage[] = messagesToKeep.map(msg => ({
+        role: msg.role,
+        content: msg.content,
+      }));
+
+      let fullResponse = '';
+
+      // 显示思考状态
+      setTimeout(() => {
+        setIsLoading(false);
+        setIsStreaming(true);
+        setStreamingMessage(''); // 重置流式消息
+      }, 800);
+
+      // 直接调用真实的流式API
+      await chatService.createStreamingChatCompletion(
+        {
+          model: selectedModel,
+          messages: apiMessages,
+          temperature: 0.7,
+          max_tokens: 2048,
+        },
+        (chunk) => {
+          const content = chunk.choices[0]?.delta?.content;
+          if (content) {
+            fullResponse += content;
+            // 直接设置累积的内容
+            setStreamingMessage(fullResponse);
+          }
+        },
+        () => {
+          // 流式输出完成
+          const assistantMessage: ChatMessage = {
+            id: `msg_${Date.now()}_assistant`,
+            role: 'assistant',
+            content: fullResponse,
+            timestamp: new Date(),
+            thinking: thinkingMode,
+            streaming: true,
+          };
+
+          const finalMessages = [...messagesToKeep, assistantMessage];
+          setMessages(finalMessages);
+          if (currentSession) {
+            updateSessionMessages(currentSession, finalMessages);
+          }
+          setIsStreaming(false);
+          setStreamingMessage('');
+        },
+        (error) => {
+          console.error('Chat error:', error);
+          message.error(`重新生成回复失败：${error.message}`);
+          setIsLoading(false);
+          setIsStreaming(false);
+          setStreamingMessage('');
+        }
+      );
+    } catch (error) {
+      console.error('Regenerate message error:', error);
+      message.error('重新生成回复失败，请重试');
+      setIsLoading(false);
+      setIsStreaming(false);
+      setStreamingMessage('');
+    }
+  }, [messages, currentSession, selectedModel, thinkingMode, updateSessionMessages]);
 
   // 更新会话信息
   const updateSession = useCallback((sessionId: string, updates: Partial<ChatSession>) => {
@@ -644,6 +755,30 @@ const ChatPage: React.FC = () => {
     },
   ];
 
+  // 监听消息变化并自动滚动
+  useEffect(() => {
+    // 当消息列表更新时自动滚动到底部
+    if (messages.length > 0) {
+      scrollToBottom();
+    }
+  }, [messages, scrollToBottom]);
+
+  // 监听流式消息变化并自动滚动
+  useEffect(() => {
+    // 当流式消息更新时也要滚动到底部
+    if (isStreaming && streamingMessage) {
+      scrollToBottom();
+    }
+  }, [streamingMessage, isStreaming, scrollToBottom]);
+
+  // 监听加载状态变化并自动滚动
+  useEffect(() => {
+    // 当开始加载时也滚动到底部（显示思考气泡）
+    if (isLoading) {
+      scrollToBottom();
+    }
+  }, [isLoading, scrollToBottom]);
+
   return (
     <div className="chat-page">
       <Layout className="h-full">
@@ -712,7 +847,7 @@ const ChatPage: React.FC = () => {
           <div className="chat-conversation-area">
             <div className="chat-messages-container">
               {/* 消息列表 */}
-              <div className="chat-messages-scroll">
+              <div className="chat-messages-scroll" ref={messagesScrollRef}>
                 {shouldShowWelcome() ? (
                   <div className="chat-welcome">
                     <Welcome
@@ -751,7 +886,20 @@ const ChatPage: React.FC = () => {
                         );
                       }
 
-                      // 其他消息使用原来的Bubble组件
+                      // 用户消息使用新的UserMessageBubble组件
+                      if (message.role === 'user') {
+                        return (
+                          <UserMessageBubble
+                            key={message.id}
+                            content={message.content}
+                            onEdit={(newContent) => handleEditUserMessage(message.id, newContent)}
+                            onCopy={handleCopyMessage}
+                            className="fade-in"
+                          />
+                        );
+                      }
+
+                      // 其他助手消息使用原来的Bubble组件
                       return (
                         <div
                           key={message.id}
@@ -762,11 +910,11 @@ const ChatPage: React.FC = () => {
                               <Bubble
                                 content={message.content}
                                 avatar={{
-                                  src: message.role === 'user' ? userInfo?.avatar : undefined,
-                                  icon: message.role === 'user' ? <UserOutlined /> : <RobotOutlined />,
+                                  src: undefined,
+                                  icon: <RobotOutlined />,
                                 }}
-                                variant={message.role === 'user' ? 'filled' : 'outlined'}
-                                placement={message.role === 'user' ? 'end' : 'start'}
+                                variant="outlined"
+                                placement="start"
                               />
                               <div className="message-footer">
                                 <Text type="secondary" className="message-time">
@@ -794,12 +942,13 @@ const ChatPage: React.FC = () => {
 
                     {/* 流式输出消息 */}
                     {isStreaming && streamingMessage && (
-                      <LiveStreamingBubble
+                      <SSEStreamingBubble
                         content={streamingMessage}
                         thinking={thinkingMode}
+                        isStreaming={isStreaming}
                         onComplete={() => {
                           // 流式输出完成的回调处理
-                          console.log('Streaming completed');
+                          console.log('SSE Streaming completed');
                         }}
                       />
                     )}

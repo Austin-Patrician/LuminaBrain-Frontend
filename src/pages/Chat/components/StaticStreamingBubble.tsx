@@ -1,6 +1,7 @@
 import React from 'react';
 import { Avatar, Typography, Button, Dropdown } from 'antd';
 import type { MenuProps } from 'antd';
+import ChatMarkdown from './ChatMarkdown';
 
 const { Text } = Typography;
 
@@ -61,9 +62,9 @@ ${content}`;
           {/* 消息内容 */}
           <div className="streaming-message">
             <div className="streaming-message-content">
-              <Text style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                {thinking ? renderThinkingContent() : content}
-              </Text>
+              <div style={{ fontSize: '14px', lineHeight: 1.6 }}>
+                <ChatMarkdown>{thinking ? renderThinkingContent() : content}</ChatMarkdown>
+              </div>
             </div>
 
             {thinking && (

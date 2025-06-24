@@ -1,0 +1,141 @@
+/* 用户消息气泡样式 */
+.user-message-bubble-container {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+  opacity: 1; /* 确保始终可见 */
+  animation: fadeInUp 0.3s ease forwards;
+}
+
+.user-message-bubble-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  max-width: 80%;
+  min-width: 0;
+  gap: 4px;
+}
+
+.user-message-bubble {
+  background: #ffffff; /* 改为白色背景 */
+  color: #333333; /* 深色文字 */
+  border: 1px solid #e5e7eb; /* 淡灰色边框 */
+  border-radius: 12px;
+  padding: 12px 16px;
+  min-width: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* 调整阴影 */
+  position: relative;
+  width: 100%;
+  font-family: var(--font-family-content);
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.user-message-bubble::after {
+  content: '';
+  position: absolute;
+  top: 12px;
+  right: -6px;
+  width: 0;
+  height: 0;
+  border-left: 6px solid #ffffff; /* 白色箭头 */
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  filter: drop-shadow(1px 0 1px rgba(0, 0, 0, 0.1)); /* 调整箭头阴影 */
+}
+
+.user-message-content {
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  line-height: 1.5;
+  font-family: var(--font-family-content);
+  color: #333333; /* 确保文字为深色 */
+}
+
+.user-message-edit-container {
+  background: white;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  padding: 8px;
+  color: #333;
+}
+
+.user-message-edit-textarea {
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  resize: none;
+  font-family: var(--font-family-content);
+}
+
+.user-message-edit-textarea:focus {
+  border: none;
+  box-shadow: none;
+}
+
+.user-message-edit-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.user-message-actions {
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.user-message-bubble-container:hover .user-message-actions {
+  opacity: 1;
+}
+
+.user-message-action-btn {
+  font-size: 12px;
+  height: 24px;
+  width: 24px;
+  padding: 0;
+  color: #666;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-family-ui);
+}
+
+.user-message-action-btn:hover {
+  color: #1890ff;
+  background-color: rgba(24, 144, 255, 0.1);
+}
+
+/* 自定义 Tooltip 样式 */
+.user-message-tooltip .ant-tooltip-inner {
+  background-color: #ffffff;
+  color: #333333;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  font-size: 12px;
+  font-family: var(--font-family-ui);
+}
+
+.user-message-tooltip .ant-tooltip-arrow {
+  border-bottom-color: #ffffff;
+}
+
+.user-message-tooltip .ant-tooltip-arrow::before {
+  border-bottom-color: #e5e7eb;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0.7;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
