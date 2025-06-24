@@ -1,15 +1,14 @@
 // aimodelService.ts
 import apiClient from "@/api/apiClient";
-import type { AIModel, AIProvider,UpdateProviderModel } from "#/entity";
+import type { AIModel, AIProvider, UpdateProviderModel, AiModelsAndKnowledgesResponse } from "#/entity";
 
 // 定义API端点
 enum AIModelApi {
 	GetModels = "/provider/all",
 	UpdateModel = "/provider/update",
 	ShareModel = "/aimodel/share",
+	GetAiModelsAndKnowledges = "aiModel/aiModelsAndKnowledges",
 }
-
-
 
 // 服务定义
 export const aimodelService = {
@@ -58,5 +57,12 @@ export const aimodelService = {
 		//	url: AIModelApi.ShareModel,
 		//	data: { modelId },
 		// });
+	},
+
+	// 获取AI模型和知识库列表
+	getAiModelsAndKnowledges: () => {
+		return apiClient.get<AiModelsAndKnowledgesResponse>({
+			url: AIModelApi.GetAiModelsAndKnowledges,
+		});
 	},
 };

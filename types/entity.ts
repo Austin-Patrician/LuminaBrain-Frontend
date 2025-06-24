@@ -189,6 +189,21 @@ export interface AiModelListResponse {
   data: AiModelItem[];
 }
 
+// AI模型和知识库项
+export interface AiModelAndKnowledgeItem {
+  id: string;
+  label: string;
+  type: "AI Model" | "Knowledge";
+}
+
+// AI模型和知识库列表响应类型
+export interface AiModelsAndKnowledgesResponse {
+  success: boolean;
+  statusCode: number;
+  message: string;
+  data: AiModelAndKnowledgeItem[];
+}
+
 // 数据字典基础实体
 export interface AuditEntity {
   id: string;

@@ -17,10 +17,7 @@ import PlusOutlined from '@ant-design/icons/PlusOutlined';
 import ShareAltOutlined from '@ant-design/icons/ShareAltOutlined';
 import MenuOutlined from '@ant-design/icons/MenuOutlined';
 import UserOutlined from '@ant-design/icons/UserOutlined';
-import RobotOutlined from '@ant-design/icons/RobotOutlined';
 import DeleteOutlined from '@ant-design/icons/DeleteOutlined';
-import EditOutlined from '@ant-design/icons/EditOutlined';
-import CodeOutlined from '@ant-design/icons/CodeOutlined';
 import MoreOutlined from '@ant-design/icons/MoreOutlined';
 import HistoryOutlined from '@ant-design/icons/HistoryOutlined';
 import SettingOutlined from '@ant-design/icons/SettingOutlined';
@@ -29,13 +26,12 @@ import TeamOutlined from '@ant-design/icons/TeamOutlined';
 import BugOutlined from '@ant-design/icons/BugOutlined';
 import QuestionCircleOutlined from '@ant-design/icons/QuestionCircleOutlined';
 import SendOutlined from '@ant-design/icons/SendOutlined';
-import { Bubble, Prompts, Sender, Welcome } from '@ant-design/x';
+import { Sender } from '@ant-design/x';
 import { useUserInfo } from '@/store/userStore';
 import Canvas from './components/Canvas';
 import ModelSelector from './components/ModelSelector';
 import AttachmentUpload from './components/AttachmentUpload';
 import ChatHistory from './components/ChatHistory';
-import StaticStreamingBubble from './components/StaticStreamingBubble';
 import ThinkingBubble from './components/ThinkingBubble';
 import SSEStreamingBubble from './components/SSEStreamingBubble';
 import { chatService, type ChatMessage as APIChatMessage } from '@/api/services/chatService';
@@ -74,14 +70,14 @@ interface ChatSession {
   isPinned?: boolean; // 新增置顶字段
 }
 
-// 模型选项
-const modelOptions = [
-  { label: 'GPT-4.1', value: 'gpt-4.1', provider: 'OpenAI' },
-  { label: 'GPT-4o', value: 'gpt-4o', provider: 'OpenAI' },
-  { label: 'GPT-4', value: 'gpt-4', provider: 'OpenAI' },
-  { label: 'Claude-3.5 Sonnet', value: 'claude-3.5-sonnet', provider: 'Anthropic' },
-  { label: 'Gemini Pro', value: 'gemini-pro', provider: 'Google' },
-];
+// 模型选项（已弃用，现在使用API获取）
+// const modelOptions = [
+//   { label: 'GPT-4.1', value: 'gpt-4.1', provider: 'OpenAI' },
+//   { label: 'GPT-4o', value: 'gpt-4o', provider: 'OpenAI' },
+//   { label: 'GPT-4', value: 'gpt-4', provider: 'OpenAI' },
+//   { label: 'Claude-3.5 Sonnet', value: 'claude-3.5-sonnet', provider: 'Anthropic' },
+//   { label: 'Gemini Pro', value: 'gemini-pro', provider: 'Google' },
+// ];
 
 const ChatPage: React.FC = () => {
   const userInfo = useUserInfo();
@@ -90,7 +86,8 @@ const ChatPage: React.FC = () => {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
-  const [selectedModel, setSelectedModel] = useState('gpt-4.1');
+  const [selectedModel, setSelectedModel] = useState('784aa44f602c4786a08ff9f968ea8237');
+  const [selectedModelType, setSelectedModelType] = useState<string>(''); // 新增：存储模型类型
   const [thinkingMode, setThinkingMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState<string>('');
@@ -110,6 +107,14 @@ const ChatPage: React.FC = () => {
         top: scrollElement.scrollHeight,
         behavior: smooth ? 'smooth' : 'auto'
       });
+    }
+  }, []);
+
+  // 处理模型选择变化
+  const handleModelChange = useCallback((modelId: string, modelType?: string) => {
+    setSelectedModel(modelId);
+    if (modelType) {
+      setSelectedModelType(modelType);
     }
   }, []);
 
@@ -279,6 +284,7 @@ const ChatPage: React.FC = () => {
           messages: apiMessages,
           temperature: 0.7,
           max_tokens: 2048,
+          ...(selectedModelType && { chatType: selectedModelType }), // 添加chatType参数
         },
         (chunk) => {
           const content = chunk.choices[0]?.delta?.content;
@@ -380,6 +386,7 @@ const ChatPage: React.FC = () => {
           messages: apiMessages,
           temperature: 0.7,
           max_tokens: 2048,
+          ...(selectedModelType && { chatType: selectedModelType }), // 添加chatType参数
         },
         (chunk) => {
           const content = chunk.choices[0]?.delta?.content;
@@ -475,6 +482,7 @@ const ChatPage: React.FC = () => {
           messages: apiMessages,
           temperature: 0.7,
           max_tokens: 2048,
+          ...(selectedModelType && { chatType: selectedModelType }), // 添加chatType参数
         },
         (chunk) => {
           const content = chunk.choices[0]?.delta?.content;
@@ -584,12 +592,6 @@ const ChatPage: React.FC = () => {
     });
   }, []);
 
-  // 判断是否显示欢迎界面
-  const shouldShowWelcome = () => {
-    // 没有会话或者当前会话没有消息时显示欢迎界面
-    return sessions.length === 0 || (!currentSession) || messages.length === 0;
-  };
-
   // 分享对话
   const handleShare = useCallback(() => {
     setShareModalVisible(true);
@@ -617,30 +619,6 @@ const ChatPage: React.FC = () => {
       antdMessage.error('复制失败，请手动复制');
     }
   }, []);
-
-  // 删除单条消息
-  const handleDeleteMessage = useCallback((messageId: string) => {
-    Modal.confirm({
-      title: '删除消息',
-      icon: <DeleteOutlined />,
-      content: '确定要删除这条消息吗？此操作不可撤销。',
-      okText: '删除',
-      okType: 'danger',
-      cancelText: '取消',
-      onOk() {
-        // 从当前消息列表中移除指定消息
-        const updatedMessages = messages.filter(msg => msg.id !== messageId);
-        setMessages(updatedMessages);
-
-        // 如果有当前会话，同步更新会话数据
-        if (currentSession) {
-          updateSessionMessages(currentSession, updatedMessages);
-        }
-
-        antdMessage.success('消息已删除');
-      },
-    });
-  }, [messages, currentSession, updateSessionMessages]);
 
   // 置顶/取消置顶会话
   const handlePinSession = useCallback((sessionId: string, isPinned: boolean) => {
@@ -843,31 +821,6 @@ const ChatPage: React.FC = () => {
     return sidebarCollapsed ? renderCollapsedSidebar() : renderExpandedSidebar();
   };
 
-  // 对话区域消息项菜单
-  const getMessageMenuItems = (message: ChatMessage): MenuProps['items'] => [
-    {
-      key: 'copy',
-      label: '复制',
-      icon: <EditOutlined />,
-      onClick: () => handleCopyMessage(message.content),
-    },
-    ...(message.role === 'assistant' ? [
-      {
-        key: 'canvas',
-        label: '在画布中查看',
-        icon: <CodeOutlined />,
-        onClick: () => handleShowCanvas(message.content),
-      }
-    ] : []),
-    {
-      key: 'delete',
-      label: '删除',
-      icon: <DeleteOutlined />,
-      danger: true,
-      onClick: () => handleDeleteMessage(message.id),
-    },
-  ];
-
   // 监听消息变化并自动滚动
   useEffect(() => {
     // 当消息列表更新时自动滚动到底部
@@ -958,31 +911,99 @@ const ChatPage: React.FC = () => {
 
           {/* 对话区域 */}
           <div className="chat-conversation-area">
-            <div className="chat-messages-container">
-              {/* 消息列表 */}
-              <div className="chat-messages-scroll" ref={messagesScrollRef}>
-                {shouldShowWelcome() ? (
-                  <div className="chat-welcome">
-                    <Welcome
-                      variant="filled"
-                      icon={<RobotOutlined />}
-                      title="欢迎使用 AI 助手"
-                      description="我是您的智能助手，可以帮助您解答问题、生成内容、编写代码等。请开始我们的对话吧！"
-                      extra={
-                        <Prompts
-                          title="您可以尝试问我："
-                          items={[
-                            { key: '1', label: '帮我写一个 React 组件' },
-                            { key: '2', label: '解释什么是人工智能' },
-                            { key: '3', label: '推荐一些学习资源' },
-                            { key: '4', label: '分析这段代码的功能' },
-                          ]}
-                          onItemClick={(item) => setInputValue(String(item.data.label))}
-                        />
-                      }
-                    />
+            {/* 当没有消息时，输入区域居中显示 */}
+            {messages.length === 0 ? (
+              <div className="chat-empty-state">
+                <div className="chat-input-centered">
+                  {/* 品牌标识 */}
+                  <div className="chat-brand-header">
+                    <div className="brand-icon">
+                      <div className="brain-icon">🧠</div>
+                    </div>
+                    <h1 className="brand-title">luminaBrain</h1>
                   </div>
-                ) : (
+
+                  <div className="chat-input-container">
+                    {/* 主要交互面板 */}
+                    <div className={`chat-interaction-panel ${isLoading ? 'loading' : ''}`}>
+                      {/* 输入区域 */}
+                      <div className="chat-input-section">
+                        <Sender
+                          value={inputValue}
+                          onChange={setInputValue}
+                          onSubmit={handleSendMessage}
+                          onFocus={() => { }}
+                          onBlur={() => { }}
+                          onKeyPress={(e: React.KeyboardEvent) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              handleSendMessage();
+                            }
+                          }}
+                          placeholder="输入消息开始对话... (Shift + Enter 换行)"
+                          loading={isLoading}
+                          disabled={isLoading}
+                          className="chat-input-enhanced"
+                          actions={false} // 隐藏内置的发送按钮
+                        />
+                      </div>
+
+                      {/* 控制面板 */}
+                      <div className="chat-controls-section">
+                        {/* 左侧工具组 */}
+                        <div className="chat-tools-group">
+                          {/* 文件上传 */}
+                          <div className="chat-attachment-upload">
+                            <AttachmentUpload
+                              onUpload={handleFileUpload}
+                              className="chat-attachment-btn"
+                            />
+                          </div>
+
+                          {/* 思考模式 */}
+                          <Tooltip title="启用思考模式，AI会显示思考过程" className="chat-tool-tooltip">
+                            <div
+                              className={`chat-thinking-toggle ${thinkingMode ? 'active' : ''}`}
+                              onClick={() => setThinkingMode(!thinkingMode)}
+                            >
+                              <BulbOutlined className="chat-thinking-icon" />
+                              <Text className="chat-thinking-text">Think</Text>
+                            </div>
+                          </Tooltip>
+                        </div>
+
+                        {/* 右侧控制组 */}
+                        <div className="chat-action-group">
+                          {/* 模型选择器 */}
+                          <div className="chat-model-selector">
+                            <ModelSelector
+                              value={selectedModel}
+                              onChange={handleModelChange}
+                            />
+                          </div>
+
+                          {/* 发送按钮 */}
+                          <Button
+                            type="primary"
+                            icon={<SendOutlined />}
+                            onClick={handleSendMessage}
+                            disabled={!inputValue.trim() || isLoading}
+                            loading={isLoading}
+                            className="chat-send-button"
+                          >
+                            发送
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* 有消息时的正常布局 */
+              <div className="chat-messages-container">
+                {/* 消息列表 */}
+                <div className="chat-messages-scroll" ref={messagesScrollRef}>
                   <div className="chat-messages-content">
                     {messages.map((message) => {
                       // 用户消息使用新的UserMessageBubble组件
@@ -1047,88 +1068,87 @@ const ChatPage: React.FC = () => {
                       <ThinkingBubble thinkingMode={thinkingMode} />
                     )}
                   </div>
-                )}
-              </div>
+                </div>
 
-              {/* 输入区域 */}
-              <div className="chat-input-area">
-                <div className="chat-input-container">
-                  {/* 主要交互面板 */}
-                  <div className={`chat-interaction-panel ${isLoading ? 'loading' : ''}`}>
-                    {/* 输入区域 */}
-                    <div className="chat-input-section">
-                      <Sender
-                        value={inputValue}
-                        onChange={setInputValue}
-                        onSubmit={handleSendMessage}
-                        onFocus={() => { }}
-                        onBlur={() => { }}
-                        onKeyPress={(e: React.KeyboardEvent) => {
-                          if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            handleSendMessage();
-                          }
-                        }}
-                        placeholder="输入消息... (Shift + Enter 换行)"
-                        loading={isLoading}
-                        disabled={isLoading}
-                        className="chat-input-enhanced"
-                        actions={false} // 隐藏内置的发送按钮
-                      />
-                    </div>
-
-                    {/* 控制面板 */}
-                    <div className="chat-controls-section">
-                      {/* 左侧工具组 */}
-                      <div className="chat-tools-group">
-                        {/* 文件上传 */}
-                        <div className="chat-attachment-upload">
-                          <AttachmentUpload
-                            onUpload={handleFileUpload}
-                            className="chat-attachment-btn"
-                          />
-                        </div>
-
-                        {/* 思考模式 */}
-                        <Tooltip title="启用思考模式，AI会显示思考过程" className="chat-tool-tooltip">
-                          <div
-                            className={`chat-thinking-toggle ${thinkingMode ? 'active' : ''}`}
-                            onClick={() => setThinkingMode(!thinkingMode)}
-                          >
-                            <BulbOutlined className="chat-thinking-icon" />
-                            <Text className="chat-thinking-text">Think</Text>
-                          </div>
-                        </Tooltip>
+                {/* 输入区域 - 固定在底部 */}
+                <div className="chat-input-area">
+                  <div className="chat-input-container">
+                    {/* 主要交互面板 */}
+                    <div className={`chat-interaction-panel ${isLoading ? 'loading' : ''}`}>
+                      {/* 输入区域 */}
+                      <div className="chat-input-section">
+                        <Sender
+                          value={inputValue}
+                          onChange={setInputValue}
+                          onSubmit={handleSendMessage}
+                          onFocus={() => { }}
+                          onBlur={() => { }}
+                          onKeyPress={(e: React.KeyboardEvent) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              handleSendMessage();
+                            }
+                          }}
+                          placeholder="输入消息... (Shift + Enter 换行)"
+                          loading={isLoading}
+                          disabled={isLoading}
+                          className="chat-input-enhanced"
+                          actions={false} // 隐藏内置的发送按钮
+                        />
                       </div>
 
-                      {/* 右侧控制组 */}
-                      <div className="chat-action-group">
-                        {/* 模型选择器 */}
-                        <div className="chat-model-selector">
-                          <ModelSelector
-                            value={selectedModel}
-                            onChange={setSelectedModel}
-                            options={modelOptions}
-                          />
+                      {/* 控制面板 */}
+                      <div className="chat-controls-section">
+                        {/* 左侧工具组 */}
+                        <div className="chat-tools-group">
+                          {/* 文件上传 */}
+                          <div className="chat-attachment-upload">
+                            <AttachmentUpload
+                              onUpload={handleFileUpload}
+                              className="chat-attachment-btn"
+                            />
+                          </div>
+
+                          {/* 思考模式 */}
+                          <Tooltip title="启用思考模式，AI会显示思考过程" className="chat-tool-tooltip">
+                            <div
+                              className={`chat-thinking-toggle ${thinkingMode ? 'active' : ''}`}
+                              onClick={() => setThinkingMode(!thinkingMode)}
+                            >
+                              <BulbOutlined className="chat-thinking-icon" />
+                              <Text className="chat-thinking-text">Think</Text>
+                            </div>
+                          </Tooltip>
                         </div>
 
-                        {/* 发送按钮 */}
-                        <Button
-                          type="primary"
-                          icon={<SendOutlined />}
-                          onClick={handleSendMessage}
-                          disabled={!inputValue.trim() || isLoading}
-                          loading={isLoading}
-                          className="chat-send-button"
-                        >
-                          发送
-                        </Button>
+                        {/* 右侧控制组 */}
+                        <div className="chat-action-group">
+                          {/* 模型选择器 */}
+                          <div className="chat-model-selector">
+                            <ModelSelector
+                              value={selectedModel}
+                              onChange={handleModelChange}
+                            />
+                          </div>
+
+                          {/* 发送按钮 */}
+                          <Button
+                            type="primary"
+                            icon={<SendOutlined />}
+                            onClick={handleSendMessage}
+                            disabled={!inputValue.trim() || isLoading}
+                            loading={isLoading}
+                            className="chat-send-button"
+                          >
+                            发送
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* 代码/文档画布 */}
             {showCanvas && (

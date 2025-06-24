@@ -3,6 +3,7 @@ import glass_buy from "@/assets/images/glass/ic_glass_buy.png";
 import glass_message from "@/assets/images/glass/ic_glass_message.png";
 import glass_users from "@/assets/images/glass/ic_glass_users.png";
 import { Iconify } from "@/components/icon";
+import TestModelSelector from "@/components/TestModelSelector";
 import ChartBar from "@/pages/components/chart/view/chart-bar";
 import ChartMixed from "@/pages/components/chart/view/chart-mixed";
 import ChartPie from "@/pages/components/chart/view/chart-pie";
@@ -150,6 +151,9 @@ function Analysis() {
 					</Card>
 				</Col>
 			</Row>
+
+			{/* 添加模型选择器测试 */}
+			<TestModelSelector />
 		</div>
 	);
 }

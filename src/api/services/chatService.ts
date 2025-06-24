@@ -1,5 +1,3 @@
-import apiClient from '../apiClient';
-
 // OpenAI兼容的消息格式
 export interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
@@ -16,6 +14,7 @@ export interface ChatCompletionRequest {
   top_p?: number;
   frequency_penalty?: number;
   presence_penalty?: number;
+  chatType?: string; // 新增：模型类型
 }
 
 // OpenAI兼容的聊天响应格式
@@ -127,7 +126,6 @@ export class ChatService {
           const { done, value } = await reader.read();
           
           if (done) {
-            console.log('Stream completed');
             onComplete();
             break;
           }
@@ -150,7 +148,6 @@ export class ChatService {
 
             // 处理 SSE 结束标志
             if (trimmedLine === 'data: [DONE]') {
-              console.log('Received [DONE] signal');
               onComplete();
               return;
             }
@@ -163,17 +160,26 @@ export class ChatService {
                 // 跳过空的 data 行
                 if (!jsonData) continue;
                 
-                const parsedChunk: ChatCompletionStreamChunk = JSON.parse(jsonData);
+                const parsedChunk = JSON.parse(jsonData);
                 
-                // 验证数据结构
+                // 检查是否是错误响应格式
+                if (parsedChunk.success === false && parsedChunk.statusCode && parsedChunk.message) {
+                  throw new Error(`服务器错误 (${parsedChunk.statusCode}): ${parsedChunk.message}`);
+                }
+                
+                // 验证数据结构（正常的流式响应）
                 if (parsedChunk && parsedChunk.choices && parsedChunk.choices.length > 0) {
                   onChunk(parsedChunk);
                 } else {
                   console.warn('Invalid chunk structure:', parsedChunk);
                 }
               } catch (parseError) {
+                if (parseError instanceof Error && parseError.message.includes('服务器错误')) {
+                  // 这是我们检测到的服务器错误，重新抛出
+                  throw parseError;
+                }
                 console.warn('Failed to parse SSE chunk:', parseError, 'Line:', trimmedLine);
-                // 不抛出错误，继续处理下一行
+                // 其他解析错误不抛出，继续处理下一行
               }
             }
           }
@@ -205,13 +211,15 @@ export const chatService = new ChatService();
 export const sendMessage = async (
   messages: ChatMessage[],
   model: string = 'gpt-4.1',
-  streaming: boolean = true
+  streaming: boolean = true,
+  chatType?: string // 新增：模型类型参数
 ): Promise<string> => {
   const request: ChatCompletionRequest = {
     model,
     messages,
     temperature: 0.7,
     max_tokens: 8000,
+    ...(chatType && { chatType }), // 如果有chatType则添加到请求中
   };
 
   if (streaming) {
