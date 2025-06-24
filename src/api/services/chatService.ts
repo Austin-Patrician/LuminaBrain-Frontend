@@ -1,3 +1,5 @@
+import apiClient from '../apiClient';
+
 // OpenAI兼容的消息格式
 export interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
@@ -113,6 +115,7 @@ export class ChatService {
         throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
 
+
       if (!response.body) {
         throw new Error('Response body is null');
       }
@@ -160,26 +163,17 @@ export class ChatService {
                 // 跳过空的 data 行
                 if (!jsonData) continue;
                 
-                const parsedChunk = JSON.parse(jsonData);
+                const parsedChunk: ChatCompletionStreamChunk = JSON.parse(jsonData);
                 
-                // 检查是否是错误响应格式
-                if (parsedChunk.success === false && parsedChunk.statusCode && parsedChunk.message) {
-                  throw new Error(`服务器错误 (${parsedChunk.statusCode}): ${parsedChunk.message}`);
-                }
-                
-                // 验证数据结构（正常的流式响应）
+                // 验证数据结构
                 if (parsedChunk && parsedChunk.choices && parsedChunk.choices.length > 0) {
                   onChunk(parsedChunk);
                 } else {
                   console.warn('Invalid chunk structure:', parsedChunk);
                 }
               } catch (parseError) {
-                if (parseError instanceof Error && parseError.message.includes('服务器错误')) {
-                  // 这是我们检测到的服务器错误，重新抛出
-                  throw parseError;
-                }
                 console.warn('Failed to parse SSE chunk:', parseError, 'Line:', trimmedLine);
-                // 其他解析错误不抛出，继续处理下一行
+                // 不抛出错误，继续处理下一行
               }
             }
           }
