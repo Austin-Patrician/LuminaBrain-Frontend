@@ -5,7 +5,7 @@ import {
   Input,
   Avatar,
   Typography,
-  message,
+  message as antdMessage,
   Modal,
   Dropdown,
   Tooltip,
@@ -40,6 +40,7 @@ import ThinkingBubble from './components/ThinkingBubble';
 import SSEStreamingBubble from './components/SSEStreamingBubble';
 import { chatService, type ChatMessage as APIChatMessage } from '@/api/services/chatService';
 import UserMessageBubble from './components/UserMessageBubble';
+import AssistantMessageBubble from './components/AssistantMessageBubble';
 import './index.css';
 
 const { Sider, Content } = Layout;
@@ -59,6 +60,7 @@ interface ChatMessage {
   }>;
   thinking?: boolean;
   streaming?: boolean; // 新增：标识是否是流式生成的消息
+  responseTime?: number; // 新增：响应时间（秒）
 }
 
 // 对话会话类型
@@ -216,6 +218,9 @@ const ChatPage: React.FC = () => {
   const handleSendMessage = useCallback(async () => {
     if (!inputValue.trim()) return;
 
+    // 记录开始时间
+    const startTime = Date.now();
+
     // 如果没有当前会话，先创建一个
     let activeSessionId = currentSession;
     if (!activeSessionId) {
@@ -284,6 +289,10 @@ const ChatPage: React.FC = () => {
           }
         },
         () => {
+          // 计算响应时间
+          const endTime = Date.now();
+          const responseTime = Number(((endTime - startTime) / 1000).toFixed(1));
+
           // 流式输出完成
           const assistantMessage: ChatMessage = {
             id: `msg_${Date.now()}_assistant`,
@@ -292,6 +301,7 @@ const ChatPage: React.FC = () => {
             timestamp: new Date(),
             thinking: thinkingMode,
             streaming: true,
+            responseTime: responseTime, // 添加响应时间
           };
 
           const finalMessages = [...newMessages, assistantMessage];
@@ -302,7 +312,7 @@ const ChatPage: React.FC = () => {
         },
         (error) => {
           console.error('Chat error:', error);
-          message.error(`消息发送失败：${error.message}`);
+          antdMessage.error(`消息发送失败：${error.message}`);
           setIsLoading(false);
           setIsStreaming(false);
           setStreamingMessage('');
@@ -310,7 +320,7 @@ const ChatPage: React.FC = () => {
       );
     } catch (error) {
       console.error('Send message error:', error);
-      message.error('消息发送失败，请重试');
+      antdMessage.error('消息发送失败，请重试');
       setIsLoading(false);
       setIsStreaming(false);
       setStreamingMessage('');
@@ -319,6 +329,9 @@ const ChatPage: React.FC = () => {
 
   // 编辑用户消息
   const handleEditUserMessage = useCallback(async (messageId: string, newContent: string) => {
+    // 记录开始时间
+    const startTime = Date.now();
+
     // 找到消息在列表中的位置
     const messageIndex = messages.findIndex(msg => msg.id === messageId);
     if (messageIndex === -1) return;
@@ -377,6 +390,10 @@ const ChatPage: React.FC = () => {
           }
         },
         () => {
+          // 计算响应时间
+          const endTime = Date.now();
+          const responseTime = Number(((endTime - startTime) / 1000).toFixed(1));
+
           // 流式输出完成
           const assistantMessage: ChatMessage = {
             id: `msg_${Date.now()}_assistant`,
@@ -385,6 +402,7 @@ const ChatPage: React.FC = () => {
             timestamp: new Date(),
             thinking: thinkingMode,
             streaming: true,
+            responseTime: responseTime, // 添加响应时间
           };
 
           const finalMessages = [...messagesToKeep, assistantMessage];
@@ -397,7 +415,7 @@ const ChatPage: React.FC = () => {
         },
         (error) => {
           console.error('Chat error:', error);
-          message.error(`重新生成回复失败：${error.message}`);
+          antdMessage.error(`重新生成回复失败：${error.message}`);
           setIsLoading(false);
           setIsStreaming(false);
           setStreamingMessage('');
@@ -405,7 +423,102 @@ const ChatPage: React.FC = () => {
       );
     } catch (error) {
       console.error('Regenerate message error:', error);
-      message.error('重新生成回复失败，请重试');
+      antdMessage.error('重新生成回复失败，请重试');
+      setIsLoading(false);
+      setIsStreaming(false);
+      setStreamingMessage('');
+    }
+  }, [messages, currentSession, selectedModel, thinkingMode, updateSessionMessages]);
+
+  // 处理重新生成AI回复
+  const handleRegenerateResponse = useCallback(async (messageId: string) => {
+    // 记录开始时间
+    const startTime = Date.now();
+
+    // 找到对应的AI消息
+    const messageIndex = messages.findIndex(msg => msg.id === messageId);
+    if (messageIndex === -1) return;
+
+    // 获取该AI消息之前的所有消息（包括用户消息）
+    const messagesToKeep = messages.slice(0, messageIndex);
+
+    setMessages(messagesToKeep);
+
+    // 如果有当前会话，同步更新会话数据
+    if (currentSession) {
+      updateSessionMessages(currentSession, messagesToKeep);
+    }
+
+    // 重新发送请求
+    setIsLoading(true);
+
+    try {
+      // 转换消息格式为API格式
+      const apiMessages: APIChatMessage[] = messagesToKeep.map(msg => ({
+        role: msg.role,
+        content: msg.content,
+      }));
+
+      let fullResponse = '';
+
+      // 显示思考状态
+      setTimeout(() => {
+        setIsLoading(false);
+        setIsStreaming(true);
+        setStreamingMessage(''); // 重置流式消息
+      }, 800);
+
+      // 直接调用真实的流式API
+      await chatService.createStreamingChatCompletion(
+        {
+          model: selectedModel,
+          messages: apiMessages,
+          temperature: 0.7,
+          max_tokens: 2048,
+        },
+        (chunk) => {
+          const content = chunk.choices[0]?.delta?.content;
+          if (content) {
+            fullResponse += content;
+            // 直接设置累积的内容
+            setStreamingMessage(fullResponse);
+          }
+        },
+        () => {
+          // 计算响应时间
+          const endTime = Date.now();
+          const responseTime = Number(((endTime - startTime) / 1000).toFixed(1));
+
+          // 流式输出完成
+          const assistantMessage: ChatMessage = {
+            id: `msg_${Date.now()}_assistant`,
+            role: 'assistant',
+            content: fullResponse,
+            timestamp: new Date(),
+            thinking: thinkingMode,
+            streaming: true,
+            responseTime: responseTime, // 添加响应时间
+          };
+
+          const finalMessages = [...messagesToKeep, assistantMessage];
+          setMessages(finalMessages);
+          if (currentSession) {
+            updateSessionMessages(currentSession, finalMessages);
+          }
+          setIsStreaming(false);
+          setStreamingMessage('');
+        },
+        (error) => {
+          console.error('Chat error:', error);
+          antdMessage.error(`重新生成回复失败：${error.message}`);
+          setIsLoading(false);
+          setIsStreaming(false);
+          setStreamingMessage('');
+        }
+      );
+    } catch (error) {
+      console.error('Regenerate message error:', error);
+      antdMessage.error('重新生成回复失败，请重试');
       setIsLoading(false);
       setIsStreaming(false);
       setStreamingMessage('');
@@ -466,7 +579,7 @@ const ChatPage: React.FC = () => {
         setMessages([]);
         localStorage.removeItem('chat-sessions');
         localStorage.removeItem('chat-current-session');
-        message.success('所有对话已清空');
+        antdMessage.success('所有对话已清空');
       },
     });
   }, []);
@@ -490,7 +603,7 @@ const ChatPage: React.FC = () => {
 
   // 文件上传处理
   const handleFileUpload = useCallback((file: File) => {
-    message.success(`文件 ${file.name} 上传成功`);
+    antdMessage.success(`文件 ${file.name} 上传成功`);
     return false; // 阻止自动上传
   }, []);
 
@@ -498,10 +611,10 @@ const ChatPage: React.FC = () => {
   const handleCopyMessage = useCallback(async (content: string) => {
     try {
       await navigator.clipboard.writeText(content);
-      message.success('消息已复制到剪贴板');
+      antdMessage.success('消息已复制到剪贴板');
     } catch (error) {
       console.error('复制失败:', error);
-      message.error('复制失败，请手动复制');
+      antdMessage.error('复制失败，请手动复制');
     }
   }, []);
 
@@ -524,7 +637,7 @@ const ChatPage: React.FC = () => {
           updateSessionMessages(currentSession, updatedMessages);
         }
 
-        message.success('消息已删除');
+        antdMessage.success('消息已删除');
       },
     });
   }, [messages, currentSession, updateSessionMessages]);
@@ -570,7 +683,7 @@ const ChatPage: React.FC = () => {
       label: '设置',
       icon: <SettingOutlined />,
       onClick: () => {
-        message.info('设置功能开发中...');
+        antdMessage.info('设置功能开发中...');
       },
     },
     {
@@ -578,7 +691,7 @@ const ChatPage: React.FC = () => {
       label: '社区',
       icon: <TeamOutlined />,
       onClick: () => {
-        message.info('社区功能开发中...');
+        antdMessage.info('社区功能开发中...');
       },
     },
     {
@@ -586,7 +699,7 @@ const ChatPage: React.FC = () => {
       label: '帮助中心',
       icon: <QuestionCircleOutlined />,
       onClick: () => {
-        message.info('帮助中心开发中...');
+        antdMessage.info('帮助中心开发中...');
       },
     },
     {
@@ -594,7 +707,7 @@ const ChatPage: React.FC = () => {
       label: '报告问题',
       icon: <BugOutlined />,
       onClick: () => {
-        message.info('问题反馈功能开发中...');
+        antdMessage.info('问题反馈功能开发中...');
       },
     },
     {
@@ -612,7 +725,7 @@ const ChatPage: React.FC = () => {
           okText: '确定',
           cancelText: '取消',
           onOk() {
-            message.success('已退出登录');
+            antdMessage.success('已退出登录');
             // 这里应该调用登出API和清理用户状态
           },
         });
@@ -872,20 +985,6 @@ const ChatPage: React.FC = () => {
                 ) : (
                   <div className="chat-messages-content">
                     {messages.map((message) => {
-                      // 如果是流式生成的助手消息，使用StaticStreamingBubble
-                      if (message.role === 'assistant' && message.streaming) {
-                        return (
-                          <StaticStreamingBubble
-                            key={message.id}
-                            content={message.content}
-                            thinking={message.thinking}
-                            timestamp={message.timestamp}
-                            messageActions={getMessageMenuItems(message)}
-                            className="fade-in"
-                          />
-                        );
-                      }
-
                       // 用户消息使用新的UserMessageBubble组件
                       if (message.role === 'user') {
                         return (
@@ -899,45 +998,35 @@ const ChatPage: React.FC = () => {
                         );
                       }
 
-                      // 其他助手消息使用原来的Bubble组件
-                      return (
-                        <div
-                          key={message.id}
-                          className={`message-bubble-container ${message.role} fade-in`}
-                        >
-                          <div className="message-bubble-wrapper">
-                            <div className="message-bubble">
-                              <Bubble
-                                content={message.content}
-                                avatar={{
-                                  src: undefined,
-                                  icon: <RobotOutlined />,
-                                }}
-                                variant="outlined"
-                                placement="start"
-                              />
-                              <div className="message-footer">
-                                <Text type="secondary" className="message-time">
-                                  {message.timestamp.toLocaleTimeString()}
-                                </Text>
-                                <div className="message-actions">
-                                  <Dropdown
-                                    menu={{ items: getMessageMenuItems(message) }}
-                                    trigger={['click']}
-                                    placement="bottomRight"
-                                  >
-                                    <Button
-                                      type="text"
-                                      size="small"
-                                      icon={<MoreOutlined />}
-                                    />
-                                  </Dropdown>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
+                      // 所有助手消息统一使用新的AssistantMessageBubble组件
+                      if (message.role === 'assistant') {
+                        return (
+                          <AssistantMessageBubble
+                            key={message.id}
+                            content={message.content}
+                            timestamp={message.timestamp}
+                            responseTime={message.responseTime}
+                            thinking={message.thinking}
+                            onRegenerate={() => handleRegenerateResponse(message.id)}
+                            onCopy={handleCopyMessage}
+                            onShare={(content) => {
+                              // 处理分享单条消息
+                              navigator.clipboard.writeText(content);
+                              antdMessage.success('消息内容已复制到剪贴板');
+                            }}
+                            onLike={() => {
+                              console.log('用户点赞了消息:', message.id);
+                            }}
+                            onDislike={() => {
+                              console.log('用户点踩了消息:', message.id);
+                            }}
+                            className="fade-in"
+                          />
+                        );
+                      }
+
+                      // 其他消息类型的后备渲染（理论上不会执行到）
+                      return null;
                     })}
 
                     {/* 流式输出消息 */}
@@ -1065,7 +1154,7 @@ const ChatPage: React.FC = () => {
           </Button>,
           <Button key="copy" type="primary" onClick={() => {
             navigator.clipboard.writeText(window.location.href + '?share=' + currentSession);
-            message.success('分享链接已复制到剪贴板');
+            antdMessage.success('分享链接已复制到剪贴板');
             setShareModalVisible(false);
           }}>
             复制链接
@@ -1084,7 +1173,7 @@ const ChatPage: React.FC = () => {
                   size="small"
                   onClick={() => {
                     navigator.clipboard.writeText(window.location.href + '?share=' + currentSession);
-                    message.success('已复制');
+                    antdMessage.success('已复制');
                   }}
                 >
                   复制

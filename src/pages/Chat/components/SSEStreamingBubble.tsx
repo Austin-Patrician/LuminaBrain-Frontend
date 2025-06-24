@@ -109,7 +109,9 @@ const SSEStreamingBubble: React.FC<SSEStreamingBubbleProps> = ({
     padding: '12px 16px',
     minWidth: 0,
     flexGrow: 1,
-    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
+    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+    /* 使用Source Sans Pro作为聊天内容字体 */
+    fontFamily: "'Source Sans Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif"
   };
 
   const cursorStyle: React.CSSProperties = {
@@ -179,7 +181,7 @@ const SSEStreamingBubble: React.FC<SSEStreamingBubbleProps> = ({
                     animationDelay: '0s'
                   }}></span>
                 </span>
-                <Text type="secondary" style={{ fontSize: '12px' }}>思考中...</Text>
+                <Text type="secondary" style={{ fontSize: '12px', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif" }}>思考中...</Text>
               </div>
             )}
 
@@ -189,7 +191,7 @@ const SSEStreamingBubble: React.FC<SSEStreamingBubbleProps> = ({
                 paddingTop: '8px',
                 borderTop: '1px solid #f0f0f0'
               }}>
-                <Text type="secondary" style={{ fontSize: '12px', color: '#6b7280' }}>
+                <Text type="secondary" style={{ fontSize: '12px', color: '#6b7280', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif" }}>
                   正在生成回复...
                 </Text>
               </div>
