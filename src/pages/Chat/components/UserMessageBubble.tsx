@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Typography, Button, Input, message, Tooltip } from 'antd';
-import { EditOutlined, CopyOutlined, SaveOutlined, CloseOutlined } from '@ant-design/icons';
+import { EditOutlined, CopyOutlined, SaveOutlined } from '@ant-design/icons';
+import { FileOutlined } from '@ant-design/icons';
 import './UserMessageBubble.css';
 
 const { Text } = Typography;
@@ -8,6 +9,13 @@ const { TextArea } = Input;
 
 interface UserMessageBubbleProps {
   content: string;
+  attachments?: Array<{
+    id: string;
+    name: string;
+    url: string;
+    type: string;
+    size: number;
+  }>; // 新增附件支持
   onEdit?: (newContent: string) => void;
   onCopy?: (content: string) => void;
   className?: string;
@@ -15,6 +23,7 @@ interface UserMessageBubbleProps {
 
 const UserMessageBubble: React.FC<UserMessageBubbleProps> = ({
   content,
+  attachments,
   onEdit,
   onCopy,
   className = ''
@@ -63,71 +72,100 @@ const UserMessageBubble: React.FC<UserMessageBubbleProps> = ({
         {/* 消息气泡 */}
         <div className="user-message-bubble">
           {isEditing ? (
-            // 编辑模式
-            <div className="user-message-edit-container">
-              <TextArea
-                value={editContent}
-                onChange={(e) => setEditContent(e.target.value)}
-                autoSize={{ minRows: 1, maxRows: 6 }}
-                placeholder="输入消息内容..."
-                className="user-message-edit-textarea"
-                autoFocus
-              />
-              <div className="user-message-edit-actions">
-                <Button
-                  size="small"
-                  onClick={handleCancelEdit}
-                  icon={<CloseOutlined />}
-                >
-                  取消
-                </Button>
-                <Button
-                  type="primary"
-                  size="small"
-                  onClick={handleSaveEdit}
-                  icon={<SaveOutlined />}
-                >
-                  保存
-                </Button>
+            // 编辑模式 - 使用类似主输入框的样式
+            <div className="user-message-edit-panel">
+              <div className="user-message-edit-input-section">
+                <TextArea
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
+                  autoSize={{ minRows: 2, maxRows: 8 }}
+                  placeholder="编辑消息内容..."
+                  className="user-message-edit-input"
+                  autoFocus
+                />
+              </div>
+              <div className="user-message-edit-controls">
+                <div className="edit-controls-left">
+                  <Text type="secondary" className="edit-char-count">
+                    {editContent.length} 字符
+                  </Text>
+                </div>
+                <div className="edit-controls-right">
+                  <Button
+                    size="middle"
+                    onClick={handleCancelEdit}
+                    className="edit-cancel-btn"
+                  >
+                    取消
+                  </Button>
+                  <Button
+                    type="primary"
+                    size="middle"
+                    onClick={handleSaveEdit}
+                    icon={<SaveOutlined />}
+                    className="edit-save-btn"
+                  >
+                    保存
+                  </Button>
+                </div>
               </div>
             </div>
           ) : (
             // 显示模式
             <div className="user-message-content">
               <Text>{content}</Text>
+
+              {/* 显示附件 */}
+              {attachments && attachments.length > 0 && (
+                <div className="user-message-attachments">
+                  {attachments.map((attachment) => (
+                    <div key={attachment.id} className="user-attachment-item">
+                      <FileOutlined className="attachment-icon" />
+                      <Text className="attachment-name" ellipsis>
+                        {attachment.name}
+                      </Text>
+                      <Text className="attachment-size" type="secondary">
+                        ({(attachment.size / 1024 / 1024).toFixed(1)} MB)
+                      </Text>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
 
-        {/* 操作按钮 - 消息下方右对齐 */}
+        {/* 工具栏 - 使用新的样式 */}
         {!isEditing && (
-          <div className="user-message-actions">
-            <Tooltip
-              title="编辑消息"
-              placement="bottom"
-              overlayClassName="user-message-tooltip"
-            >
-              <Button
-                type="text"
-                size="small"
-                icon={<EditOutlined />}
-                onClick={() => setIsEditing(true)}
-                className="user-message-action-btn"
-              />
-            </Tooltip>
-            <Tooltip
-              title="复制消息"
-              placement="bottom"
-              overlayClassName="user-message-tooltip"
-            >
-              <Button
-                type="text"
-                size="small"
-                icon={<CopyOutlined />}
-                onClick={handleCopy}
-                className="user-message-action-btn"
-              />
-            </Tooltip>
+          <div className="user-message-toolbar">
+            <div className="user-message-actions">
+              <Tooltip
+                title="编辑消息"
+                placement="bottom"
+                overlayClassName="user-message-tooltip"
+              >
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<EditOutlined />}
+                  onClick={() => setIsEditing(true)}
+                  className="user-message-action-btn"
+                />
+              </Tooltip>
+              <Tooltip
+                title="复制消息"
+                placement="bottom"
+                overlayClassName="user-message-tooltip"
+              >
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<CopyOutlined />}
+                  onClick={handleCopy}
+                  className="user-message-action-btn"
+                />
+              </Tooltip>
+            </div>
           </div>
         )}
       </div>

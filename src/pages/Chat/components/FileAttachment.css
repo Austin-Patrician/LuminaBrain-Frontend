@@ -1,0 +1,294 @@
+/* 文件附件样式 - 进一步紧凑化设计，支持5-6个一行 */
+.file-attachment {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px; /* 进一步减少内边距 */
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 8px; /* 减少圆角 */
+  margin: 2px; /* 减少外边距 */
+  min-width: 130px; /* 进一步减少最小宽度 */
+  max-width: 150px; /* 进一步减少最大宽度，支持5-6个一行 */
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  box-shadow: 
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 1px 1px rgba(0, 0, 0, 0.06);
+}
+
+.file-attachment:hover {
+  background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+  border-color: #cbd5e1;
+  box-shadow: 
+    0 3px 8px rgba(0, 0, 0, 0.08),
+    0 2px 4px rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
+}
+
+.file-attachment-content {
+  display: flex;
+  align-items: center;
+  gap: 6px; /* 进一步减少间距 */
+  flex: 1;
+  min-width: 0;
+}
+
+.file-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px; /* 进一步减少图标尺寸 */
+  height: 24px;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: #ffffff;
+  border-radius: 5px; /* 减少圆角 */
+  flex-shrink: 0;
+  font-size: 10px; /* 进一步减少字体大小 */
+  box-shadow: 0 1px 3px rgba(59, 130, 246, 0.2);
+}
+
+.file-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px; /* 进一步减少间距 */
+  flex: 1;
+  min-width: 0;
+}
+
+.file-name {
+  font-size: 11px; /* 进一步减少字体大小 */
+  font-weight: 600;
+  color: #1f2937;
+  line-height: 1.2; /* 减少行高 */
+  max-width: 100%;
+  /* 使用Inter字体 */
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+}
+
+.file-size {
+  font-size: 9px; /* 进一步减少字体大小 */
+  color: #64748b;
+  line-height: 1.1; /* 减少行高 */
+  font-weight: 500;
+  /* 使用Inter字体 */
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+}
+
+.file-attachment-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px; /* 进一步减少间距 */
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateX(4px); /* 减少位移距离 */
+}
+
+.file-attachment:hover .file-attachment-actions {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.file-action-btn {
+  width: 20px !important; /* 进一步减少按钮尺寸 */
+  height: 20px !important;
+  padding: 0 !important;
+  border-radius: 3px !important; /* 进一步减少圆角 */
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  border: none !important;
+  font-size: 9px !important; /* 进一步减少字体大小 */
+}
+
+/* 文件附件列表容器 - 进一步优化紧凑布局 */
+.file-attachments-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  margin-bottom: 14px; /* 稍微减少边距 */
+  padding: 8px 10px; /* 进一步减少内边距 */
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 12px; /* 减少圆角 */
+  border: 1px solid #e2e8f0;
+  max-height: 150px; /* 稍微减少最大高度 */
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+  box-shadow: 
+    0 1px 3px rgba(0, 0, 0, 0.04),
+    inset 0 1px 2px rgba(255, 255, 255, 0.5);
+}
+
+.file-attachments-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 10px; /* 调整位置 */
+  right: 10px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, #cbd5e1 20%, #94a3b8 50%, #cbd5e1 80%, transparent 100%);
+  opacity: 0.6;
+}
+
+.file-attachments-container::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 6px; /* 减少高度 */
+  background: linear-gradient(180deg, transparent 0%, rgba(248, 250, 252, 0.8) 100%);
+  border-radius: 0 0 12px 12px;
+  pointer-events: none;
+}
+
+/* 添加文件数量指示器 - 调整尺寸 */
+.file-attachments-container[data-file-count]::before {
+  content: attr(data-file-count) " 个文件";
+  position: absolute;
+  top: -7px; /* 调整位置 */
+  left: 14px;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: white;
+  padding: 1px 6px; /* 减少内边距 */
+  border-radius: 6px; /* 减少圆角 */
+  font-size: 10px; /* 减少字体大小 */
+  font-weight: 600;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  box-shadow: 0 1px 3px rgba(59, 130, 246, 0.2);
+  z-index: 10;
+}
+
+.file-attachments-container:empty {
+  display: none;
+}
+
+/* 优化的滚动条样式 */
+.file-attachments-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.file-attachments-container::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+  margin: 4px 0;
+}
+
+.file-attachments-container::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%);
+  border-radius: 3px;
+  transition: all 0.2s ease;
+}
+
+.file-attachments-container::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+}
+
+/* 文件类型特定的图标颜色 - 调整阴影 */
+.file-attachment[data-file-type*="image"] .file-icon {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  box-shadow: 0 1px 2px rgba(16, 185, 129, 0.2); /* 进一步减少阴影 */
+}
+
+.file-attachment[data-file-type*="pdf"] .file-icon {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  box-shadow: 0 1px 2px rgba(239, 68, 68, 0.2);
+}
+
+.file-attachment[data-file-type*="doc"] .file-icon,
+.file-attachment[data-file-type*="docx"] .file-icon {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2);
+}
+
+.file-attachment[data-file-type*="xls"] .file-icon,
+.file-attachment[data-file-type*="xlsx"] .file-icon {
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+  box-shadow: 0 1px 2px rgba(22, 163, 74, 0.2);
+}
+
+.file-attachment[data-file-type*="text"] .file-icon {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  box-shadow: 0 1px 2px rgba(99, 102, 241, 0.2);
+}
+
+/* 添加微妙的动画效果 */
+@keyframes fileAttachmentSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.file-attachment {
+  animation: fileAttachmentSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* 响应式优化 - 调整各种屏幕尺寸 */
+@media (max-width: 768px) {
+  .file-attachment {
+    min-width: 110px; /* 移动端进一步紧凑 */
+    max-width: 140px;
+    padding: 5px 7px; /* 减少内边距 */
+    margin: 2px;
+  }
+  
+  .file-icon {
+    width: 20px;
+    height: 20px;
+    font-size: 8px;
+  }
+  
+  .file-name {
+    font-size: 10px;
+  }
+  
+  .file-size {
+    font-size: 8px;
+  }
+  
+  .file-action-btn {
+    width: 18px !important;
+    height: 18px !important;
+    font-size: 8px !important;
+  }
+  
+  .file-attachments-container {
+    padding: 6px 8px;
+    max-height: 130px;
+  }
+}
+
+@media (max-width: 480px) {
+  .file-attachment {
+    min-width: 95px; /* 小屏幕极致紧凑 */
+    max-width: 120px;
+    padding: 4px 6px;
+    margin: 1px;
+  }
+  
+  .file-attachment-content {
+    gap: 4px;
+  }
+  
+  .file-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 7px;
+  }
+  
+  .file-name {
+    font-size: 9px;
+  }
+  
+  .file-size {
+    font-size: 7px;
+  }
+}

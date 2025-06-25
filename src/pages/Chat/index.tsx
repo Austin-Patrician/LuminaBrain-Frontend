@@ -37,6 +37,7 @@ import SSEStreamingBubble from './components/SSEStreamingBubble';
 import { chatService, type ChatMessage as APIChatMessage } from '@/api/services/chatService';
 import UserMessageBubble from './components/UserMessageBubble';
 import AssistantMessageBubble from './components/AssistantMessageBubble';
+import FileAttachment from './components/FileAttachment';
 import './index.css';
 
 const { Sider, Content } = Layout;
@@ -53,10 +54,11 @@ interface ChatMessage {
     name: string;
     url: string;
     type: string;
+    size: number;
   }>;
   thinking?: boolean;
-  streaming?: boolean; // 新增：标识是否是流式生成的消息
-  responseTime?: number; // 新增：响应时间（秒）
+  streaming?: boolean;
+  responseTime?: number;
 }
 
 // 对话会话类型
@@ -93,8 +95,10 @@ const ChatPage: React.FC = () => {
   const [streamingMessage, setStreamingMessage] = useState<string>('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [showCanvas, setShowCanvas] = useState(false);
-  const [canvasContent, setCanvasContent] = useState('');
   const [shareModalVisible, setShareModalVisible] = useState(false);
+
+  // 新增：文件管理状态
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
 
   // 添加滚动容器的引用
   const messagesScrollRef = useRef<HTMLDivElement>(null);
@@ -219,9 +223,23 @@ const ChatPage: React.FC = () => {
     }
   }, [sessions, saveCurrentSession]);
 
-  // 发送消息
+  // 文件上传处理 - 修改为支持多文件
+  const handleFileUpload = useCallback((files: File[]) => {
+    // 添加新文件到附件列表
+    setAttachedFiles(prev => [...prev, ...files]);
+
+    const fileNames = files.map(f => f.name).join(', ');
+    antdMessage.success(`已添加 ${files.length} 个文件: ${fileNames}`);
+  }, []);
+
+  // 移除文件附件
+  const handleRemoveFile = useCallback((index: number) => {
+    setAttachedFiles(prev => prev.filter((_, i) => i !== index));
+  }, []);
+
+  // 发送消息 - 修改为包含文件附件
   const handleSendMessage = useCallback(async () => {
-    if (!inputValue.trim()) return;
+    if (!inputValue.trim() && attachedFiles.length === 0) return;
 
     // 记录开始时间
     const startTime = Date.now();
@@ -247,11 +265,21 @@ const ChatPage: React.FC = () => {
       saveCurrentSession(newSession.id);
     }
 
+    // 创建附件信息
+    const attachments = attachedFiles.map(file => ({
+      id: `attachment_${Date.now()}_${Math.random()}`,
+      name: file.name,
+      url: URL.createObjectURL(file), // 临时URL用于显示
+      type: file.type,
+      size: file.size
+    }));
+
     const userMessage: ChatMessage = {
       id: `msg_${Date.now()}_user`,
       role: 'user',
       content: inputValue,
       timestamp: new Date(),
+      attachments: attachments.length > 0 ? attachments : undefined,
     };
 
     const newMessages = [...messages, userMessage];
@@ -259,6 +287,7 @@ const ChatPage: React.FC = () => {
     updateSessionMessages(activeSessionId, newMessages);
 
     setInputValue('');
+    setAttachedFiles([]); // 清空附件列表
     setIsLoading(true);
 
     try {
@@ -331,7 +360,7 @@ const ChatPage: React.FC = () => {
       setIsStreaming(false);
       setStreamingMessage('');
     }
-  }, [inputValue, selectedModel, thinkingMode, currentSession, sessions, messages, updateSessionMessages, saveSessions, saveCurrentSession]);
+  }, [inputValue, attachedFiles, selectedModel, thinkingMode, currentSession, sessions, messages, updateSessionMessages, saveSessions, saveCurrentSession]);
 
   // 编辑用户消息
   const handleEditUserMessage = useCallback(async (messageId: string, newContent: string) => {
@@ -595,18 +624,6 @@ const ChatPage: React.FC = () => {
   // 分享对话
   const handleShare = useCallback(() => {
     setShareModalVisible(true);
-  }, []);
-
-  // 显示代码画布
-  const handleShowCanvas = useCallback((content: string) => {
-    setCanvasContent(content);
-    setShowCanvas(true);
-  }, []);
-
-  // 文件上传处理
-  const handleFileUpload = useCallback((file: File) => {
-    antdMessage.success(`文件 ${file.name} 上传成功`);
-    return false; // 阻止自动上传
   }, []);
 
   // 复制消息内容
@@ -928,6 +945,22 @@ const ChatPage: React.FC = () => {
                     <div className={`chat-interaction-panel ${isLoading ? 'loading' : ''}`}>
                       {/* 输入区域 */}
                       <div className="chat-input-section">
+                        {/* 文件附件显示区域 */}
+                        {attachedFiles.length > 0 && (
+                          <div 
+                            className="file-attachments-container"
+                            data-file-count={attachedFiles.length}
+                          >
+                            {attachedFiles.map((file, index) => (
+                              <FileAttachment
+                                key={`${file.name}-${index}`}
+                                file={file}
+                                onRemove={() => handleRemoveFile(index)}
+                              />
+                            ))}
+                          </div>
+                        )}
+
                         <Sender
                           value={inputValue}
                           onChange={setInputValue}
@@ -1012,6 +1045,7 @@ const ChatPage: React.FC = () => {
                           <UserMessageBubble
                             key={message.id}
                             content={message.content}
+                            attachments={message.attachments}
                             onEdit={(newContent) => handleEditUserMessage(message.id, newContent)}
                             onCopy={handleCopyMessage}
                             className="fade-in"
@@ -1025,7 +1059,6 @@ const ChatPage: React.FC = () => {
                           <AssistantMessageBubble
                             key={message.id}
                             content={message.content}
-                            timestamp={message.timestamp}
                             responseTime={message.responseTime}
                             thinking={message.thinking}
                             onRegenerate={() => handleRegenerateResponse(message.id)}
@@ -1077,6 +1110,22 @@ const ChatPage: React.FC = () => {
                     <div className={`chat-interaction-panel ${isLoading ? 'loading' : ''}`}>
                       {/* 输入区域 */}
                       <div className="chat-input-section">
+                        {/* 文件附件显示区域 */}
+                        {attachedFiles.length > 0 && (
+                          <div 
+                            className="file-attachments-container"
+                            data-file-count={attachedFiles.length}
+                          >
+                            {attachedFiles.map((file, index) => (
+                              <FileAttachment
+                                key={`${file.name}-${index}`}
+                                file={file}
+                                onRemove={() => handleRemoveFile(index)}
+                              />
+                            ))}
+                          </div>
+                        )}
+
                         <Sender
                           value={inputValue}
                           onChange={setInputValue}
@@ -1154,7 +1203,7 @@ const ChatPage: React.FC = () => {
             {showCanvas && (
               <div className="chat-canvas">
                 <Canvas
-                  content={canvasContent}
+                  content=""
                   onClose={() => setShowCanvas(false)}
                 />
               </div>

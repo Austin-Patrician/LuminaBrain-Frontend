@@ -5,10 +5,8 @@ import {
   CopyOutlined,
   ShareAltOutlined,
   LikeOutlined,
-  DislikeOutlined,
-  RobotOutlined
+  DislikeOutlined
 } from '@ant-design/icons';
-import { Avatar } from 'antd';
 import ChatMarkdown from './ChatMarkdown';
 import './AssistantMessageBubble.css';
 
@@ -16,7 +14,6 @@ const { Text } = Typography;
 
 interface AssistantMessageBubbleProps {
   content: string;
-  timestamp: Date;
   responseTime?: number; // 响应时间，以秒为单位
   onRegenerate?: () => void;
   onCopy?: (content: string) => void;
@@ -29,7 +26,6 @@ interface AssistantMessageBubbleProps {
 
 const AssistantMessageBubble: React.FC<AssistantMessageBubbleProps> = ({
   content,
-  timestamp,
   responseTime,
   onRegenerate,
   onCopy,
@@ -83,29 +79,12 @@ const AssistantMessageBubble: React.FC<AssistantMessageBubbleProps> = ({
     onRegenerate?.();
   };
 
-  // 格式化时间显示
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('zh-CN', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
   return (
     <div className={`assistant-message-bubble-container ${className}`}>
       <div className="assistant-message-bubble-wrapper">
-        {/* 消息气泡 */}
+        {/* 消息气泡 - 移除头像 */}
         <div className="assistant-message-bubble">
-          {/* 头像 */}
-          <div className="assistant-message-avatar">
-            <Avatar
-              size={32}
-              icon={<RobotOutlined />}
-              className="assistant-avatar"
-            />
-          </div>
-
-          {/* 消息内容 */}
+          {/* 消息内容 - 直接显示，无头像 */}
           <div className="assistant-message-content-wrapper">
             <div className="assistant-message-content">
               <ChatMarkdown>{content}</ChatMarkdown>
@@ -125,7 +104,7 @@ const AssistantMessageBubble: React.FC<AssistantMessageBubbleProps> = ({
         <div className="assistant-message-toolbar">
           <div className="assistant-toolbar-left">
             {/* 重新生成 */}
-            <Tooltip title="重新生成" placement="top" overlayClassName="assistant-message-tooltip">
+            <Tooltip title="重新生成" placement="bottom" overlayClassName="assistant-message-tooltip">
               <Button
                 type="text"
                 size="small"
@@ -136,7 +115,7 @@ const AssistantMessageBubble: React.FC<AssistantMessageBubbleProps> = ({
             </Tooltip>
 
             {/* 复制 */}
-            <Tooltip title="复制回复" placement="top" overlayClassName="assistant-message-tooltip">
+            <Tooltip title="复制" placement="bottom" overlayClassName="assistant-message-tooltip">
               <Button
                 type="text"
                 size="small"
@@ -147,7 +126,7 @@ const AssistantMessageBubble: React.FC<AssistantMessageBubbleProps> = ({
             </Tooltip>
 
             {/* 复制分享链接 */}
-            <Tooltip title="复制分享链接" placement="top" overlayClassName="assistant-message-tooltip">
+            <Tooltip title="复制分享链接" placement="bottom" overlayClassName="assistant-message-tooltip">
               <Button
                 type="text"
                 size="small"
@@ -158,7 +137,7 @@ const AssistantMessageBubble: React.FC<AssistantMessageBubbleProps> = ({
             </Tooltip>
 
             {/* 点赞 */}
-            <Tooltip title="这个回复很有帮助" placement="top" overlayClassName="assistant-message-tooltip">
+            <Tooltip title="赞" placement="bottom" overlayClassName="assistant-message-tooltip">
               <Button
                 type="text"
                 size="small"
@@ -169,7 +148,7 @@ const AssistantMessageBubble: React.FC<AssistantMessageBubbleProps> = ({
             </Tooltip>
 
             {/* 需要改进 */}
-            <Tooltip title="这个回复需要改进" placement="top" overlayClassName="assistant-message-tooltip">
+            <Tooltip title="需要改进" placement="bottom" overlayClassName="assistant-message-tooltip">
               <Button
                 type="text"
                 size="small"

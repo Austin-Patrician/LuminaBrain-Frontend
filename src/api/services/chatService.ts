@@ -56,7 +56,7 @@ export class ChatService {
   private baseURL: string;
   private apiKey: string;
 
-  constructor(baseURL = 'http://localhost:5154/v1', apiKey = '') {
+  constructor(baseURL = 'http://localhost:5154/api/v1', apiKey = '') {
     this.baseURL = baseURL;
     this.apiKey = apiKey;
   }

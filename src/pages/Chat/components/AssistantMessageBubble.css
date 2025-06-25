@@ -19,15 +19,10 @@
 .assistant-message-bubble {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
   width: 100%;
 }
 
-.assistant-message-avatar {
-  flex-shrink: 0;
-  margin-top: 4px;
-}
-
+/* 移除头像相关样式，消息内容直接占据全宽 */
 .assistant-message-content-wrapper {
   background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
   border: 1px solid #e1e5e9;
@@ -54,20 +49,7 @@
   transform: translateY(-1px);
 }
 
-.assistant-message-content-wrapper::before {
-  content: '';
-  position: absolute;
-  left: -10px;
-  top: 18px;
-  width: 0;
-  height: 0;
-  border-top: 10px solid transparent;
-  border-bottom: 10px solid transparent;
-  border-right: 10px solid #ffffff;
-  filter: drop-shadow(-1px 0 1px rgba(0, 0, 0, 0.05));
-  z-index: 2;
-}
-
+/* 移除左侧箭头，因为没有头像了 */
 .assistant-message-content {
   word-wrap: break-word;
   white-space: pre-wrap;
@@ -85,7 +67,7 @@
   border-top: 1px solid #f3f4f6;
 }
 
-/* 工具栏样式 */
+/* 工具栏样式 - 移除左边距，因为没有头像对齐了 */
 .assistant-message-toolbar {
   display: flex;
   justify-content: space-between;
@@ -93,7 +75,7 @@
   opacity: 0;
   transition: opacity 0.3s ease;
   padding: 4px 8px;
-  margin-left: 40px; /* 与头像对齐 */
+  margin-left: 0; /* 移除头像对齐的左边距 */
   min-height: 32px;
   background: rgba(255, 255, 255, 0.8);
   border-radius: 8px;
@@ -176,17 +158,11 @@
 }
 
 .assistant-message-tooltip .ant-tooltip-arrow {
-  border-bottom-color: #1f2937;
+  border-top-color: #1f2937;
 }
 
 .assistant-message-tooltip .ant-tooltip-arrow::before {
-  border-bottom-color: #1f2937;
-}
-
-/* 助手头像样式 */
-.assistant-avatar {
-  background-color: #f3f4f6 !important;
-  color: #6b7280 !important;
+  border-top-color: #1f2937;
 }
 
 /* 动画效果 */
@@ -208,7 +184,7 @@
   }
   
   .assistant-message-toolbar {
-    margin-left: 32px;
+    margin-left: 0; /* 移动端也移除左边距 */
   }
   
   .assistant-toolbar-btn {

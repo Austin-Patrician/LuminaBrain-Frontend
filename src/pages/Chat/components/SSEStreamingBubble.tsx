@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Avatar, Typography } from 'antd';
-import RobotOutlined from '@ant-design/icons/RobotOutlined';
+import { Typography } from 'antd';
 import ChatMarkdown from './ChatMarkdown';
 
 const { Text } = Typography;
@@ -89,19 +88,6 @@ const SSEStreamingBubble: React.FC<SSEStreamingBubbleProps> = ({
     minWidth: 0
   };
 
-  const contentStyle: React.CSSProperties = {
-    display: 'flex',
-    alignItems: 'flex-start',
-    gap: '8px',
-    minWidth: 0,
-    width: '100%'
-  };
-
-  const avatarStyle: React.CSSProperties = {
-    flexShrink: 0,
-    marginTop: '2px'
-  };
-
   const messageStyle: React.CSSProperties = {
     background: '#ffffff',
     border: '1px solid #e5e7eb',
@@ -127,76 +113,65 @@ const SSEStreamingBubble: React.FC<SSEStreamingBubbleProps> = ({
   return (
     <div style={containerStyle} className={className}>
       <div style={wrapperStyle}>
-        <div style={contentStyle}>
-          {/* 头像 */}
-          <div style={avatarStyle}>
-            <Avatar
-              size={32}
-              icon={<RobotOutlined />}
-              style={{ backgroundColor: '#f3f4f6', color: '#6b7280' }}
-            />
-          </div>
-
-          {/* 消息内容 */}
-          <div style={messageStyle}>
-            <div style={{ fontSize: '14px', lineHeight: 1.6 }}>
-              {/* 使用 Markdown 组件渲染内容 */}
-              <div style={{ display: 'inline-block', width: '100%' }}>
-                <ChatMarkdown>{displayedContent}</ChatMarkdown>
-                <span style={cursorStyle} />
-              </div>
+        {/* 消息内容 - 移除头像 */}
+        <div style={messageStyle}>
+          <div style={{ fontSize: '14px', lineHeight: 1.6 }}>
+            {/* 使用 Markdown 组件渲染内容 */}
+            <div style={{ display: 'inline-block', width: '100%' }}>
+              <ChatMarkdown>{displayedContent}</ChatMarkdown>
+              <span style={cursorStyle} />
             </div>
-
-            {thinking && (
-              <div style={{
-                marginTop: '8px',
-                paddingTop: '8px',
-                borderTop: '1px solid #f3f4f6',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}>
-                <span style={{ display: 'flex', gap: '4px' }}>
-                  <span style={{
-                    width: '4px',
-                    height: '4px',
-                    borderRadius: '50%',
-                    backgroundColor: '#9ca3af',
-                    animation: 'thinking-pulse 1.4s infinite ease-in-out both'
-                  }}></span>
-                  <span style={{
-                    width: '4px',
-                    height: '4px',
-                    borderRadius: '50%',
-                    backgroundColor: '#9ca3af',
-                    animation: 'thinking-pulse 1.4s infinite ease-in-out both',
-                    animationDelay: '-0.16s'
-                  }}></span>
-                  <span style={{
-                    width: '4px',
-                    height: '4px',
-                    borderRadius: '50%',
-                    backgroundColor: '#9ca3af',
-                    animation: 'thinking-pulse 1.4s infinite ease-in-out both',
-                    animationDelay: '0s'
-                  }}></span>
-                </span>
-                <Text type="secondary" style={{ fontSize: '12px', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif" }}>思考中...</Text>
-              </div>
-            )}
-
-            {isStreaming && (
-              <div style={{
-                marginTop: '8px',
-                paddingTop: '8px',
-                borderTop: '1px solid #f0f0f0'
-              }}>
-                <Text type="secondary" style={{ fontSize: '12px', color: '#6b7280', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif" }}>
-                  正在生成回复...
-                </Text>
-              </div>
-            )}
           </div>
+
+          {thinking && (
+            <div style={{
+              marginTop: '8px',
+              paddingTop: '8px',
+              borderTop: '1px solid #f3f4f6',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+              <span style={{ display: 'flex', gap: '4px' }}>
+                <span style={{
+                  width: '4px',
+                  height: '4px',
+                  borderRadius: '50%',
+                  backgroundColor: '#9ca3af',
+                  animation: 'thinking-pulse 1.4s infinite ease-in-out both'
+                }}></span>
+                <span style={{
+                  width: '4px',
+                  height: '4px',
+                  borderRadius: '50%',
+                  backgroundColor: '#9ca3af',
+                  animation: 'thinking-pulse 1.4s infinite ease-in-out both',
+                  animationDelay: '-0.16s'
+                }}></span>
+                <span style={{
+                  width: '4px',
+                  height: '4px',
+                  borderRadius: '50%',
+                  backgroundColor: '#9ca3af',
+                  animation: 'thinking-pulse 1.4s infinite ease-in-out both',
+                  animationDelay: '0s'
+                }}></span>
+              </span>
+              <Text type="secondary" style={{ fontSize: '12px', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif" }}>思考中...</Text>
+            </div>
+          )}
+
+          {isStreaming && (
+            <div style={{
+              marginTop: '8px',
+              paddingTop: '8px',
+              borderTop: '1px solid #f0f0f0'
+            }}>
+              <Text type="secondary" style={{ fontSize: '12px', color: '#6b7280', fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif" }}>
+                正在生成回复...
+              </Text>
+            </div>
+          )}
         </div>
       </div>
 
