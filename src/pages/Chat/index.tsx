@@ -88,7 +88,7 @@ const ChatPage: React.FC = () => {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
-  const [selectedModel, setSelectedModel] = useState('784aa44f602c4786a08ff9f968ea8237');
+  const [selectedModel, setSelectedModel] = useState('');
   const [selectedModelType, setSelectedModelType] = useState<string>(''); // 新增：存储模型类型
   const [thinkingMode, setThinkingMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -947,7 +947,7 @@ const ChatPage: React.FC = () => {
                       <div className="chat-input-section">
                         {/* 文件附件显示区域 */}
                         {attachedFiles.length > 0 && (
-                          <div 
+                          <div
                             className="file-attachments-container"
                             data-file-count={attachedFiles.length}
                           >
@@ -1112,7 +1112,7 @@ const ChatPage: React.FC = () => {
                       <div className="chat-input-section">
                         {/* 文件附件显示区域 */}
                         {attachedFiles.length > 0 && (
-                          <div 
+                          <div
                             className="file-attachments-container"
                             data-file-count={attachedFiles.length}
                           >

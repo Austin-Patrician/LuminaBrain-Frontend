@@ -19,7 +19,7 @@ const applicaiton: AppRouteObject[] = [
 			</Wrapper>
 		),
 		meta: {
-			label: "application",
+			label: "sys.menu.application.index",
 			icon: <Iconify icon="solar:calendar-bold-duotone" size={24} />,
 			key: "/application",
 		},

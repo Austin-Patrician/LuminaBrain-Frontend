@@ -68,14 +68,14 @@ const management: AppRouteObject = {
 			path: "system",
 			meta: { label: "sys.menu.system.index", key: "/management/system" },
 			children: [
-				{
-					path: "organization",
-					element: <OrganizationPage />,
-					meta: {
-						label: "sys.menu.system.organization",
-						key: "/management/system/organization",
-					},
-				},
+				// {
+				// 	path: "organization",
+				// 	element: <OrganizationPage />,
+				// 	meta: {
+				// 		label: "sys.menu.system.organization",
+				// 		key: "/management/system/organization",
+				// 	},
+				// },
 				{
 					path: "permission",
 					element: <PermissioPage />,
@@ -86,11 +86,11 @@ const management: AppRouteObject = {
 				},
 			],
 		},
-		{
-			path: "blog",
-			element: <Blog />,
-			meta: { label: "sys.menu.blog", key: "/management/blog" },
-		},
+		// {
+		// 	path: "blog",
+		// 	element: <Blog />,
+		// 	meta: { label: "sys.menu.blog", key: "/management/blog" },
+		// },
 	],
 };
 

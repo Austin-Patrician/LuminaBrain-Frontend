@@ -107,7 +107,10 @@
         "firstStep": "Basic Settings",
         "secondStep": "Advanced Settings"
       },
+      "dictionary": "Dictionary",
 
+      "multiflow":"Agent Flow",
+      "chat":"AI Chat",
       "agent": "Agent",
       "agentFlow": "Agent Flow",
       "knowledgedetail": "Knowledge Detail",

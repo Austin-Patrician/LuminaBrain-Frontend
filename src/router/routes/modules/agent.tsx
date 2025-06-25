@@ -19,7 +19,7 @@ const agent: AppRouteObject[] = [
       </Wrapper>
     ),
     meta: {
-      label: "agent",
+      label: "sys.menu.agent",
       icon: <Iconify icon="solar:calendar-bold-duotone" size={24} />,
       key: "/agent",
     },

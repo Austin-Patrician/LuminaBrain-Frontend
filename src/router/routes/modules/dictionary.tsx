@@ -17,7 +17,7 @@ const dictionary: AppRouteObject = {
     </Suspense>
   ),
   meta: {
-    label: "数据字典",
+    label: "sys.menu.dictionary",
     icon: (
       <Iconify
         icon="solar:book-bookmark-bold-duotone"

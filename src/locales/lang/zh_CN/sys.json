@@ -107,6 +107,9 @@
         "firstStep": "基础设置",
         "secondStep": "高级设置"
       },
+      "chat":"AI 对话",
+      "dictionary": "数据字典",
+      "multiflow":"智能工作流",
       "knowledgedetail": "知识库详情",
       "knowledge": "知识库",
       "agent": "智能体",

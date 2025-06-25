@@ -18,7 +18,7 @@ const agentFlow: AppRouteObject = {
     </Suspense>
   ),
   meta: {
-    label: "智能工作流",
+    label: "sys.menu.multiflow",
     icon: (
       <SvgIcon icon="ic-analysis" className="ant-menu-item-icon" size="24" />
     ),

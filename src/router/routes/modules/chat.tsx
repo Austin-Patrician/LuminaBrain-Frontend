@@ -20,7 +20,7 @@ const chat: AppRouteObject = {
     </Wrapper>
   ),
   meta: {
-    label: "AI 对话",
+    label: "sys.menu.chat",
     icon: <Iconify icon="solar:chat-round-bold-duotone" size={24} />,
     key: "/chat",
   },

@@ -19,7 +19,7 @@ const aimodel: AppRouteObject[] = [
 			</Wrapper>
 		),
 		meta: {
-			label: "AIModel",
+			label: "sys.menu.aimodel",
 			icon: <Iconify icon="solar:calendar-bold-duotone" size={24} />,
 			key: "/aimodel",
 		},
