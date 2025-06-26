@@ -383,8 +383,8 @@ const defaultViewport = { x: 0, y: 0, zoom: 1 };
 
 const AgentFlowPage: React.FC = () => {
   const navigate = useNavigate();
-  const { flowId } = useParams();
-
+  const { id } = useParams();
+  const flowId = id;
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
@@ -612,12 +612,12 @@ const AgentFlowPage: React.FC = () => {
       Modal.confirm({
         title: "未保存的更改",
         content: "您有未保存的更改，确定要离开吗？",
-        onOk: () => navigate("/agentFlow/list"),
+        onOk: () => navigate("/agentFlowManagement/agentFlow"),
         okText: "确定",
         cancelText: "取消",
       });
     } else {
-      navigate("/agentFlow/list");
+      navigate("/agentFlowManagement/agentFlow");
     }
   };
 

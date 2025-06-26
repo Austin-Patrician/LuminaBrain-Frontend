@@ -93,9 +93,6 @@ export class ChatService {
     onError: (error: Error) => void
   ): Promise<void> {
     try {
-      console.log('Making streaming request to:', `${this.baseURL}/chat/completions`);
-      console.log('Request payload:', { ...request, stream: true });
-
       const response = await fetch(`${this.baseURL}/chat/completions`, {
         method: 'POST',
         headers: {
