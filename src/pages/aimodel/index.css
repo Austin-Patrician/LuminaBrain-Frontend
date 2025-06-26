@@ -1,0 +1,242 @@
+/* AI模型管理页面样式 */
+
+/* 页面容器 */
+.ai-model-page {
+  padding: 20px;
+}
+
+/* 提供商主卡片 */
+.provider-card {
+  margin-bottom: 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.09);
+}
+
+.provider-card-body {
+  padding: 16px;
+}
+
+/* 提供商图标容器 */
+.provider-icon-container {
+  background: rgba(24, 144, 255, 0.1);
+  border-radius: 50%;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 提供商名称 */
+.provider-name {
+  font-size: 16px;
+}
+
+/* 模型展开区域 */
+.models-expanded-section {
+  margin-top: 16px;
+}
+
+.models-divider {
+  margin: 12px 0;
+}
+
+/* 模型卡片 */
+.model-card {
+  border-radius: 12px;
+  border: 1px solid #e8e8e8;
+  height: 160px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(135deg, #fafafa 0%, #ffffff 100%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.model-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.model-card-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* 模型头部区域 */
+.model-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.model-title-section {
+  flex: 1;
+  margin-right: 12px;
+}
+
+.model-name {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  color: #1a1a1a;
+  display: block;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.model-type-tag {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 6px;
+  line-height: 14px;
+  height: auto;
+  margin: 0;
+  border-radius: 4px;
+  border: none;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* 模型描述区域 */
+.model-description-section {
+  flex: 1;
+  margin-bottom: 12px;
+  min-height: 36px;
+  display: flex;
+  align-items: flex-start;
+}
+
+.model-description {
+  font-size: 12px;
+  line-height: 18px;
+  color: #595959;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* 模型操作区域 */
+.model-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid #f5f5f5;
+}
+
+.model-config-button {
+  height: 28px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(24, 144, 255, 0.2);
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* 空状态 */
+.empty-models {
+  text-align: center;
+  padding: 40px 20px;
+  background: #fafafa;
+  border-radius: 8px;
+  border: 1px dashed #d9d9d9;
+}
+
+.empty-models-text {
+  color: #8c8c8c;
+  font-size: 14px;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* 待添加提供商卡片 */
+.available-provider-card {
+  height: 280px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.available-provider-card-body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 20px;
+}
+
+.available-provider-icon-section {
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.available-provider-icon-container {
+  background: rgba(24, 144, 255, 0.1);
+  border-radius: 50%;
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+}
+
+.available-provider-name-section {
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.available-provider-name {
+  font-size: 18px;
+}
+
+.available-provider-tags-section {
+  text-align: center;
+  margin-bottom: 12px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.available-provider-tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+
+.available-provider-tag {
+  font-size: 10px;
+  margin: 2px;
+}
+
+.available-provider-divider {
+  margin: 12px 0;
+}
+
+/* 面板样式 */
+.panel-style {
+  background-color: #f7f7f7;
+  border-radius: 8px;
+}
+
+.configured-panel {
+  margin-bottom: 16px;
+}
+
+/* 加载和空状态 */
+.loading-section {
+  text-align: center;
+  padding: 20px;
+}
+
+.empty-configured-providers {
+  text-align: center;
+  padding: 20px;
+}
+
+.empty-available-providers {
+  text-align: center;
+  padding: 20px;
+}

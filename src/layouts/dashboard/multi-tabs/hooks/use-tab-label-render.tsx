@@ -1,7 +1,23 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { USER_LIST } from "@/_mock/assets";
 import type { KeepAliveTab } from "../types";
+import { useUserInfo } from "@/store/userStore";
+
+// Mock user data for demonstration - replace with real API calls
+const mockUsers = [
+	{
+		id: "1",
+		username: "admin",
+		email: "admin@example.com",
+		avatar: "https://api.dicebear.com/7.x/miniavs/svg?seed=1",
+	},
+	{
+		id: "2",
+		username: "user",
+		email: "user@example.com",
+		avatar: "https://api.dicebear.com/7.x/miniavs/svg?seed=2",
+	},
+];
 
 export function useTabLabelRender() {
 	const { t } = useTranslation();
@@ -14,7 +30,7 @@ export function useTabLabelRender() {
 				const userId = tab.params?.id;
 				const defaultLabel = t(tab.label);
 				if (userId) {
-					const user = USER_LIST.find((item) => item.id === userId);
+					const user = mockUsers.find((item) => item.id === userId);
 					return `${user?.username}-${defaultLabel}`;
 				}
 				return defaultLabel;

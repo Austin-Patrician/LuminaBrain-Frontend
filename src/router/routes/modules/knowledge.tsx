@@ -6,41 +6,42 @@ import { Outlet } from "react-router";
 
 import type { AppRouteObject } from "#/router";
 
-const Knowledge = lazy(() => import("@/pages/knowledge"));
+const Knowledge = lazy(() => import("@/pages/knowledge/index"));
 const KnowledgeDetail = lazy(() => import("@/pages/knowledge/detail"));
 
-function Wrapper({ children }: any) {
-  return <Suspense fallback={<CircleLoading />}>{children}</Suspense>;
-}
-
 const knowledge: AppRouteObject[] = [
-  // {
-  //   path: "knowledge",
-  //   element: (
-  //     <Suspense fallback={<CircleLoading />}>
-  //       <Outlet />
-  //     </Suspense>
-  //   ),
-  //   meta: {
-  //     label: "sys.menu.knowledge",
-  //     icon: <Iconify icon="solar:calendar-bold-duotone" size={24} />,
-  //     key: "/knowledge",
-  //   },
-  //   children: [
-  //     {
-  //       index: false,
-  //       element: <Knowledge />,
-  //     },
-  //     {
-  //       path: ":id",
-  //       element: <KnowledgeDetail />,
-  //       meta: {
-  //         label: "sys.menu.knowledge_detail",
-  //         key: "/knowledge/:id",
-  //       },
-  //     },
-  //   ],
-  // },
+  {
+    path: "knowledgemanagement",
+    element: (
+      <Suspense fallback={<CircleLoading />}>
+        <Outlet />
+      </Suspense>
+    ),
+    meta: {
+      label: "sys.menu.knowledge",
+      icon: <Iconify icon="solar:calendar-bold-duotone" size={24} />,
+      key: "/knowledgemanagement",
+    },
+    children: [
+      {
+        index: true,
+        meta: {
+          label: "sys.menu.knowledge",
+          key: "/knowledgemanagement",
+        },
+        element: <Knowledge />,
+      },
+      {
+        path: ":id",
+        element: <KnowledgeDetail />,
+        meta: {
+          label: "sys.menu.knowledgedetail",
+          key: "/knowledgemanagement/:id",
+          hideMenu: true, // 隐藏菜单
+        },
+      },
+    ],
+  },
 ];
 
 export default knowledge;

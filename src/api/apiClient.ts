@@ -6,7 +6,6 @@ import userStore from "@/store/userStore";
 import { toast } from "sonner";
 import type { Result } from "#/api";
 import { ResultEnum } from "#/enum";
-import { da } from "@faker-js/faker";
 
 // 创建 axios 实例
 const axiosInstance = axios.create({
@@ -19,7 +18,10 @@ const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use(
 	(config) => {
 		// 在请求被发送之前做些什么
-		config.headers.Authorization = "Bearer Token";
+		const { userToken } = userStore.getState();
+		if (userToken?.accessToken) {
+			config.headers.Authorization = `Bearer ${userToken.accessToken}`;
+		}
 		return config;
 	},
 	(error) => {

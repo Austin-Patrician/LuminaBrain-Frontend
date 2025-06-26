@@ -1,23 +1,56 @@
-import { Button, Card, Popconfirm, Tag } from "antd";
+import { Button, Card, Popconfirm } from "antd";
 import Table, { type ColumnsType } from "antd/es/table";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
-import { USER_LIST } from "@/_mock/assets";
 import { IconButton, Iconify } from "@/components/icon";
-import { usePathname, useRouter } from "@/router/hooks";
+import ProTag from "@/theme/antd/components/tag";
+import { useTheme } from "@/theme/hooks";
 
-import type { Role, UserInfo } from "#/entity";
+import type { UserInfo } from "#/entity";
 import { BasicStatus } from "#/enum";
 
-const USERS: UserInfo[] = USER_LIST as UserInfo[];
+import UserModal from "./user-modal";
 
-export default function RolePage() {
-	const { push } = useRouter();
-	const pathname = usePathname();
+// Mock user data for demonstration - replace with real API calls
+const mockUsers: UserInfo[] = [
+	{
+		id: "1",
+		username: "admin",
+		email: "admin@example.com",
+		avatar: "https://api.dicebear.com/7.x/miniavs/svg?seed=1",
+		status: BasicStatus.ENABLE,
+		role: {
+			id: "1",
+			name: "Admin",
+			label: "admin",
+			status: BasicStatus.ENABLE,
+		},
+	},
+	{
+		id: "2",
+		username: "user",
+		email: "user@example.com",
+		avatar: "https://api.dicebear.com/7.x/miniavs/svg?seed=2",
+		status: BasicStatus.ENABLE,
+		role: {
+			id: "2",
+			name: "User",
+			label: "user",
+			status: BasicStatus.ENABLE,
+		},
+	},
+];
+
+export default function UserPage() {
+	const { t } = useTranslation();
+	const { themeTokens } = useTheme();
+	const [userModalProps, setUserModalProps] = useState<UserModalProps>();
 
 	const columns: ColumnsType<UserInfo> = [
 		{
 			title: "Name",
-			dataIndex: "name",
+			dataIndex: "username",
 			width: 300,
 			render: (_, record) => {
 				return (
@@ -25,28 +58,36 @@ export default function RolePage() {
 						<img alt="" src={record.avatar} className="h-10 w-10 rounded-full" />
 						<div className="ml-2 flex flex-col">
 							<span className="text-sm">{record.username}</span>
-							<span className="text-xs text-text-secondary">{record.email}</span>
+							<span style={{ color: themeTokens.color.text.secondary }} className="text-xs">
+								{record.email}
+							</span>
 						</div>
 					</div>
 				);
 			},
 		},
 		{
-			title: "Role",
+			title: t("sys.login.password"),
+			dataIndex: "password",
+			width: 120,
+			render: () => "********",
+		},
+		{
+			title: t("sys.user.role"),
 			dataIndex: "role",
 			align: "center",
 			width: 120,
-			render: (role: Role) => <Tag color="cyan">{role.name}</Tag>,
+			render: (role) => <ProTag color="cyan">{role?.name}</ProTag>,
 		},
 		{
-			title: "Status",
+			title: t("sys.user.status"),
 			dataIndex: "status",
 			align: "center",
 			width: 120,
 			render: (status) => (
-				<Tag color={status === BasicStatus.DISABLE ? "error" : "success"}>
+				<ProTag color={status === BasicStatus.DISABLE ? "error" : "success"}>
 					{status === BasicStatus.DISABLE ? "Disable" : "Enable"}
-				</Tag>
+				</ProTag>
 			),
 		},
 		{
@@ -55,19 +96,29 @@ export default function RolePage() {
 			align: "center",
 			width: 100,
 			render: (_, record) => (
-				<div className="flex w-full justify-center text-gray-500">
+				<div className="flex w-full justify-center text-gray">
 					<IconButton
 						onClick={() => {
-							console.log(pathname, 'pathname')
-							push(`${pathname}/${record.id}`);
+							setUserModalProps({
+								formValue: record,
+								title: "Edit",
+								show: true,
+								onOk: onEditUser,
+								onCancel: () => setUserModalProps(undefined),
+							});
 						}}
 					>
-						<Iconify icon="mdi:card-account-details" size={18} />
-					</IconButton>
-					<IconButton onClick={() => { }}>
 						<Iconify icon="solar:pen-bold-duotone" size={18} />
 					</IconButton>
-					<Popconfirm title="Delete the User" okText="Yes" cancelText="No" placement="left">
+					<Popconfirm
+						title="Delete the User"
+						okText="Yes"
+						cancelText="No"
+						placement="left"
+						onConfirm={() => {
+							console.log("Delete user:", record.id);
+						}}
+					>
 						<IconButton>
 							<Iconify icon="mingcute:delete-2-fill" size={18} className="text-error" />
 						</IconButton>
@@ -77,11 +128,26 @@ export default function RolePage() {
 		},
 	];
 
+	const onEditUser = () => {
+		setUserModalProps((prev) => ({ ...prev!, show: false }));
+	};
+
 	return (
 		<Card
-			title="User List"
+			title="User Management"
 			extra={
-				<Button type="primary" onClick={() => { }}>
+				<Button
+					type="primary"
+					onClick={() => {
+						setUserModalProps({
+							formValue: {},
+							title: "Create",
+							show: true,
+							onOk: onEditUser,
+							onCancel: () => setUserModalProps(undefined),
+						});
+					}}
+				>
 					New
 				</Button>
 			}
@@ -92,8 +158,17 @@ export default function RolePage() {
 				scroll={{ x: "max-content" }}
 				pagination={false}
 				columns={columns}
-				dataSource={USERS}
+				dataSource={mockUsers}
 			/>
+			<UserModal {...userModalProps} />
 		</Card>
 	);
 }
+
+export type UserModalProps = {
+	formValue: UserInfo;
+	title: string;
+	show: boolean;
+	onOk: VoidFunction;
+	onCancel: VoidFunction;
+};

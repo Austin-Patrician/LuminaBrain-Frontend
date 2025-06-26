@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Collapse,
   Card,
@@ -8,21 +8,16 @@ import {
   Modal,
   Form,
   Input,
-  Select,
   Tag,
   Divider,
   Row,
   Col,
   message,
-  ConfigProvider
 } from "antd";
 import {
   EditOutlined,
   ShareAltOutlined,
   PlusOutlined,
-  ApiOutlined,
-  RobotOutlined,
-  SettingOutlined,
   CopyOutlined,
   CaretRightOutlined
 } from "@ant-design/icons";
@@ -30,6 +25,7 @@ import { aimodelService } from "@/api/services/aimodelService";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { AIModel, AIProvider, UpdateProviderModel } from "#/entity";
 import LLMIcon from "@/components/icon/llmIcon";
+import "./index.css";
 
 const { Panel } = Collapse;
 const { Title, Text } = Typography;
@@ -42,16 +38,6 @@ const MODEL_TYPE_COLORS = {
   Image: "orange",
   Type: "cyan",
   Tts: "magenta",
-};
-
-// 模型类型图标映射
-const MODEL_TYPE_ICONS = {
-  Chat: <RobotOutlined />,
-  Embedding: <ApiOutlined />,
-  Rerank: <SettingOutlined />,
-  Image: <ApiOutlined />,
-  Type: <ApiOutlined />,
-  Tts: <ApiOutlined />,
 };
 
 const ModelManagementPage: React.FC = () => {
@@ -222,28 +208,17 @@ const ModelManagementPage: React.FC = () => {
   const renderProviderCard = (provider: AIProvider) => (
     <Card
       key={provider.id}
-      style={{
-        marginBottom: 16,
-        borderRadius: "8px",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.09)",
-      }}
+      className="provider-card"
       bodyStyle={{ padding: '16px' }}
     >
       {/* 提供商信息和操作按钮区域 */}
       <Row align="middle" justify="space-between" gutter={16}>
         <Col>
           <Space size="middle" align="center">
-            <div style={{
-              background: 'rgba(24, 144, 255, 0.1)',
-              borderRadius: '50%',
-              padding: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
+            <div className="provider-icon-container">
               <LLMIcon provider={provider.providerName} size={40} />
             </div>
-            <Text strong style={{ fontSize: '16px' }}>
+            <Text strong className="provider-name">
               {provider.providerName}
             </Text>
           </Space>
@@ -278,18 +253,14 @@ const ModelManagementPage: React.FC = () => {
 
       {/* 模型列表部分 - 条件渲染 */}
       {expandedProviders[provider.id] && (
-        <div style={{ marginTop: '16px' }}>
-          <Divider style={{ margin: '12px 0' }} />
-          <Row gutter={[16, 16]}>
+        <div className="models-expanded-section">
+          <Divider className="models-divider" />
+          <Row gutter={[16, 24]}>
             {provider.aiModels.map((model: AIModel) => (
               <Col key={model.id} xs={24} sm={12} md={8} lg={6} xl={6}>
                 <Card
                   hoverable
-                  style={{
-                    borderRadius: '10px',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                    height: '180px'
-                  }}
+                  className="model-card"
                   bodyStyle={{
                     padding: '16px',
                     display: 'flex',
@@ -297,53 +268,48 @@ const ModelManagementPage: React.FC = () => {
                     height: '100%'
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
-                    <div style={{
-                      background: MODEL_TYPE_COLORS[model.aiModelTypeName as keyof typeof MODEL_TYPE_COLORS] + '15',
-                      borderRadius: '50%',
-                      padding: '6px',
-                      marginRight: '10px'
-                    }}>
-                      {MODEL_TYPE_ICONS[model.aiModelTypeName as keyof typeof MODEL_TYPE_ICONS]}
+                  {/* 模型头部区域 */}
+                  <div className="model-header">
+                    <div className="model-title-section">
+                      <Text
+                        strong
+                        className="model-name"
+                        ellipsis={{ tooltip: model.modelName }}
+                      >
+                        {model.modelName}
+                      </Text>
                     </div>
-                    <Text strong ellipsis={{ tooltip: model.modelName }}>
-                      {model.modelName}
-                    </Text>
                     <Tag
                       color={MODEL_TYPE_COLORS[model.aiModelTypeName as keyof typeof MODEL_TYPE_COLORS]}
-                      style={{ marginLeft: 'auto', fontSize: '10px' }}
+                      className="model-type-tag"
                     >
                       {model.aiModelTypeName}
                     </Tag>
                   </div>
 
-                  <div style={{ flex: 1, overflow: 'hidden' }}>
-                    <Text type="secondary" style={{ fontSize: '12px' }} ellipsis={{ tooltip: model.modelDescription }}>
-                      {model.modelDescription || "暂无描述"}
+                  {/* 模型描述区域 */}
+                  <div className="model-description-section">
+                    <Text
+                      className="model-description"
+                      title={model.modelDescription || "该模型暂无详细描述信息"}
+                    >
+                      {model.modelDescription || "该模型暂无详细描述信息"}
                     </Text>
                   </div>
 
-                  <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between' }}>
-                    <Button
-                      size="small"
-                      icon={<ShareAltOutlined />}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleShare(model);
-                      }}
-                    >
-                      分享
-                    </Button>
+                  {/* 操作区域 */}
+                  <div className="model-actions">
                     <Button
                       size="small"
                       type="primary"
                       icon={<EditOutlined />}
+                      className="model-config-button"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleEditSettings(model);
                       }}
                     >
-                      编辑
+                      配置
                     </Button>
                   </div>
                 </Card>
@@ -351,8 +317,10 @@ const ModelManagementPage: React.FC = () => {
             ))}
             {provider.aiModels.length === 0 && (
               <Col span={24}>
-                <div style={{ textAlign: 'center', padding: '20px', color: '#999' }}>
-                  该提供商暂无已添加的模型
+                <div className="empty-models">
+                  <Text className="empty-models-text">
+                    该提供商暂无已添加的模型
+                  </Text>
                 </div>
               </Col>
             )}
@@ -363,7 +331,7 @@ const ModelManagementPage: React.FC = () => {
   );
 
   return (
-    <div style={{ padding: "20px" }}>
+    <div className="ai-model-page">
       <Title level={2}>AI 模型管理</Title>
       <Divider />
 
@@ -371,16 +339,16 @@ const ModelManagementPage: React.FC = () => {
         <Panel
           header={<Title level={4}>已添加的提供商 ({configuredProviders.length})</Title>}
           key="1"
-          style={{ backgroundColor: "#f7f7f7", borderRadius: "8px", marginBottom: "16px" }}
+          className="panel-style configured-panel"
         >
           <div>
             {isLoading ? (
-              <div style={{ textAlign: "center", padding: "20px" }}>加载中...</div>
+              <div className="loading-section">加载中...</div>
             ) : (
               configuredProviders.map((provider: AIProvider) => renderProviderCard(provider))
             )}
             {!isLoading && configuredProviders.length === 0 && (
-              <div style={{ textAlign: "center", padding: "20px" }}>暂无已配置的模型提供商</div>
+              <div className="empty-configured-providers">暂无已配置的模型提供商</div>
             )}
           </div>
         </Panel>
@@ -388,11 +356,11 @@ const ModelManagementPage: React.FC = () => {
         <Panel
           header={<Title level={4}>待添加的提供商 ({availableProviders.length})</Title>}
           key="2"
-          style={{ backgroundColor: "#f7f7f7", borderRadius: "8px" }}
+          className="panel-style"
         >
           <Row gutter={[16, 16]}>
             {isLoading ? (
-              <Col span={24} style={{ textAlign: "center", padding: "20px" }}>
+              <Col span={24} className="loading-section">
                 加载中...
               </Col>
             ) : (
@@ -400,11 +368,7 @@ const ModelManagementPage: React.FC = () => {
                 <Col key={provider.id} xs={24} sm={12} md={8} lg={6} xl={6}>
                   <Card
                     hoverable
-                    style={{
-                      height: '280px',
-                      borderRadius: '12px',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                    }}
+                    className="available-provider-card"
                     bodyStyle={{
                       display: 'flex',
                       flexDirection: 'column',
@@ -413,46 +377,27 @@ const ModelManagementPage: React.FC = () => {
                     }}
                   >
                     {/* 图标居中显示 */}
-                    <div style={{ textAlign: 'center', marginBottom: '16px' }}>
-                      <div style={{
-                        background: 'rgba(24, 144, 255, 0.1)',
-                        borderRadius: '50%',
-                        width: '80px',
-                        height: '80px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        margin: '0 auto'
-                      }}>
+                    <div className="available-provider-icon-section">
+                      <div className="available-provider-icon-container">
                         <LLMIcon provider={provider.providerName} size={50} />
                       </div>
                     </div>
 
                     {/* 提供商名称居中显示 */}
-                    <div style={{ textAlign: 'center', marginBottom: '12px' }}>
-                      <Text strong style={{ fontSize: '18px' }}>
+                    <div className="available-provider-name-section">
+                      <Text strong className="available-provider-name">
                         {provider.providerName}
                       </Text>
                     </div>
 
                     {/* 标签居中显示 */}
-                    <div style={{
-                      textAlign: 'center',
-                      marginBottom: '12px',
-                      flex: 1,
-                      overflow: 'hidden'
-                    }}>
-                      <div style={{
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        justifyContent: 'center',
-                        gap: '6px'
-                      }}>
+                    <div className="available-provider-tags-section">
+                      <div className="available-provider-tags-container">
                         {provider.tag.split(',').map((tag, index) => (
                           <Tag
                             key={index}
                             color="default"
-                            style={{ fontSize: '10px', margin: '2px' }}
+                            className="available-provider-tag"
                           >
                             {tag}
                           </Tag>
@@ -461,7 +406,7 @@ const ModelManagementPage: React.FC = () => {
                     </div>
 
                     {/* 分隔线 */}
-                    <Divider style={{ margin: '12px 0' }} />
+                    <Divider className="available-provider-divider" />
 
                     {/* 添加按钮 */}
                     <Button
@@ -477,7 +422,7 @@ const ModelManagementPage: React.FC = () => {
               ))
             )}
             {!isLoading && availableProviders.length === 0 && (
-              <Col span={24} style={{ textAlign: "center", padding: "20px" }}>
+              <Col span={24} className="empty-available-providers">
                 暂无可添加的模型提供商
               </Col>
             )}

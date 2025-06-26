@@ -1,77 +1,70 @@
 import { faker } from "@faker-js/faker";
-import { Avatar, Col, Divider, Row, Tag } from "antd";
+import { Avatar, Button, Col, Progress, Row } from "antd";
 import dayjs from "dayjs";
 
-import { fakeAvatars } from "@/_mock/utils";
 import Card from "@/components/card";
-import { IconButton, Iconify } from "@/components/icon";
+import { Iconify } from "@/components/icon";
+
+// Generate fake avatars locally
+const generateFakeAvatars = (count: number) => {
+	return Array.from({ length: count }, () => faker.image.avatarGitHub());
+};
 
 export default function ProjectsTab() {
 	const items = [
 		{
-			icon: <Iconify icon="logos:react" size={40} />,
-			name: "Admin Template",
-			client: faker.person.fullName(),
-			desc: "Time is our most valuable asset, that is why we want to help you save it by creating…",
-			members: fakeAvatars(15),
-			startDate: dayjs(faker.date.past({ years: 1 })),
-			deadline: dayjs(faker.date.future({ years: 1 })),
-			messages: 236,
-			allHours: "98/135",
-			allTasks: faker.number.int({ min: 60, max: 99 }),
-			closedTasks: faker.number.int({ min: 30, max: 60 }),
+			name: "Technology behind the Blockchain",
+			desc: "Progressively incentivize cooperative systems through technically sound functionalities. Authoritatively pontificate.",
+			cover: faker.image.urlLoremFlickr({ category: "technics" }),
+			avatar: faker.image.avatarGitHub(),
+			members: generateFakeAvatars(5),
+			updatedAt: dayjs(faker.date.recent()).fromNow(),
+			progress: faker.number.int({ min: 20, max: 100 }),
 		},
 		{
-			icon: <Iconify icon="logos:vue" size={40} />,
+			name: "Admin Template",
+			desc: "Time is our most valuable asset, that is why we want to help you save it by creating…",
+			cover: faker.image.urlLoremFlickr({ category: "technics" }),
+			avatar: faker.image.avatarGitHub(),
+			members: generateFakeAvatars(15),
+			updatedAt: dayjs(faker.date.recent()).fromNow(),
+			progress: faker.number.int({ min: 20, max: 100 }),
+		},
+		{
 			name: "App Design",
 			desc: "App design combines the user interface (UI) and user experience (UX).  ",
-			client: faker.person.fullName(),
-			members: fakeAvatars(27),
-			startDate: dayjs(faker.date.past({ years: 1 })),
-			deadline: dayjs(faker.date.future({ years: 1 })),
-			messages: 236,
-			allHours: "880/421",
-			allTasks: faker.number.int({ min: 60, max: 99 }),
-			closedTasks: faker.number.int({ min: 30, max: 60 }),
+			cover: faker.image.urlLoremFlickr({ category: "technics" }),
+			avatar: faker.image.avatarGitHub(),
+			members: generateFakeAvatars(27),
+			updatedAt: dayjs(faker.date.recent()).fromNow(),
+			progress: faker.number.int({ min: 20, max: 100 }),
 		},
 		{
-			icon: <Iconify icon="logos:figma" size={40} />,
 			name: "Figma Dashboard",
 			desc: "Use this template to organize your design project. Some of the key features are… ",
-			client: faker.person.fullName(),
-			members: fakeAvatars(32),
-			startDate: dayjs(faker.date.past({ years: 1 })),
-			deadline: dayjs(faker.date.future({ years: 1 })),
-			messages: 236,
-			allHours: "1.2k/820",
-			allTasks: faker.number.int({ min: 60, max: 99 }),
-			closedTasks: faker.number.int({ min: 30, max: 60 }),
+			cover: faker.image.urlLoremFlickr({ category: "technics" }),
+			avatar: faker.image.avatarGitHub(),
+			members: generateFakeAvatars(32),
+			updatedAt: dayjs(faker.date.recent()).fromNow(),
+			progress: faker.number.int({ min: 20, max: 100 }),
 		},
 		{
-			icon: <Iconify icon="logos:html-5" size={40} />,
 			name: "Create Website",
 			desc: "Your domain name should reflect your products or services so that your...  ",
-			client: faker.person.fullName(),
-			members: fakeAvatars(221),
-			startDate: dayjs(faker.date.past({ years: 1 })),
-			deadline: dayjs(faker.date.future({ years: 1 })),
-			messages: 236,
-			allHours: "142/420",
-			allTasks: faker.number.int({ min: 60, max: 99 }),
-			closedTasks: faker.number.int({ min: 30, max: 60 }),
+			cover: faker.image.urlLoremFlickr({ category: "technics" }),
+			avatar: faker.image.avatarGitHub(),
+			members: generateFakeAvatars(221),
+			updatedAt: dayjs(faker.date.recent()).fromNow(),
+			progress: faker.number.int({ min: 20, max: 100 }),
 		},
 		{
-			icon: <Iconify icon="logos:adobe-xd" size={40} />,
 			name: "Logo Design",
 			desc: "Premium logo designs created by top logo designers. Create the branding of business.  ",
-			client: faker.person.fullName(),
-			members: fakeAvatars(125),
-			startDate: dayjs(faker.date.past({ years: 1 })),
-			deadline: dayjs(faker.date.future({ years: 1 })),
-			messages: 232,
-			allHours: "580/445",
-			allTasks: faker.number.int({ min: 60, max: 99 }),
-			closedTasks: faker.number.int({ min: 30, max: 60 }),
+			cover: faker.image.urlLoremFlickr({ category: "technics" }),
+			avatar: faker.image.avatarGitHub(),
+			members: generateFakeAvatars(125),
+			updatedAt: dayjs(faker.date.recent()).fromNow(),
+			progress: faker.number.int({ min: 20, max: 100 }),
 		},
 	];
 	return (
@@ -80,7 +73,7 @@ export default function ProjectsTab() {
 				<Col span={24} md={12} key={item.name}>
 					<Card className="w-full flex-col">
 						<header className="flex w-full items-center">
-							{item.icon}
+							<Iconify icon="logos:react" size={40} />
 
 							<div className="flex flex-col">
 								<span className="ml-4 text-xl opacity-70">{item.name}</span>
@@ -90,9 +83,10 @@ export default function ProjectsTab() {
 							</div>
 
 							<div className="ml-auto flex opacity-70">
-								<IconButton>
-									<Iconify icon="fontisto:more-v-a" size={18} />
-								</IconButton>
+								<Button
+									shape="circle"
+									icon={<Iconify icon="fontisto:more-v-a" size={18} />}
+								/>
 							</div>
 						</header>
 
@@ -115,9 +109,7 @@ export default function ProjectsTab() {
 							<span className="opacity-70">{item.desc}</span>
 						</main>
 
-						<Divider />
-
-						<footer className="flex w-full  flex-col items-center">
+						<div className="flex w-full flex-col">
 							<div className="mb-4 flex w-full justify-between">
 								<span>
 									All Hours:
@@ -139,7 +131,7 @@ export default function ProjectsTab() {
 									<span className="ml-2">{item.messages}</span>
 								</div>
 							</div>
-						</footer>
+						</div>
 					</Card>
 				</Col>
 			))}

@@ -3,7 +3,6 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AiFillGithub, AiFillGoogleCircle, AiFillWechat } from "react-icons/ai";
 
-import { DEFAULT_USER, TEST_USER } from "@/_mock/assets";
 import type { SignInReq } from "@/api/services/userService";
 import { useSignIn } from "@/store/userStore";
 
@@ -34,31 +33,9 @@ function LoginForm() {
 				size="large"
 				initialValues={{
 					remember: true,
-					username: DEFAULT_USER.username,
-					password: DEFAULT_USER.password,
 				}}
 				onFinish={handleFinish}
 			>
-				<div className="mb-4 flex flex-col">
-					<Alert
-						description={
-							<div className="flex flex-col">
-								<div className="flex">
-									<span className="flex-shrink-0 text-text-disabled">{t("sys.login.userName")}:</span>
-									<span className="ml-1 text-text-secondary">
-										{DEFAULT_USER.username} / {TEST_USER.username}
-									</span>
-								</div>
-								<div className="flex">
-									<span className="flex-shrink-0 text-text-disabled">{t("sys.login.password")}:</span>
-									<span className="ml-1 text-text-secondary">{DEFAULT_USER.password}</span>
-								</div>
-							</div>
-						}
-						showIcon
-					/>
-				</div>
-
 				<Form.Item name="username" rules={[{ required: true, message: t("sys.login.accountPlaceholder") }]}>
 					<Input placeholder={t("sys.login.userName")} />
 				</Form.Item>

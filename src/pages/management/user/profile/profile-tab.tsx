@@ -1,13 +1,18 @@
 import { faker } from "@faker-js/faker";
 import { Avatar, Col, Progress, Row, Space, Table, Tag, Timeline, Typography } from "antd";
 import type { ColumnsType } from "antd/es/table";
+import dayjs from "dayjs";
 
-import { fakeAvatars } from "@/_mock/utils";
 import Card from "@/components/card";
 import { IconButton, Iconify, SvgIcon } from "@/components/icon";
 import Scrollbar from "@/components/scrollbar";
 import { useUserInfo } from "@/store/userStore";
 import { themeVars } from "@/theme/theme.css";
+
+// Generate fake avatars locally
+const generateFakeAvatars = (count: number) => {
+	return Array.from({ length: count }, () => faker.image.avatarGitHub());
+};
 
 interface DataType {
 	key: string;
@@ -134,7 +139,7 @@ export default function ProfileTab() {
 				name: faker.company.buzzPhrase(),
 				date: faker.date.past().toDateString(),
 				leader: faker.person.fullName(),
-				team: fakeAvatars(faker.number.int({ min: 2, max: 5 })),
+				team: generateFakeAvatars(faker.number.int({ min: 2, max: 5 })),
 				status: faker.number.int({ min: 50, max: 99 }),
 			});
 		}
