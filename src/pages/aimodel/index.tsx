@@ -226,12 +226,6 @@ const ModelManagementPage: React.FC = () => {
         <Col>
           <Space>
             <Button
-              icon={<ShareAltOutlined />}
-              onClick={() => message.info(`准备分享 ${provider.providerName} 提供商`)}
-            >
-              分享
-            </Button>
-            <Button
               icon={<EditOutlined />}
               onClick={() => handleAddProvider(provider)}
             >

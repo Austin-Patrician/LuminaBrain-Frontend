@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   ReactFlow,
   Background,
@@ -18,7 +24,16 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { nodeTypes } from "./components/nodes";
-import { Button, message, Tooltip, Modal, Input, Form, Select, Tag } from "antd";
+import {
+  Button,
+  message,
+  Tooltip,
+  Modal,
+  Input,
+  Form,
+  Select,
+  Tag,
+} from "antd";
 import {
   PlusOutlined,
   SaveOutlined,
@@ -37,27 +52,24 @@ import {
   CloudOutlined,
   MessageOutlined,
   LeftOutlined,
-  CheckCircleOutlined
+  CheckCircleOutlined,
 } from "@ant-design/icons";
 import PropertiesPanel from "./components/PropertiesPanel";
 import NodePanel from "./components/NodePanel";
 import { flowService, FlowDataRaw } from "../../api/services/flowService";
-import { useNavigate, useSearchParams } from "react-router";
+import { useNavigate, useSearchParams, useParams } from "react-router";
 import DebugPanel from "./components/DebugPanel";
 import WorkflowExecutor, { DebugNodeResult } from "./services/workflowExecutor";
-import ReactMarkdown from 'react-markdown';
-import {
-  type FlowStatus
-} from '../../constant/flowStatus';
+import ReactMarkdown from "react-markdown";
 
 const { TextArea } = Input;
 const { Option } = Select;
 
 // 生成36位GUID的工具函数
 const generateGUID = (): string => {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-    const r = Math.random() * 16 | 0;
-    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
     return v.toString(16);
   });
 };
@@ -66,87 +78,87 @@ const generateGUID = (): string => {
 const getDefaultNodeData = (nodeType: string, label: string) => {
   const baseData = {
     label: label,
-    description: '',
+    description: "",
   };
 
   switch (nodeType) {
-    case 'aiDialogNode':
-    case 'aiSummaryNode':
-    case 'aiExtractNode':
-    case 'aiJsonNode':
+    case "aiDialogNode":
+    case "aiSummaryNode":
+    case "aiExtractNode":
+    case "aiJsonNode":
       return {
         ...baseData,
-        model: '', // 移除默认值，让用户必须选择
-        systemPrompt: '',
-        userMessage: '',
+        model: "", // 移除默认值，让用户必须选择
+        systemPrompt: "",
+        userMessage: "",
         temperature: 0.7,
         maxTokens: 1000,
         stream: false,
       };
 
-    case 'databaseNode':
+    case "databaseNode":
       return {
         ...baseData,
-        dbType: 'mysql',
-        connectionString: '',
-        query: '',
+        dbType: "mysql",
+        connectionString: "",
+        query: "",
         timeout: 30,
       };
 
-    case 'knowledgeBaseNode':
+    case "knowledgeBaseNode":
       return {
         ...baseData,
-        knowledgeBaseId: '',
-        searchQuery: '',
+        knowledgeBaseId: "",
+        searchQuery: "",
         topK: 5,
         similarityThreshold: 0.7,
       };
 
-    case 'bingNode':
+    case "bingNode":
       return {
         ...baseData,
-        searchQuery: '',
+        searchQuery: "",
         maxResults: 10,
-        safeSearch: 'moderate',
+        safeSearch: "moderate",
       };
 
-    case 'decisionNode':
-    case 'conditionNode':
+    case "decisionNode":
+    case "conditionNode":
       return {
         ...baseData,
-        condition: '',
-        conditionType: 'javascript',
-        trueBranch: '',
-        falseBranch: '',
+        condition: "",
+        conditionType: "javascript",
+        trueBranch: "",
+        falseBranch: "",
       };
 
-    case 'jsonExtractor':
+    case "jsonExtractor":
       return {
         ...baseData,
-        jsonPath: '',
-        extractMode: 'single',
-        defaultValue: '',
+        jsonPath: "",
+        extractMode: "single",
+        defaultValue: "",
       };
 
-    case 'responseNode':
+    case "responseNode":
       return {
         ...baseData,
-        responseTemplate: '',
-        responseFormat: 'text',
+        responseTemplate: "",
+        responseFormat: "text",
         statusCode: 200,
       };
 
-    case 'startNode':
+    case "startNode":
       return {
         ...baseData,
-        triggerType: 'manual',
-        scheduleTime: '',
+        triggerType: "manual",
+        scheduleTime: "",
       };
 
-    case 'endNode':
+    case "endNode":
       return {
         ...baseData,
-        outputFormat: 'json',
+        outputFormat: "json",
         returnCode: 0,
       };
 
@@ -211,40 +223,136 @@ const nodeCategories = [
     key: "ai",
     label: "AI处理节点",
     children: [
-      { type: "aiDialogNode", label: "AI对话", icon: getNodeIcon("aiDialogNode"), color: getNodeColor("aiDialogNode"), description: "与AI模型进行对话交互" },
-      { type: "aiSummaryNode", label: "摘要总结", icon: getNodeIcon("aiSummaryNode"), color: getNodeColor("aiSummaryNode"), description: "对文本内容进行智能摘要" },
-      { type: "aiExtractNode", label: "内容提取", icon: getNodeIcon("aiExtractNode"), color: getNodeColor("aiExtractNode"), description: "从文本中提取关键信息" },
-      { type: "aiJsonNode", label: "JSON处理", icon: getNodeIcon("aiJsonNode"), color: getNodeColor("aiJsonNode"), description: "AI处理JSON数据格式" },
+      {
+        type: "aiDialogNode",
+        label: "AI对话",
+        icon: getNodeIcon("aiDialogNode"),
+        color: getNodeColor("aiDialogNode"),
+        description: "与AI模型进行对话交互",
+      },
+      {
+        type: "aiSummaryNode",
+        label: "摘要总结",
+        icon: getNodeIcon("aiSummaryNode"),
+        color: getNodeColor("aiSummaryNode"),
+        description: "对文本内容进行智能摘要",
+      },
+      {
+        type: "aiExtractNode",
+        label: "内容提取",
+        icon: getNodeIcon("aiExtractNode"),
+        color: getNodeColor("aiExtractNode"),
+        description: "从文本中提取关键信息",
+      },
+      {
+        type: "aiJsonNode",
+        label: "JSON处理",
+        icon: getNodeIcon("aiJsonNode"),
+        color: getNodeColor("aiJsonNode"),
+        description: "AI处理JSON数据格式",
+      },
     ],
   },
   {
     key: "data",
     label: "数据处理节点",
     children: [
-      { type: "databaseNode", label: "数据库查询", icon: getNodeIcon("databaseNode"), color: getNodeColor("databaseNode"), description: "执行数据库查询操作" },
-      { type: "knowledgeBaseNode", label: "知识库检索", icon: getNodeIcon("knowledgeBaseNode"), color: getNodeColor("knowledgeBaseNode"), description: "从知识库中检索相关信息" },
-      { type: "bingNode", label: "必应搜索", icon: getNodeIcon("bingNode"), color: getNodeColor("bingNode"), description: "使用必应进行网络搜索" },
+      {
+        type: "databaseNode",
+        label: "数据库查询",
+        icon: getNodeIcon("databaseNode"),
+        color: getNodeColor("databaseNode"),
+        description: "执行数据库查询操作",
+      },
+      {
+        type: "knowledgeBaseNode",
+        label: "知识库检索",
+        icon: getNodeIcon("knowledgeBaseNode"),
+        color: getNodeColor("knowledgeBaseNode"),
+        description: "从知识库中检索相关信息",
+      },
+      {
+        type: "bingNode",
+        label: "必应搜索",
+        icon: getNodeIcon("bingNode"),
+        color: getNodeColor("bingNode"),
+        description: "使用必应进行网络搜索",
+      },
     ],
   },
   {
     key: "control",
     label: "控制节点",
     children: [
-      { type: "startNode", label: "开始", icon: getNodeIcon("startNode"), color: getNodeColor("startNode"), description: "工作流开始节点" },
-      { type: "endNode", label: "结束", icon: getNodeIcon("endNode"), color: getNodeColor("endNode"), description: "工作流结束节点" },
-      { type: "responseNode", label: "响应输出", icon: getNodeIcon("responseNode"), color: getNodeColor("responseNode"), description: "输出最终响应结果" },
+      {
+        type: "startNode",
+        label: "开始",
+        icon: getNodeIcon("startNode"),
+        color: getNodeColor("startNode"),
+        description: "工作流开始节点",
+      },
+      {
+        type: "endNode",
+        label: "结束",
+        icon: getNodeIcon("endNode"),
+        color: getNodeColor("endNode"),
+        description: "工作流结束节点",
+      },
+      {
+        type: "responseNode",
+        label: "响应输出",
+        icon: getNodeIcon("responseNode"),
+        color: getNodeColor("responseNode"),
+        description: "输出最终响应结果",
+      },
     ],
   },
   {
     key: "basic",
     label: "基础节点",
     children: [
-      { type: "basicNode", label: "基础节点", icon: getNodeIcon("basicNode"), color: getNodeColor("basicNode"), description: "基础功能节点" },
-      { type: "processNode", label: "处理节点", icon: getNodeIcon("processNode"), color: getNodeColor("processNode"), description: "数据处理和转换节点" },
-      { type: "decisionNode", label: "判断节点", icon: getNodeIcon("decisionNode"), color: getNodeColor("decisionNode"), description: "条件判断和分支节点" },
-      { type: "conditionNode", label: "条件节点", icon: getNodeIcon("conditionNode"), color: getNodeColor("conditionNode"), description: "逻辑条件处理节点" },
-      { type: "customNode", label: "自定义节点", icon: getNodeIcon("customNode"), color: getNodeColor("customNode"), description: "可自定义功能的节点" },
-      { type: "jsonExtractor", label: "JSON提取器", icon: getNodeIcon("jsonExtractor"), color: getNodeColor("jsonExtractor"), description: "从JSON中提取特定数据" },
+      {
+        type: "basicNode",
+        label: "基础节点",
+        icon: getNodeIcon("basicNode"),
+        color: getNodeColor("basicNode"),
+        description: "基础功能节点",
+      },
+      {
+        type: "processNode",
+        label: "处理节点",
+        icon: getNodeIcon("processNode"),
+        color: getNodeColor("processNode"),
+        description: "数据处理和转换节点",
+      },
+      {
+        type: "decisionNode",
+        label: "判断节点",
+        icon: getNodeIcon("decisionNode"),
+        color: getNodeColor("decisionNode"),
+        description: "条件判断和分支节点",
+      },
+      {
+        type: "conditionNode",
+        label: "条件节点",
+        icon: getNodeIcon("conditionNode"),
+        color: getNodeColor("conditionNode"),
+        description: "逻辑条件处理节点",
+      },
+      {
+        type: "customNode",
+        label: "自定义节点",
+        icon: getNodeIcon("customNode"),
+        color: getNodeColor("customNode"),
+        description: "可自定义功能的节点",
+      },
+      {
+        type: "jsonExtractor",
+        label: "JSON提取器",
+        icon: getNodeIcon("jsonExtractor"),
+        color: getNodeColor("jsonExtractor"),
+        description: "从JSON中提取特定数据",
+      },
     ],
   },
 ];
@@ -275,15 +383,15 @@ const defaultViewport = { x: 0, y: 0, zoom: 1 };
 
 const AgentFlowPage: React.FC = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const flowId = searchParams.get('id');
+  const { flowId } = useParams();
 
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [selectedEdges, setSelectedEdges] = useState<string[]>([]); // 添加选中连线状态
-  const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
+  const [reactFlowInstance, setReactFlowInstance] =
+    useState<ReactFlowInstance | null>(null);
   const [initialized, setInitialized] = useState(false);
   const [nodePanelVisible, setNodePanelVisible] = useState(true);
 
@@ -295,26 +403,30 @@ const AgentFlowPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
 
   // 添加历史记录相关状态
-  const [history, setHistory] = useState<Array<{ nodes: Node[]; edges: Edge[] }>>([
-    { nodes: initialNodes, edges: initialEdges },
-  ]);
+  const [history, setHistory] = useState<
+    Array<{ nodes: Node[]; edges: Edge[] }>
+  >([{ nodes: initialNodes, edges: initialEdges }]);
   const [historyIndex, setHistoryIndex] = useState(0);
   const ignoreHistoryRef = useRef(false);
 
   // 调试相关状态
   const [debugPanelVisible, setDebugPanelVisible] = useState(false);
-  const [debugResults, setDebugResults] = useState<Record<string, DebugNodeResult>>({});
+  const [debugResults, setDebugResults] = useState<
+    Record<string, DebugNodeResult>
+  >({});
   const isDebugMode = Object.keys(debugResults).length > 0;
 
   // Markdown查看器状态
   const [markdownViewerVisible, setMarkdownViewerVisible] = useState(false);
-  const [currentMarkdownContent, setCurrentMarkdownContent] = useState('');
+  const [currentMarkdownContent, setCurrentMarkdownContent] = useState("");
 
   // WorkflowExecutor实例
   const workflowExecutorRef = useRef<WorkflowExecutor>(new WorkflowExecutor());
 
   // 页面加载时检查是否有流程ID，如果有则加载流程
   useEffect(() => {
+    console.log("Flow ID from URL:", flowId);
+
     if (flowId) {
       loadFlow(flowId);
     }
@@ -325,7 +437,7 @@ const AgentFlowPage: React.FC = () => {
     if (initialized && currentFlow) {
       setIsFlowModified(true);
     }
-  }, [nodes, edges, initialized]);  // 加载流程数据
+  }, [nodes, edges, initialized]); // 加载流程数据
   const loadFlow = async (id: string) => {
     setLoading(true);
     try {
@@ -349,28 +461,38 @@ const AgentFlowPage: React.FC = () => {
       }
 
       setIsFlowModified(false);
-      message.success('流程加载成功');
+      message.success("流程加载成功");
     } catch (error) {
-      message.error('流程加载失败');
-      console.error('Load flow error:', error);
+      message.error("流程加载失败");
+      console.error("Load flow error:", error);
     } finally {
       setLoading(false);
     }
   };
 
   // 验证流程配置的函数
-  const validateFlowConfiguration = (nodes: Node[]): { isValid: boolean; errors: string[] } => {
+  const validateFlowConfiguration = (
+    nodes: Node[]
+  ): { isValid: boolean; errors: string[] } => {
     const errors: string[] = [];
 
     // 检查AI节点是否选择了AI模型
-    const aiNodeTypes = ['aiDialogNode', 'aiSummaryNode', 'aiExtractNode', 'aiJsonNode'];
+    const aiNodeTypes = [
+      "aiDialogNode",
+      "aiSummaryNode",
+      "aiExtractNode",
+      "aiJsonNode",
+    ];
 
     nodes.forEach((node) => {
-      if (aiNodeTypes.includes(node.type || '')) {
+      if (aiNodeTypes.includes(node.type || "")) {
         const nodeData = node.data || {};
 
         // 检查AI模型是否为空，确保model是字符串类型
-        if (!nodeData.model || (typeof nodeData.model === 'string' && nodeData.model.trim() === '')) {
+        if (
+          !nodeData.model ||
+          (typeof nodeData.model === "string" && nodeData.model.trim() === "")
+        ) {
           errors.push(`节点"${nodeData.label || node.type}"未选择AI模型`);
         }
 
@@ -383,7 +505,7 @@ const AgentFlowPage: React.FC = () => {
 
     return {
       isValid: errors.length === 0,
-      errors
+      errors,
     };
   };
 
@@ -395,7 +517,7 @@ const AgentFlowPage: React.FC = () => {
 
     // 确保必需字段有值
     if (!flowData.name) {
-      message.error('流程名称不能为空');
+      message.error("流程名称不能为空");
       return;
     }
 
@@ -403,28 +525,30 @@ const AgentFlowPage: React.FC = () => {
     const validation = validateFlowConfiguration(flowObject.nodes);
     if (!validation.isValid) {
       Modal.error({
-        title: '流程配置验证失败',
+        title: "流程配置验证失败",
         content: (
           <div>
             <p>请修复以下问题后再保存：</p>
             <ul className="mt-2">
               {validation.errors.map((error, index) => (
-                <li key={index} className="text-red-600">• {error}</li>
+                <li key={index} className="text-red-600">
+                  • {error}
+                </li>
               ))}
             </ul>
           </div>
         ),
-        okText: '知道了',
+        okText: "知道了",
       });
       return;
     }
 
     // 确定流程状态：新建流程为draft，现有流程保持原状态
-    const flowStatus = currentFlow?.status || 'draft';
+    const flowStatus = currentFlow?.status || "draft";
 
     const saveData: FlowDataRaw = {
       name: flowData.name,
-      description: flowData.description || '',
+      description: flowData.description || "",
       nodes: flowObject.nodes,
       edges: flowObject.edges,
       viewport: flowObject.viewport,
@@ -440,11 +564,11 @@ const AgentFlowPage: React.FC = () => {
       if (currentFlow?.id) {
         // 更新现有流程 - 保持原有状态
         result = await flowService.updateFlow(currentFlow.id, saveData);
-        message.success('流程保存成功');
+        message.success("流程保存成功");
       } else {
         // 创建新流程 - 使用draft状态
         result = await flowService.createFlow(saveData);
-        message.success('流程创建成功');
+        message.success("流程创建成功");
 
         // 更新URL，添加流程ID
         navigate(`/agentFlow/editor?id=${result.id}`, { replace: true });
@@ -456,10 +580,9 @@ const AgentFlowPage: React.FC = () => {
       // 保存成功后更新历史记录
       setHistory([{ nodes: flowObject.nodes, edges: flowObject.edges }]);
       setHistoryIndex(0);
-
     } catch (error) {
-      message.error(currentFlow?.id ? '流程保存失败' : '流程创建失败');
-      console.error('Save flow error:', error);
+      message.error(currentFlow?.id ? "流程保存失败" : "流程创建失败");
+      console.error("Save flow error:", error);
     } finally {
       setLoading(false);
     }
@@ -468,18 +591,18 @@ const AgentFlowPage: React.FC = () => {
   // 发布流程
   const publishFlow = async () => {
     if (!currentFlow?.id) {
-      message.warning('请先保存流程');
+      message.warning("请先保存流程");
       return;
     }
 
     try {
       await flowService.publishFlow(currentFlow.id);
-      setCurrentFlow({ ...currentFlow, status: 'published' });
-      message.success('流程发布成功');
+      setCurrentFlow({ ...currentFlow, status: "published" });
+      message.success("流程发布成功");
       setPublishModalVisible(false);
     } catch (error) {
-      message.error('流程发布失败');
-      console.error('Publish flow error:', error);
+      message.error("流程发布失败");
+      console.error("Publish flow error:", error);
     }
   };
 
@@ -487,14 +610,14 @@ const AgentFlowPage: React.FC = () => {
   const handleBackToList = () => {
     if (isFlowModified) {
       Modal.confirm({
-        title: '未保存的更改',
-        content: '您有未保存的更改，确定要离开吗？',
-        onOk: () => navigate('/agentFlow/list'),
-        okText: '确定',
-        cancelText: '取消',
+        title: "未保存的更改",
+        content: "您有未保存的更改，确定要离开吗？",
+        onOk: () => navigate("/agentFlow/list"),
+        okText: "确定",
+        cancelText: "取消",
       });
     } else {
-      navigate('/agentFlow/list');
+      navigate("/agentFlow/list");
     }
   };
 
@@ -514,13 +637,15 @@ const AgentFlowPage: React.FC = () => {
     });
   };
 
-
   // 添加历史记录的辅助函数
-  const addToHistory = useCallback((newState: { nodes: Node[]; edges: Edge[] }) => {
-    const currentHistory = history.slice(0, historyIndex + 1);
-    setHistory([...currentHistory, newState]);
-    setHistoryIndex(historyIndex + 1);
-  }, [history, historyIndex]);
+  const addToHistory = useCallback(
+    (newState: { nodes: Node[]; edges: Edge[] }) => {
+      const currentHistory = history.slice(0, historyIndex + 1);
+      setHistory([...currentHistory, newState]);
+      setHistoryIndex(historyIndex + 1);
+    },
+    [history, historyIndex]
+  );
 
   // Initialize the flow after the component has mounted
   useEffect(() => {
@@ -589,12 +714,15 @@ const AgentFlowPage: React.FC = () => {
   const handleConnect = useCallback(
     (params: Connection) => {
       setEdges((eds) => {
-        const newEdges = addEdge({
-          ...params,
-          type: "smoothstep",
-          animated: true,
-          style: { stroke: '#1677ff', strokeWidth: 2 }
-        }, eds);
+        const newEdges = addEdge(
+          {
+            ...params,
+            type: "smoothstep",
+            animated: true,
+            style: { stroke: "#1677ff", strokeWidth: 2 },
+          },
+          eds
+        );
 
         // 添加新状态到历史记录
         const currentHistory = history.slice(0, historyIndex + 1);
@@ -620,19 +748,22 @@ const AgentFlowPage: React.FC = () => {
   }, []);
 
   // 选中状态改变处理
-  const onSelectionChange = useCallback((params: { nodes: Node[]; edges: Edge[] }) => {
-    // 更新选中的节点
-    if (params.nodes.length > 0) {
-      setSelectedNode(params.nodes[0]);
-      setSelectedEdges([]);
-    } else if (params.edges.length > 0) {
-      setSelectedEdges(params.edges.map(edge => edge.id));
-      setSelectedNode(null);
-    } else {
-      setSelectedNode(null);
-      setSelectedEdges([]);
-    }
-  }, []);
+  const onSelectionChange = useCallback(
+    (params: { nodes: Node[]; edges: Edge[] }) => {
+      // 更新选中的节点
+      if (params.nodes.length > 0) {
+        setSelectedNode(params.nodes[0]);
+        setSelectedEdges([]);
+      } else if (params.edges.length > 0) {
+        setSelectedEdges(params.edges.map((edge) => edge.id));
+        setSelectedNode(null);
+      } else {
+        setSelectedNode(null);
+        setSelectedEdges([]);
+      }
+    },
+    []
+  );
 
   // 点击空白处清除选中
   const onPaneClick = useCallback(() => {
@@ -641,95 +772,105 @@ const AgentFlowPage: React.FC = () => {
   }, []);
 
   // 节点数据更改处理函数
-  const onNodeDataChange = useCallback((nodeId: string, newData: any) => {
-    setNodes((nds) =>
-      nds.map((node) => {
-        if (node.id === nodeId) {
-          const updatedNode = {
-            ...node,
-            data: { ...node.data, ...newData }
-          };
-          return updatedNode;
-        }
-        return node;
-      })
-    );
+  const onNodeDataChange = useCallback(
+    (nodeId: string, newData: any) => {
+      setNodes((nds) =>
+        nds.map((node) => {
+          if (node.id === nodeId) {
+            const updatedNode = {
+              ...node,
+              data: { ...node.data, ...newData },
+            };
+            return updatedNode;
+          }
+          return node;
+        })
+      );
 
-    // 同时更新选中节点状态
-    setSelectedNode((selected) => {
-      if (selected && selected.id === nodeId) {
-        return {
-          ...selected,
-          data: { ...selected.data, ...newData }
-        };
-      }
-      return selected;
-    });
-
-    // 保存到历史记录
-    const newFlowData = {
-      nodes: nodes.map((node) => {
-        if (node.id === nodeId) {
+      // 同时更新选中节点状态
+      setSelectedNode((selected) => {
+        if (selected && selected.id === nodeId) {
           return {
-            ...node,
-            data: { ...node.data, ...newData }
+            ...selected,
+            data: { ...selected.data, ...newData },
           };
         }
-        return node;
-      }),
-      edges
-    };
+        return selected;
+      });
 
-    addToHistory(newFlowData);
-  }, [nodes, edges, addToHistory]);
+      // 保存到历史记录
+      const newFlowData = {
+        nodes: nodes.map((node) => {
+          if (node.id === nodeId) {
+            return {
+              ...node,
+              data: { ...node.data, ...newData },
+            };
+          }
+          return node;
+        }),
+        edges,
+      };
+
+      addToHistory(newFlowData);
+    },
+    [nodes, edges, addToHistory]
+  );
 
   // 节点名称更改处理函数
-  const onNodeLabelChange = useCallback((nodeId: string, newLabel: string) => {
-    setNodes((nds) =>
-      nds.map((node) => {
-        if (node.id === nodeId) {
-          const updatedNode = {
-            ...node,
-            data: { ...node.data, label: newLabel }
-          };
-          return updatedNode;
-        }
-        return node;
-      })
-    );
+  const onNodeLabelChange = useCallback(
+    (nodeId: string, newLabel: string) => {
+      setNodes((nds) =>
+        nds.map((node) => {
+          if (node.id === nodeId) {
+            const updatedNode = {
+              ...node,
+              data: { ...node.data, label: newLabel },
+            };
+            return updatedNode;
+          }
+          return node;
+        })
+      );
 
-    // 同时更新选中节点状态
-    setSelectedNode((selected) => {
-      if (selected && selected.id === nodeId) {
-        return {
-          ...selected,
-          data: { ...selected.data, label: newLabel }
-        };
-      }
-      return selected;
-    });
-
-    // 保存到历史记录
-    const newFlowData = {
-      nodes: nodes.map((node) => {
-        if (node.id === nodeId) {
+      // 同时更新选中节点状态
+      setSelectedNode((selected) => {
+        if (selected && selected.id === nodeId) {
           return {
-            ...node,
-            data: { ...node.data, label: newLabel }
+            ...selected,
+            data: { ...selected.data, label: newLabel },
           };
         }
-        return node;
-      }),
-      edges
-    };
+        return selected;
+      });
 
-    addToHistory(newFlowData);
-  }, [nodes, edges, addToHistory]);
+      // 保存到历史记录
+      const newFlowData = {
+        nodes: nodes.map((node) => {
+          if (node.id === nodeId) {
+            return {
+              ...node,
+              data: { ...node.data, label: newLabel },
+            };
+          }
+          return node;
+        }),
+        edges,
+      };
+
+      addToHistory(newFlowData);
+    },
+    [nodes, edges, addToHistory]
+  );
 
   // 删除节点时自动删除相关边
   const onNodesDelete = useCallback(
     (deleted: Node[]) => {
-      setEdges((eds) => eds.filter((e) => !deleted.some((n) => n.id === e.source || n.id === e.target)));
+      setEdges((eds) =>
+        eds.filter(
+          (e) => !deleted.some((n) => n.id === e.source || n.id === e.target)
+        )
+      );
       setSelectedNode(null);
     },
     [setEdges]
@@ -764,8 +905,12 @@ const AgentFlowPage: React.FC = () => {
       const mouseY = event.clientY - reactFlowBounds.top;
 
       // 如果鼠标位置在画布边界内，使用鼠标位置
-      if (mouseX >= 0 && mouseX <= reactFlowBounds.width &&
-        mouseY >= 0 && mouseY <= reactFlowBounds.height) {
+      if (
+        mouseX >= 0 &&
+        mouseX <= reactFlowBounds.width &&
+        mouseY >= 0 &&
+        mouseY <= reactFlowBounds.height
+      ) {
         position = reactFlowInstance.screenToFlowPosition({
           x: event.clientX - reactFlowBounds.left,
           y: event.clientY - reactFlowBounds.top,
@@ -839,7 +984,7 @@ const AgentFlowPage: React.FC = () => {
 
   // 显示Markdown结果
   const handleShowMarkdownResult = (result: DebugNodeResult) => {
-    setCurrentMarkdownContent(result.markdownOutput || '');
+    setCurrentMarkdownContent(result.markdownOutput || "");
     setMarkdownViewerVisible(true);
   };
 
@@ -865,7 +1010,9 @@ const AgentFlowPage: React.FC = () => {
     }
 
     const newNodes = nodes.filter((node) => node.id !== selectedNode.id);
-    const newEdges = edges.filter((e) => e.source !== selectedNode.id && e.target !== selectedNode.id);
+    const newEdges = edges.filter(
+      (e) => e.source !== selectedNode.id && e.target !== selectedNode.id
+    );
 
     // 添加新状态到历史记录
     const currentHistory = history.slice(0, historyIndex + 1);
@@ -911,8 +1058,8 @@ const AgentFlowPage: React.FC = () => {
       <Form
         layout="vertical"
         initialValues={{
-          name: currentFlow?.name || '',
-          description: currentFlow?.description || '',
+          name: currentFlow?.name || "",
+          description: currentFlow?.description || "",
           tags: currentFlow?.tags || [],
         }}
         onFinish={async (values) => {
@@ -924,9 +1071,9 @@ const AgentFlowPage: React.FC = () => {
           label="流程名称"
           name="name"
           rules={[
-            { required: true, message: '请输入流程名称' },
-            { min: 2, message: '流程名称至少2个字符' },
-            { max: 50, message: '流程名称不能超过50个字符' }
+            { required: true, message: "请输入流程名称" },
+            { min: 2, message: "流程名称至少2个字符" },
+            { max: 50, message: "流程名称不能超过50个字符" },
           ]}
         >
           <Input placeholder="请输入流程名称" />
@@ -935,9 +1082,7 @@ const AgentFlowPage: React.FC = () => {
         <Form.Item
           label="流程描述"
           name="description"
-          rules={[
-            { max: 200, message: '描述不能超过200个字符' }
-          ]}
+          rules={[{ max: 200, message: "描述不能超过200个字符" }]}
         >
           <TextArea
             rows={3}
@@ -947,15 +1092,11 @@ const AgentFlowPage: React.FC = () => {
           />
         </Form.Item>
 
-        <Form.Item
-          label="标签"
-          name="tags"
-          help="添加标签便于分类和搜索"
-        >
+        <Form.Item label="标签" name="tags" help="添加标签便于分类和搜索">
           <Select
             mode="tags"
             placeholder="输入标签并按回车添加"
-            tokenSeparators={[',']}
+            tokenSeparators={[","]}
             maxTagCount={5}
             maxTagTextLength={10}
           >
@@ -968,9 +1109,7 @@ const AgentFlowPage: React.FC = () => {
         </Form.Item>
 
         <div className="flex justify-end gap-2 mt-6">
-          <Button onClick={() => setSaveModalVisible(false)}>
-            取消
-          </Button>
+          <Button onClick={() => setSaveModalVisible(false)}>取消</Button>
           <Button type="primary" htmlType="submit" loading={loading}>
             保存
           </Button>
@@ -995,7 +1134,9 @@ const AgentFlowPage: React.FC = () => {
           <div className="flex items-start gap-3">
             <div className="text-yellow-600 text-lg">⚠️</div>
             <div>
-              <div className="font-medium text-yellow-800 mb-1">发布前请确认</div>
+              <div className="font-medium text-yellow-800 mb-1">
+                发布前请确认
+              </div>
               <ul className="text-sm text-yellow-700 space-y-1">
                 <li>• 流程配置已经完整且正确</li>
                 <li>• 所有节点都已正确连接</li>
@@ -1008,13 +1149,31 @@ const AgentFlowPage: React.FC = () => {
 
         <div className="bg-gray-50 p-4 rounded-lg">
           <div className="text-sm text-gray-600 space-y-2">
-            <div><strong>流程名称：</strong>{currentFlow?.name}</div>
-            <div><strong>节点数量：</strong>{nodes.length} 个</div>
-            <div><strong>连接数量：</strong>{edges.length} 个</div>
-            <div><strong>当前状态：</strong>
-              <Tag color={currentFlow?.status === 'published' ? 'success' : 'default'} className="ml-2">
-                {currentFlow?.status === 'draft' ? '草稿' :
-                  currentFlow?.status === 'published' ? '已发布' : '已归档'}
+            <div>
+              <strong>流程名称：</strong>
+              {currentFlow?.name}
+            </div>
+            <div>
+              <strong>节点数量：</strong>
+              {nodes.length} 个
+            </div>
+            <div>
+              <strong>连接数量：</strong>
+              {edges.length} 个
+            </div>
+            <div>
+              <strong>当前状态：</strong>
+              <Tag
+                color={
+                  currentFlow?.status === "published" ? "success" : "default"
+                }
+                className="ml-2"
+              >
+                {currentFlow?.status === "draft"
+                  ? "草稿"
+                  : currentFlow?.status === "published"
+                  ? "已发布"
+                  : "已归档"}
               </Tag>
             </div>
           </div>
@@ -1030,7 +1189,7 @@ const AgentFlowPage: React.FC = () => {
 
   // 创建带有调试数据的节点
   const enhancedNodes = useMemo(() => {
-    return nodes.map(node => ({
+    return nodes.map((node) => ({
       ...node,
       data: {
         ...node.data,
@@ -1043,12 +1202,12 @@ const AgentFlowPage: React.FC = () => {
 
   // 创建带有选中状态的连线
   const enhancedEdges = useMemo(() => {
-    return edges.map(edge => ({
+    return edges.map((edge) => ({
       ...edge,
       selected: selectedEdges.includes(edge.id),
       style: {
         ...edge.style,
-        stroke: selectedEdges.includes(edge.id) ? '#ff6b6b' : '#1677ff',
+        stroke: selectedEdges.includes(edge.id) ? "#ff6b6b" : "#1677ff",
         strokeWidth: selectedEdges.includes(edge.id) ? 3 : 2,
       },
     }));
@@ -1059,19 +1218,23 @@ const AgentFlowPage: React.FC = () => {
     const handleKeyDown = (event: KeyboardEvent) => {
       // 检查是否在输入框中
       const target = event.target as HTMLElement;
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true') {
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.contentEditable === "true"
+      ) {
         return;
       }
 
-      if (event.key === 'Delete' || event.key === 'Backspace') {
+      if (event.key === "Delete" || event.key === "Backspace") {
         event.preventDefault();
         handleDeleteSelected();
       }
     };
 
-    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown);
     return () => {
-      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener("keydown", handleKeyDown);
     };
   }, [selectedNode, selectedEdges, handleDeleteSelected]);
 
@@ -1095,7 +1258,7 @@ const AgentFlowPage: React.FC = () => {
 
               <div className="flex items-center gap-3">
                 <h1 className="text-lg font-semibold text-gray-800 mb-0">
-                  {currentFlow?.name || '新建流程'}
+                  {currentFlow?.name || "新建流程"}
                 </h1>
                 {isFlowModified && (
                   <Tooltip title="有未保存的更改">
@@ -1105,15 +1268,26 @@ const AgentFlowPage: React.FC = () => {
                 {currentFlow && (
                   <Tooltip
                     title={
-                      currentFlow.status === 'draft' ? '草稿' :
-                        currentFlow.status === 'published' ? '已发布' :
-                          currentFlow.status === 'archived' ? '已归档' : '未归档'
+                      currentFlow.status === "draft"
+                        ? "草稿"
+                        : currentFlow.status === "published"
+                        ? "已发布"
+                        : currentFlow.status === "archived"
+                        ? "已归档"
+                        : "未归档"
                     }
                   >
-                    <div className={`w-3 h-3 rounded-full ${currentFlow.status === 'published' ? 'bg-green-500' :
-                      currentFlow.status === 'draft' ? 'bg-blue-500' :
-                        currentFlow.status === 'archived' ? 'bg-gray-500' : 'bg-gray-400'
-                      }`} />
+                    <div
+                      className={`w-3 h-3 rounded-full ${
+                        currentFlow.status === "published"
+                          ? "bg-green-500"
+                          : currentFlow.status === "draft"
+                          ? "bg-blue-500"
+                          : currentFlow.status === "archived"
+                          ? "bg-gray-500"
+                          : "bg-gray-400"
+                      }`}
+                    />
                   </Tooltip>
                 )}
               </div>
@@ -1150,11 +1324,15 @@ const AgentFlowPage: React.FC = () => {
 
             {/* 编辑工具栏 */}
             <div className="flex items-center gap-2">
-              <Tooltip title={
-                selectedNode ? "删除选中节点" :
-                  selectedEdges.length > 0 ? "删除选中连线" :
-                    "删除选中元素"
-              }>
+              <Tooltip
+                title={
+                  selectedNode
+                    ? "删除选中节点"
+                    : selectedEdges.length > 0
+                    ? "删除选中连线"
+                    : "删除选中元素"
+                }
+              >
                 <Button
                   icon={<DeleteOutlined />}
                   onClick={handleDeleteSelected}
@@ -1207,7 +1385,7 @@ const AgentFlowPage: React.FC = () => {
                   <Button
                     icon={<CheckCircleOutlined />}
                     onClick={() => setPublishModalVisible(true)}
-                    disabled={currentFlow.status === 'published'}
+                    disabled={currentFlow.status === "published"}
                     size="small"
                     className="flex items-center"
                   >
@@ -1247,12 +1425,12 @@ const AgentFlowPage: React.FC = () => {
                 onDragOver={onDragOver}
                 onDrop={onDrop}
                 selectNodesOnDrag={true}
-                multiSelectionKeyCode={['Meta', 'Ctrl']}
-                deleteKeyCode={['Backspace', 'Delete']}
+                multiSelectionKeyCode={["Meta", "Ctrl"]}
+                deleteKeyCode={["Backspace", "Delete"]}
                 defaultEdgeOptions={{
                   type: "smoothstep",
                   animated: true,
-                  style: { stroke: '#1677ff', strokeWidth: 2 }
+                  style: { stroke: "#1677ff", strokeWidth: 2 },
                 }}
                 snapToGrid={true}
                 snapGrid={snapGrid}
@@ -1260,7 +1438,7 @@ const AgentFlowPage: React.FC = () => {
                 fitView
                 minZoom={0.1}
                 maxZoom={2}
-                className={`bg-gray-50 ${isDebugMode ? 'debug-mode' : ''}`}
+                className={`bg-gray-50 ${isDebugMode ? "debug-mode" : ""}`}
               >
                 <Background
                   gap={20}
@@ -1277,33 +1455,53 @@ const AgentFlowPage: React.FC = () => {
                       const debugResult = debugResults[node.id];
                       if (debugResult) {
                         switch (debugResult.status) {
-                          case 'completed': return '#10b981';
-                          case 'failed': return '#ef4444';
-                          case 'running': return '#f59e0b';
-                          case 'waiting_input': return '#eab308';
-                          default: return '#6b7280';
+                          case "completed":
+                            return "#10b981";
+                          case "failed":
+                            return "#ef4444";
+                          case "running":
+                            return "#f59e0b";
+                          case "waiting_input":
+                            return "#eab308";
+                          default:
+                            return "#6b7280";
                         }
                       }
                     }
                     switch (node.type) {
-                      case 'startNode': return '#10b981';
-                      case 'endNode': return '#ef4444';
-                      case 'aiDialogNode': return '#3b82f6';
-                      case 'processNode': return '#8b5cf6';
-                      case 'decisionNode': return '#f59e0b';
-                      default: return '#6b7280';
+                      case "startNode":
+                        return "#10b981";
+                      case "endNode":
+                        return "#ef4444";
+                      case "aiDialogNode":
+                        return "#3b82f6";
+                      case "processNode":
+                        return "#8b5cf6";
+                      case "decisionNode":
+                        return "#f59e0b";
+                      default:
+                        return "#6b7280";
                     }
                   }}
                 />
 
                 {/* Panel 组件用于显示浮动信息 */}
-                <Panel position="top-right" className="bg-white p-2 rounded-lg shadow-lg border border-gray-200">
+                <Panel
+                  position="top-right"
+                  className="bg-white p-2 rounded-lg shadow-lg border border-gray-200"
+                >
                   <div className="text-sm text-gray-600">
                     节点: {nodes.length} | 连线: {edges.length}
                     {isDebugMode && (
                       <>
                         <br />
-                        调试中: {Object.values(debugResults).filter(r => r.status === 'completed').length} / {Object.keys(debugResults).length}
+                        调试中:{" "}
+                        {
+                          Object.values(debugResults).filter(
+                            (r) => r.status === "completed"
+                          ).length
+                        }{" "}
+                        / {Object.keys(debugResults).length}
                       </>
                     )}
                   </div>
@@ -1342,7 +1540,7 @@ const AgentFlowPage: React.FC = () => {
         footer={[
           <Button key="close" onClick={() => setMarkdownViewerVisible(false)}>
             关闭
-          </Button>
+          </Button>,
         ]}
         width={800}
         className="markdown-viewer-modal"
@@ -1362,4 +1560,3 @@ const AgentFlowPage: React.FC = () => {
 };
 
 export default AgentFlowPage;
-

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Card,
   Table,
@@ -11,8 +11,8 @@ import {
   Input,
   Row,
   Col,
-  Statistic
-} from 'antd';
+  Statistic,
+} from "antd";
 import {
   PlusOutlined,
   EditOutlined,
@@ -20,11 +20,16 @@ import {
   PlayCircleOutlined,
   CopyOutlined,
   SearchOutlined,
-  EyeOutlined
-} from '@ant-design/icons';
-import { useNavigate } from 'react-router';
-import type { ColumnsType } from 'antd/es/table';
-import { flowService, FlowDataRaw, FlowListParams } from '@/api/services/flowService';
+  EyeOutlined,
+} from "@ant-design/icons";
+import { useNavigate } from "react-router";
+import type { ColumnsType } from "antd/es/table";
+import {
+  flowService,
+  FlowDataRaw,
+  FlowListParams,
+} from "@/api/services/flowService";
+import { usePathname, useRouter } from "@/router/hooks";
 
 const { Title, Text } = Typography;
 const { Search } = Input;
@@ -34,9 +39,11 @@ type FlowData = FlowDataRaw;
 
 const AgentFlowListPage: React.FC = () => {
   const navigate = useNavigate();
+  const { push } = useRouter();
+  const pathname = usePathname();
   const [flows, setFlows] = useState<FlowData[]>([]);
   const [loading, setLoading] = useState(false);
-  const [searchText, setSearchText] = useState('');
+  const [searchText, setSearchText] = useState("");
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
   useEffect(() => {
@@ -54,8 +61,8 @@ const AgentFlowListPage: React.FC = () => {
       const flowsData = await flowService.getFlows(params);
       setFlows(flowsData);
     } catch (error) {
-      console.error('Load flows error:', error);
-      message.error('加载流程列表失败');
+      console.error("Load flows error:", error);
+      message.error("加载流程列表失败");
     } finally {
       setLoading(false);
     }
@@ -63,7 +70,7 @@ const AgentFlowListPage: React.FC = () => {
 
   // 重新加载数据 - 当搜索条件变化时
   useEffect(() => {
-    if (searchText !== '') {
+    if (searchText !== "") {
       const timer = setTimeout(() => {
         loadFlows();
       }, 500); // 防抖，500ms后执行搜索
@@ -76,19 +83,20 @@ const AgentFlowListPage: React.FC = () => {
 
   // 创建新流程
   const handleCreateFlow = () => {
-    navigate('/agentFlow/editor');
+    navigate("/agentFlow/editor");
   };
 
   // 编辑流程
   const handleEditFlow = (flowId: string) => {
-    navigate(`/agentFlow/editor?id=${flowId}`);
+    // 跳转到编辑器页面并携带流程ID参数
+    push(`${pathname}/${flowId}`);
   };
 
   // 复制流程 - 使用 flowService.copyFlow()
   const handleCopyFlow = async (flow: FlowData) => {
     try {
       if (!flow.id) {
-        message.error('流程ID不存在');
+        message.error("流程ID不存在");
         return;
       }
 
@@ -96,8 +104,8 @@ const AgentFlowListPage: React.FC = () => {
       message.success(`流程 "${flow.name}" 复制成功`);
       loadFlows(); // 重新加载列表
     } catch (error) {
-      console.error('Copy flow error:', error);
-      message.error('复制流程失败');
+      console.error("Copy flow error:", error);
+      message.error("复制流程失败");
     }
   };
 
@@ -105,54 +113,57 @@ const AgentFlowListPage: React.FC = () => {
   const handleDeleteFlow = async (flowId: string) => {
     try {
       await flowService.deleteFlow(flowId);
-      message.success('删除成功');
+      message.success("删除成功");
       loadFlows(); // 重新加载列表
     } catch (error) {
-      console.error('Delete flow error:', error);
-      message.error('删除失败');
+      console.error("Delete flow error:", error);
+      message.error("删除失败");
     }
   };
 
   // 运行流程 - 使用 flowService.runFlow()
   const handleRunFlow = async (flow: FlowData) => {
-    if (flow.status !== 'published') {
-      message.warning('只有已发布的流程才能运行');
+    if (flow.status !== "published") {
+      message.warning("只有已发布的流程才能运行");
       return;
     }
 
     try {
       if (!flow.id) {
-        message.error('流程ID不存在');
+        message.error("流程ID不存在");
         return;
       }
 
       await flowService.runFlow(flow.id);
       message.success(`流程 "${flow.name}" 开始运行`);
     } catch (error) {
-      console.error('Run flow error:', error);
-      message.error('运行流程失败');
+      console.error("Run flow error:", error);
+      message.error("运行流程失败");
     }
   };
 
   // 获取状态标签
-  const getStatusTag = (status: FlowData['status']) => {
+  const getStatusTag = (status: FlowData["status"]) => {
     const statusConfig = {
-      draft: { color: 'default', text: '草稿' },
-      published: { color: 'success', text: '已发布' },
-      archived: { color: 'warning', text: '已归档' }
+      draft: { color: "default", text: "草稿" },
+      published: { color: "success", text: "已发布" },
+      archived: { color: "warning", text: "已归档" },
     };
 
     // 处理 undefined 或无效的 status 值
-    const config = statusConfig[status as keyof typeof statusConfig] || { color: 'default', text: '未知' };
+    const config = statusConfig[status as keyof typeof statusConfig] || {
+      color: "default",
+      text: "未知",
+    };
     return <Tag color={config.color}>{config.text}</Tag>;
   };
 
   // 表格列定义
   const columns: ColumnsType<FlowData> = [
     {
-      title: '流程名称',
-      dataIndex: 'name',
-      key: 'name',
+      title: "流程名称",
+      dataIndex: "name",
+      key: "name",
       render: (text, record) => (
         <div>
           <div className="font-medium text-gray-900">{text}</div>
@@ -162,41 +173,47 @@ const AgentFlowListPage: React.FC = () => {
       filteredValue: searchText ? [searchText] : null,
       onFilter: (value, record) =>
         record.name.toLowerCase().includes(value.toString().toLowerCase()) ||
-        record.description.toLowerCase().includes(value.toString().toLowerCase()),
+        record.description
+          .toLowerCase()
+          .includes(value.toString().toLowerCase()),
     },
     {
-      title: '节点统计',
-      key: 'stats',
+      title: "节点统计",
+      key: "stats",
       width: 120,
       render: (_, record) => (
         <div className="text-center">
-          <div className="text-lg font-bold text-blue-600">{record.nodeCount}</div>
+          <div className="text-lg font-bold text-blue-600">
+            {record.nodeCount}
+          </div>
           <div className="text-xs text-gray-500">节点</div>
-          <div className="text-sm text-gray-600">{record.connectionCount} 连接</div>
+          <div className="text-sm text-gray-600">
+            {record.connectionCount} 连接
+          </div>
         </div>
       ),
     },
     {
-      title: '状态',
-      dataIndex: 'status',
-      key: 'status',
+      title: "状态",
+      dataIndex: "status",
+      key: "status",
       width: 100,
       render: (status) => getStatusTag(status),
       filters: [
-        { text: '草稿', value: 'draft' },
-        { text: '已发布', value: 'published' },
-        { text: '已归档', value: 'archived' },
+        { text: "草稿", value: "draft" },
+        { text: "已发布", value: "published" },
+        { text: "已归档", value: "archived" },
       ],
       onFilter: (value, record) => record.status === value,
     },
     {
-      title: '标签',
-      dataIndex: 'tags',
-      key: 'tags',
+      title: "标签",
+      dataIndex: "tags",
+      key: "tags",
       width: 150,
       render: (tags: string[]) => (
         <div>
-          {tags?.map(tag => (
+          {tags?.map((tag) => (
             <Tag key={tag} className="mb-1">
               {tag}
             </Tag>
@@ -205,9 +222,9 @@ const AgentFlowListPage: React.FC = () => {
       ),
     },
     {
-      title: '更新时间',
-      dataIndex: 'updatedAt',
-      key: 'updatedAt',
+      title: "更新时间",
+      dataIndex: "updatedAt",
+      key: "updatedAt",
       width: 160,
       render: (text, record) => (
         <div>
@@ -215,11 +232,12 @@ const AgentFlowListPage: React.FC = () => {
           <div className="text-xs text-gray-500">by {record.createdBy}</div>
         </div>
       ),
-      sorter: (a, b) => new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime(),
+      sorter: (a, b) =>
+        new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime(),
     },
     {
-      title: '操作',
-      key: 'action',
+      title: "操作",
+      key: "action",
       width: 200,
       render: (_, record) => (
         <Space size="small">
@@ -244,7 +262,7 @@ const AgentFlowListPage: React.FC = () => {
             size="small"
             icon={<PlayCircleOutlined />}
             onClick={() => handleRunFlow(record)}
-            disabled={record.status !== 'published'}
+            disabled={record.status !== "published"}
           >
             运行
           </Button>
@@ -263,12 +281,7 @@ const AgentFlowListPage: React.FC = () => {
             okText="确定"
             cancelText="取消"
           >
-            <Button
-              type="link"
-              size="small"
-              danger
-              icon={<DeleteOutlined />}
-            >
+            <Button type="link" size="small" danger icon={<DeleteOutlined />}>
               删除
             </Button>
           </Popconfirm>
@@ -283,16 +296,19 @@ const AgentFlowListPage: React.FC = () => {
   };
 
   // 过滤后的数据
-  const filteredFlows = flows.filter(flow =>
-    flow.name.toLowerCase().includes(searchText.toLowerCase()) ||
-    flow.description.toLowerCase().includes(searchText.toLowerCase())
+  const filteredFlows = flows.filter(
+    (flow) =>
+      flow.name.toLowerCase().includes(searchText.toLowerCase()) ||
+      flow.description.toLowerCase().includes(searchText.toLowerCase())
   );
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       {/* 页面头部 */}
       <div className="mb-6">
-        <Title level={2} className="mb-2">智能工作流管理</Title>
+        <Title level={2} className="mb-2">
+          智能工作流管理
+        </Title>
         <Text className="text-gray-600">创建和管理您的AI工作流程</Text>
       </div>
 
@@ -303,7 +319,7 @@ const AgentFlowListPage: React.FC = () => {
             <Statistic
               title="总流程数"
               value={flows.length}
-              valueStyle={{ color: '#1890ff' }}
+              valueStyle={{ color: "#1890ff" }}
             />
           </Card>
         </Col>
@@ -311,8 +327,8 @@ const AgentFlowListPage: React.FC = () => {
           <Card>
             <Statistic
               title="已发布"
-              value={flows.filter(f => f.status === 'published').length}
-              valueStyle={{ color: '#52c41a' }}
+              value={flows.filter((f) => f.status === "published").length}
+              valueStyle={{ color: "#52c41a" }}
             />
           </Card>
         </Col>
@@ -320,8 +336,8 @@ const AgentFlowListPage: React.FC = () => {
           <Card>
             <Statistic
               title="草稿"
-              value={flows.filter(f => f.status === 'draft').length}
-              valueStyle={{ color: '#faad14' }}
+              value={flows.filter((f) => f.status === "draft").length}
+              valueStyle={{ color: "#faad14" }}
             />
           </Card>
         </Col>
@@ -330,7 +346,7 @@ const AgentFlowListPage: React.FC = () => {
             <Statistic
               title="总节点数"
               value={flows.reduce((sum, f) => sum + f.nodeCount, 0)}
-              valueStyle={{ color: '#722ed1' }}
+              valueStyle={{ color: "#722ed1" }}
             />
           </Card>
         </Col>

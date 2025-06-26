@@ -36,6 +36,15 @@ const agentFlow: AppRouteObject = {
       },
     },
     {
+      path: "list/:id",
+      element: <AgentFlowEditorPage />,
+      meta: {
+        label: "流程编辑器",
+        key: "/agentFlow/list/:id",
+        hideMenu: true, // 隐藏在菜单中
+      },
+    },
+    {
       path: "editor",
       element: <AgentFlowEditorPage />,
       meta: {

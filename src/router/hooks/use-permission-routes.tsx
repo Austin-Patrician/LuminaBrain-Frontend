@@ -142,16 +142,35 @@ function transformPermissionsToRoutes(permissions: Permission[], flattenedPermis
 }
 
 const ROUTE_MODE = import.meta.env.VITE_APP_ROUTER_MODE;
+
 export function usePermissionRoutes() {
-	if (ROUTE_MODE === "module") {
-		return getRoutesFromModules();
-	}
-
 	const permissions = useUserPermission();
-	return useMemo(() => {
-		if (!permissions) return [];
 
-		const flattenedPermissions = flattenTrees(permissions);
-		return transformPermissionsToRoutes(permissions, flattenedPermissions);
+	return useMemo(() => {
+		// 如果是模块模式，直接返回静态路由
+		if (ROUTE_MODE === "module") {
+			return getRoutesFromModules();
+		}
+
+		// 权限模式处理
+		if (!permissions) {
+			// 权限数据为 undefined，说明用户信息还未加载完成，返回静态路由作为回退
+			return getRoutesFromModules();
+		}
+
+		if (permissions.length === 0) {
+			// 权限为空数组，说明用户没有任何权限，也返回静态路由
+			return getRoutesFromModules();
+		}
+
+		// 使用权限生成路由
+		try {
+			const flattenedPermissions = flattenTrees(permissions);
+			return transformPermissionsToRoutes(permissions, flattenedPermissions);
+		} catch (error) {
+			console.error("Error transforming permissions to routes:", error);
+			// 如果权限转换失败，回退到静态路由
+			return getRoutesFromModules();
+		}
 	}, [permissions]);
 }

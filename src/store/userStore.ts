@@ -52,6 +52,7 @@ const useUserStore = create<UserStore>()(
 
 export const useUserInfo = () => useUserStore((state) => state.userInfo);
 export const useUserToken = () => useUserStore((state) => state.userToken);
+// 从用户信息中获取权限
 export const useUserPermission = () => useUserStore((state) => state.userInfo.permissions);
 export const useUserActions = () => useUserStore((state) => state.actions);
 
@@ -69,7 +70,8 @@ export const useSignIn = () => {
 			console.log(res);
 			const { user, accessToken, refreshToken } = res;
 			setUserToken({ accessToken, refreshToken });
-			setUserInfo(user);
+			setUserInfo(user); // user中应该包含permissions字段
+			
 			navigatge(HOMEPAGE, { replace: true });
 			toast.success("Sign in success!");
 		} catch (err) {

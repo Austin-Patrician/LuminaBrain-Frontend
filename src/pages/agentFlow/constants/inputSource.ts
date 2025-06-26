@@ -18,17 +18,17 @@ export const INPUT_SOURCE_OPTIONS = [
   {
     label: '用户输入',
     value: INPUT_SOURCE.USER_INPUT,
-    description: '运行时由用户手动输入数据'
+    description: ''
   },
   {
     label: '上一步结果',
     value: INPUT_SOURCE.PREVIOUS_RESULT,
-    description: '使用前一个节点的执行结果'
+    description: ''
   },
   {
     label: '上下文数据',
     value: INPUT_SOURCE.CONTEXT_DATA,
-    description: '使用工作流上下文中的数据'
+    description: ''
   }
 ] as const;
 

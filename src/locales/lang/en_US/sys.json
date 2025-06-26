@@ -109,10 +109,11 @@
       },
       "dictionary": "Dictionary",
 
-      "multiflow":"Agent Flow",
-      "chat":"AI Chat",
+      "multiflow": "Agent Flow",
+      "chat": "AI Chat",
       "agent": "Agent",
       "agentFlow": "Agent Flow",
+      "agentFlowList": "Agent Flow List",
       "knowledgedetail": "Knowledge Detail",
       "aimodel": "AI Model",
       "knowledge": "Knowledge",
