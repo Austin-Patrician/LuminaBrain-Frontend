@@ -8,6 +8,7 @@ import type { AppRouteObject } from "#/router";
 
 const Knowledge = lazy(() => import("@/pages/knowledge/index"));
 const KnowledgeDetail = lazy(() => import("@/pages/knowledge/detail"));
+const KnowledgeItemDetail = lazy(() => import("@/pages/knowledge/item-detail"));
 
 const knowledge: AppRouteObject[] = [
   {
@@ -37,6 +38,15 @@ const knowledge: AppRouteObject[] = [
         meta: {
           label: "sys.menu.knowledgedetail",
           key: "/knowledgemanagement/:id",
+          hideMenu: true, // 隐藏菜单
+        },
+      },
+      {
+        path: ":knowledgeId/item/:itemId",
+        element: <KnowledgeItemDetail />,
+        meta: {
+          label: "sys.menu.knowledgeitemdetail",
+          key: "/knowledgemanagement/:knowledgeId/item/:itemId",
           hideMenu: true, // 隐藏菜单
         },
       },

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import {
   Layout,
   Button,
@@ -11,34 +11,37 @@ import {
   Tooltip,
   Divider,
   type MenuProps,
-} from 'antd';
-import BulbOutlined from '@ant-design/icons/BulbOutlined';
-import PlusOutlined from '@ant-design/icons/PlusOutlined';
-import ShareAltOutlined from '@ant-design/icons/ShareAltOutlined';
-import MenuOutlined from '@ant-design/icons/MenuOutlined';
-import UserOutlined from '@ant-design/icons/UserOutlined';
-import DeleteOutlined from '@ant-design/icons/DeleteOutlined';
-import MoreOutlined from '@ant-design/icons/MoreOutlined';
-import HistoryOutlined from '@ant-design/icons/HistoryOutlined';
-import SettingOutlined from '@ant-design/icons/SettingOutlined';
-import LogoutOutlined from '@ant-design/icons/LogoutOutlined';
-import TeamOutlined from '@ant-design/icons/TeamOutlined';
-import BugOutlined from '@ant-design/icons/BugOutlined';
-import QuestionCircleOutlined from '@ant-design/icons/QuestionCircleOutlined';
-import SendOutlined from '@ant-design/icons/SendOutlined';
-import { Sender } from '@ant-design/x';
-import { useUserInfo } from '@/store/userStore';
-import Canvas from './components/Canvas';
-import ModelSelector from './components/ModelSelector';
-import AttachmentUpload from './components/AttachmentUpload';
-import ChatHistory from './components/ChatHistory';
-import ThinkingBubble from './components/ThinkingBubble';
-import SSEStreamingBubble from './components/SSEStreamingBubble';
-import { chatService, type ChatMessage as APIChatMessage } from '@/api/services/chatService';
-import UserMessageBubble from './components/UserMessageBubble';
-import AssistantMessageBubble from './components/AssistantMessageBubble';
-import FileAttachment from './components/FileAttachment';
-import './index.css';
+} from "antd";
+import BulbOutlined from "@ant-design/icons/BulbOutlined";
+import PlusOutlined from "@ant-design/icons/PlusOutlined";
+import ShareAltOutlined from "@ant-design/icons/ShareAltOutlined";
+import MenuOutlined from "@ant-design/icons/MenuOutlined";
+import UserOutlined from "@ant-design/icons/UserOutlined";
+import DeleteOutlined from "@ant-design/icons/DeleteOutlined";
+import MoreOutlined from "@ant-design/icons/MoreOutlined";
+import HistoryOutlined from "@ant-design/icons/HistoryOutlined";
+import SettingOutlined from "@ant-design/icons/SettingOutlined";
+import LogoutOutlined from "@ant-design/icons/LogoutOutlined";
+import TeamOutlined from "@ant-design/icons/TeamOutlined";
+import BugOutlined from "@ant-design/icons/BugOutlined";
+import QuestionCircleOutlined from "@ant-design/icons/QuestionCircleOutlined";
+import SendOutlined from "@ant-design/icons/SendOutlined";
+import { Sender } from "@ant-design/x";
+import { useUserInfo } from "@/store/userStore";
+import Canvas from "./components/Canvas";
+import ModelSelector from "./components/ModelSelector";
+import AttachmentUpload from "./components/AttachmentUpload";
+import ChatHistory from "./components/ChatHistory";
+import ThinkingBubble from "./components/ThinkingBubble";
+import SSEStreamingBubble from "./components/SSEStreamingBubble";
+import {
+  chatService,
+  type ChatMessage as APIChatMessage,
+} from "@/api/services/chatService";
+import UserMessageBubble from "./components/UserMessageBubble";
+import AssistantMessageBubble from "./components/AssistantMessageBubble";
+import FileAttachment from "./components/FileAttachment";
+import "./index.css";
 
 const { Sider, Content } = Layout;
 const { Title, Text } = Typography;
@@ -46,7 +49,7 @@ const { Title, Text } = Typography;
 // 消息类型定义
 interface ChatMessage {
   id: string;
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string;
   timestamp: Date;
   attachments?: Array<{
@@ -84,15 +87,15 @@ interface ChatSession {
 const ChatPage: React.FC = () => {
   const userInfo = useUserInfo();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [currentSession, setCurrentSession] = useState<string>('');
+  const [currentSession, setCurrentSession] = useState<string>("");
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [inputValue, setInputValue] = useState('');
-  const [selectedModel, setSelectedModel] = useState('');
-  const [selectedModelType, setSelectedModelType] = useState<string>(''); // 新增：存储模型类型
+  const [inputValue, setInputValue] = useState("");
+  const [selectedModel, setSelectedModel] = useState("");
+  const [selectedModelType, setSelectedModelType] = useState<string>(""); // 新增：存储模型类型
   const [thinkingMode, setThinkingMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [streamingMessage, setStreamingMessage] = useState<string>('');
+  const [streamingMessage, setStreamingMessage] = useState<string>("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [showCanvas, setShowCanvas] = useState(false);
   const [shareModalVisible, setShareModalVisible] = useState(false);
@@ -109,46 +112,56 @@ const ChatPage: React.FC = () => {
       const scrollElement = messagesScrollRef.current;
       scrollElement.scrollTo({
         top: scrollElement.scrollHeight,
-        behavior: smooth ? 'smooth' : 'auto'
+        behavior: smooth ? "smooth" : "auto",
       });
     }
   }, []);
 
   // 处理模型选择变化
-  const handleModelChange = useCallback((modelId: string, modelType?: string) => {
-    setSelectedModel(modelId);
-    if (modelType) {
-      setSelectedModelType(modelType);
-    }
-  }, []);
+  const handleModelChange = useCallback(
+    (modelId: string, modelType?: string) => {
+      setSelectedModel(modelId);
+      if (modelType) {
+        setSelectedModelType(modelType);
+      }
+    },
+    []
+  );
 
   // 从localStorage加载聊天记录
   useEffect(() => {
-    const savedSessions = localStorage.getItem('chat-sessions');
-    const savedCurrentSession = localStorage.getItem('chat-current-session');
+    const savedSessions = localStorage.getItem("chat-sessions");
+    const savedCurrentSession = localStorage.getItem("chat-current-session");
 
     if (savedSessions) {
       try {
-        const parsedSessions = JSON.parse(savedSessions).map((session: any) => ({
-          ...session,
-          createdAt: new Date(session.createdAt),
-          updatedAt: new Date(session.updatedAt),
-          messages: session.messages.map((msg: any) => ({
-            ...msg,
-            timestamp: new Date(msg.timestamp)
-          }))
-        }));
+        const parsedSessions = JSON.parse(savedSessions).map(
+          (session: any) => ({
+            ...session,
+            createdAt: new Date(session.createdAt),
+            updatedAt: new Date(session.updatedAt),
+            messages: session.messages.map((msg: any) => ({
+              ...msg,
+              timestamp: new Date(msg.timestamp),
+            })),
+          })
+        );
         setSessions(parsedSessions);
 
-        if (savedCurrentSession && parsedSessions.some((s: ChatSession) => s.id === savedCurrentSession)) {
+        if (
+          savedCurrentSession &&
+          parsedSessions.some((s: ChatSession) => s.id === savedCurrentSession)
+        ) {
           setCurrentSession(savedCurrentSession);
-          const currentSessionData = parsedSessions.find((s: ChatSession) => s.id === savedCurrentSession);
+          const currentSessionData = parsedSessions.find(
+            (s: ChatSession) => s.id === savedCurrentSession
+          );
           if (currentSessionData) {
             setMessages(currentSessionData.messages);
           }
         }
       } catch (error) {
-        console.error('Failed to load chat sessions from localStorage:', error);
+        console.error("Failed to load chat sessions from localStorage:", error);
       }
     }
   }, []);
@@ -156,48 +169,53 @@ const ChatPage: React.FC = () => {
   // 保存聊天记录到localStorage
   const saveSessions = useCallback((newSessions: ChatSession[]) => {
     try {
-      localStorage.setItem('chat-sessions', JSON.stringify(newSessions));
+      localStorage.setItem("chat-sessions", JSON.stringify(newSessions));
     } catch (error) {
-      console.error('Failed to save chat sessions to localStorage:', error);
+      console.error("Failed to save chat sessions to localStorage:", error);
     }
   }, []);
 
   // 保存当前会话ID
   const saveCurrentSession = useCallback((sessionId: string) => {
     try {
-      localStorage.setItem('chat-current-session', sessionId);
+      localStorage.setItem("chat-current-session", sessionId);
     } catch (error) {
-      console.error('Failed to save current session to localStorage:', error);
+      console.error("Failed to save current session to localStorage:", error);
     }
   }, []);
 
   // 更新会话的消息
-  const updateSessionMessages = useCallback((sessionId: string, newMessages: ChatMessage[]) => {
-    setSessions(prevSessions => {
-      const updatedSessions = prevSessions.map(session => {
-        if (session.id === sessionId) {
-          return {
-            ...session,
-            messages: newMessages,
-            updatedAt: new Date(),
-            // 如果是新消息且会话标题还是"新对话"，则自动生成标题
-            title: session.title === '新对话' && newMessages.length > 0
-              ? newMessages[0].content.slice(0, 20) + (newMessages[0].content.length > 20 ? '...' : '')
-              : session.title
-          };
-        }
-        return session;
+  const updateSessionMessages = useCallback(
+    (sessionId: string, newMessages: ChatMessage[]) => {
+      setSessions((prevSessions) => {
+        const updatedSessions = prevSessions.map((session) => {
+          if (session.id === sessionId) {
+            return {
+              ...session,
+              messages: newMessages,
+              updatedAt: new Date(),
+              // 如果是新消息且会话标题还是"新对话"，则自动生成标题
+              title:
+                session.title === "新对话" && newMessages.length > 0
+                  ? newMessages[0].content.slice(0, 20) +
+                    (newMessages[0].content.length > 20 ? "..." : "")
+                  : session.title,
+            };
+          }
+          return session;
+        });
+        saveSessions(updatedSessions);
+        return updatedSessions;
       });
-      saveSessions(updatedSessions);
-      return updatedSessions;
-    });
-  }, [saveSessions]);
+    },
+    [saveSessions]
+  );
 
   // 创建新对话
   const createNewChat = useCallback(() => {
     const newSession: ChatSession = {
       id: `session_${Date.now()}`,
-      title: '新对话',
+      title: "新对话",
       messages: [],
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -214,42 +232,42 @@ const ChatPage: React.FC = () => {
   }, [selectedModel, sessions, saveSessions, saveCurrentSession]);
 
   // 选择会话
-  const selectSession = useCallback((sessionId: string) => {
-    const session = sessions.find(s => s.id === sessionId);
-    if (session) {
-      setCurrentSession(sessionId);
-      setMessages(session.messages);
-      saveCurrentSession(sessionId);
-    }
-  }, [sessions, saveCurrentSession]);
+  const selectSession = useCallback(
+    (sessionId: string) => {
+      const session = sessions.find((s) => s.id === sessionId);
+      if (session) {
+        setCurrentSession(sessionId);
+        setMessages(session.messages);
+        saveCurrentSession(sessionId);
+      }
+    },
+    [sessions, saveCurrentSession]
+  );
 
   // 文件上传处理 - 修改为支持多文件
   const handleFileUpload = useCallback((files: File[]) => {
     // 添加新文件到附件列表
-    setAttachedFiles(prev => [...prev, ...files]);
+    setAttachedFiles((prev) => [...prev, ...files]);
 
-    const fileNames = files.map(f => f.name).join(', ');
+    const fileNames = files.map((f) => f.name).join(", ");
     antdMessage.success(`已添加 ${files.length} 个文件: ${fileNames}`);
   }, []);
 
   // 移除文件附件
   const handleRemoveFile = useCallback((index: number) => {
-    setAttachedFiles(prev => prev.filter((_, i) => i !== index));
+    setAttachedFiles((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
   // 发送消息 - 修改为包含文件附件
   const handleSendMessage = useCallback(async () => {
     if (!inputValue.trim() && attachedFiles.length === 0) return;
 
-    // 记录开始时间
-    const startTime = Date.now();
-
     // 如果没有当前会话，先创建一个
     let activeSessionId = currentSession;
     if (!activeSessionId) {
       const newSession: ChatSession = {
         id: `session_${Date.now()}`,
-        title: '新对话',
+        title: "新对话",
         messages: [],
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -266,17 +284,17 @@ const ChatPage: React.FC = () => {
     }
 
     // 创建附件信息
-    const attachments = attachedFiles.map(file => ({
+    const attachments = attachedFiles.map((file) => ({
       id: `attachment_${Date.now()}_${Math.random()}`,
       name: file.name,
       url: URL.createObjectURL(file), // 临时URL用于显示
       type: file.type,
-      size: file.size
+      size: file.size,
     }));
 
     const userMessage: ChatMessage = {
       id: `msg_${Date.now()}_user`,
-      role: 'user',
+      role: "user",
       content: inputValue,
       timestamp: new Date(),
       attachments: attachments.length > 0 ? attachments : undefined,
@@ -286,33 +304,35 @@ const ChatPage: React.FC = () => {
     setMessages(newMessages);
     updateSessionMessages(activeSessionId, newMessages);
 
-    setInputValue('');
+    setInputValue("");
     setAttachedFiles([]); // 清空附件列表
     setIsLoading(true);
 
     try {
       // 转换消息格式为API格式
-      const apiMessages: APIChatMessage[] = newMessages.map(msg => ({
+      const apiMessages: APIChatMessage[] = newMessages.map((msg) => ({
         role: msg.role,
         content: msg.content,
       }));
 
-      let fullResponse = '';
+      let fullResponse = "";
 
       // 显示思考状态
       setTimeout(() => {
         setIsLoading(false);
         setIsStreaming(true);
-        setStreamingMessage(''); // 重置流式消息
+        setStreamingMessage(""); // 重置流式消息
       }, 800);
 
-      // 直接调用真实的流式API
+      // 记录开始时间
+      const startTime = Date.now();
+
       await chatService.createStreamingChatCompletion(
         {
           model: selectedModel,
           messages: apiMessages,
           temperature: 0.7,
-          max_tokens: 2048,
+          max_tokens: 8000,
           ...(selectedModelType && { chatType: selectedModelType }), // 添加chatType参数
         },
         (chunk) => {
@@ -326,12 +346,14 @@ const ChatPage: React.FC = () => {
         () => {
           // 计算响应时间
           const endTime = Date.now();
-          const responseTime = Number(((endTime - startTime) / 1000).toFixed(1));
+          const responseTime = Number(
+            ((endTime - startTime) / 1000).toFixed(1)
+          );
 
           // 流式输出完成
           const assistantMessage: ChatMessage = {
             id: `msg_${Date.now()}_assistant`,
-            role: 'assistant',
+            role: "assistant",
             content: fullResponse,
             timestamp: new Date(),
             thinking: thinkingMode,
@@ -343,280 +365,319 @@ const ChatPage: React.FC = () => {
           setMessages(finalMessages);
           updateSessionMessages(activeSessionId, finalMessages);
           setIsStreaming(false);
-          setStreamingMessage('');
+          setStreamingMessage("");
         },
         (error) => {
-          console.error('Chat error:', error);
+          console.error("Chat error:", error);
           antdMessage.error(`消息发送失败：${error.message}`);
           setIsLoading(false);
           setIsStreaming(false);
-          setStreamingMessage('');
+          setStreamingMessage("");
         }
       );
     } catch (error) {
-      console.error('Send message error:', error);
-      antdMessage.error('消息发送失败，请重试');
+      console.error("Send message error:", error);
+      antdMessage.error("消息发送失败，请重试");
       setIsLoading(false);
       setIsStreaming(false);
-      setStreamingMessage('');
+      setStreamingMessage("");
     }
-  }, [inputValue, attachedFiles, selectedModel, thinkingMode, currentSession, sessions, messages, updateSessionMessages, saveSessions, saveCurrentSession]);
+  }, [
+    inputValue,
+    attachedFiles,
+    selectedModel,
+    thinkingMode,
+    currentSession,
+    sessions,
+    messages,
+    updateSessionMessages,
+    saveSessions,
+    saveCurrentSession,
+  ]);
 
   // 编辑用户消息
-  const handleEditUserMessage = useCallback(async (messageId: string, newContent: string) => {
-    // 记录开始时间
-    const startTime = Date.now();
+  const handleEditUserMessage = useCallback(
+    async (messageId: string, newContent: string) => {
+      // 记录开始时间
+      const startTime = Date.now();
 
-    // 找到消息在列表中的位置
-    const messageIndex = messages.findIndex(msg => msg.id === messageId);
-    if (messageIndex === -1) return;
+      // 找到消息在列表中的位置
+      const messageIndex = messages.findIndex((msg) => msg.id === messageId);
+      if (messageIndex === -1) return;
 
-    // 更新消息内容
-    const updatedMessages = [...messages];
-    updatedMessages[messageIndex] = {
-      ...updatedMessages[messageIndex],
-      content: newContent,
-      timestamp: new Date(), // 更新时间戳
-    };
+      // 更新消息内容
+      const updatedMessages = [...messages];
+      updatedMessages[messageIndex] = {
+        ...updatedMessages[messageIndex],
+        content: newContent,
+        timestamp: new Date(), // 更新时间戳
+      };
 
-    // 删除该消息之后的所有消息（包括AI回复）
-    const messagesToKeep = updatedMessages.slice(0, messageIndex + 1);
+      // 删除该消息之后的所有消息（包括AI回复）
+      const messagesToKeep = updatedMessages.slice(0, messageIndex + 1);
 
-    setMessages(messagesToKeep);
+      setMessages(messagesToKeep);
 
-    // 如果有当前会话，同步更新会话数据
-    if (currentSession) {
-      updateSessionMessages(currentSession, messagesToKeep);
-    }
+      // 如果有当前会话，同步更新会话数据
+      if (currentSession) {
+        updateSessionMessages(currentSession, messagesToKeep);
+      }
 
-    // 重新发送请求
-    setIsLoading(true);
+      // 重新发送请求
+      setIsLoading(true);
 
-    try {
-      // 转换消息格式为API格式
-      const apiMessages: APIChatMessage[] = messagesToKeep.map(msg => ({
-        role: msg.role,
-        content: msg.content,
-      }));
+      try {
+        // 转换消息格式为API格式
+        const apiMessages: APIChatMessage[] = messagesToKeep.map((msg) => ({
+          role: msg.role,
+          content: msg.content,
+        }));
 
-      let fullResponse = '';
+        let fullResponse = "";
 
-      // 显示思考状态
-      setTimeout(() => {
-        setIsLoading(false);
-        setIsStreaming(true);
-        setStreamingMessage(''); // 重置流式消息
-      }, 800);
-
-      // 直接调用真实的流式API
-      await chatService.createStreamingChatCompletion(
-        {
-          model: selectedModel,
-          messages: apiMessages,
-          temperature: 0.7,
-          max_tokens: 2048,
-          ...(selectedModelType && { chatType: selectedModelType }), // 添加chatType参数
-        },
-        (chunk) => {
-          const content = chunk.choices[0]?.delta?.content;
-          if (content) {
-            fullResponse += content;
-            // 直接设置累积的内容
-            setStreamingMessage(fullResponse);
-          }
-        },
-        () => {
-          // 计算响应时间
-          const endTime = Date.now();
-          const responseTime = Number(((endTime - startTime) / 1000).toFixed(1));
-
-          // 流式输出完成
-          const assistantMessage: ChatMessage = {
-            id: `msg_${Date.now()}_assistant`,
-            role: 'assistant',
-            content: fullResponse,
-            timestamp: new Date(),
-            thinking: thinkingMode,
-            streaming: true,
-            responseTime: responseTime, // 添加响应时间
-          };
-
-          const finalMessages = [...messagesToKeep, assistantMessage];
-          setMessages(finalMessages);
-          if (currentSession) {
-            updateSessionMessages(currentSession, finalMessages);
-          }
-          setIsStreaming(false);
-          setStreamingMessage('');
-        },
-        (error) => {
-          console.error('Chat error:', error);
-          antdMessage.error(`重新生成回复失败：${error.message}`);
+        // 显示思考状态
+        setTimeout(() => {
           setIsLoading(false);
-          setIsStreaming(false);
-          setStreamingMessage('');
-        }
-      );
-    } catch (error) {
-      console.error('Regenerate message error:', error);
-      antdMessage.error('重新生成回复失败，请重试');
-      setIsLoading(false);
-      setIsStreaming(false);
-      setStreamingMessage('');
-    }
-  }, [messages, currentSession, selectedModel, thinkingMode, updateSessionMessages]);
+          setIsStreaming(true);
+          setStreamingMessage(""); // 重置流式消息
+        }, 800);
+
+        // 直接调用真实的流式API
+        await chatService.createStreamingChatCompletion(
+          {
+            model: selectedModel,
+            messages: apiMessages,
+            temperature: 0.7,
+            max_tokens: 2048,
+            ...(selectedModelType && { chatType: selectedModelType }), // 添加chatType参数
+          },
+          (chunk) => {
+            const content = chunk.choices[0]?.delta?.content;
+            if (content) {
+              fullResponse += content;
+              // 直接设置累积的内容
+              setStreamingMessage(fullResponse);
+            }
+          },
+          () => {
+            // 计算响应时间
+            const endTime = Date.now();
+            const responseTime = Number(
+              ((endTime - startTime) / 1000).toFixed(1)
+            );
+
+            // 流式输出完成
+            const assistantMessage: ChatMessage = {
+              id: `msg_${Date.now()}_assistant`,
+              role: "assistant",
+              content: fullResponse,
+              timestamp: new Date(),
+              thinking: thinkingMode,
+              streaming: true,
+              responseTime: responseTime, // 添加响应时间
+            };
+
+            const finalMessages = [...messagesToKeep, assistantMessage];
+            setMessages(finalMessages);
+            if (currentSession) {
+              updateSessionMessages(currentSession, finalMessages);
+            }
+            setIsStreaming(false);
+            setStreamingMessage("");
+          },
+          (error) => {
+            console.error("Chat error:", error);
+            antdMessage.error(`重新生成回复失败：${error.message}`);
+            setIsLoading(false);
+            setIsStreaming(false);
+            setStreamingMessage("");
+          }
+        );
+      } catch (error) {
+        console.error("Regenerate message error:", error);
+        antdMessage.error("重新生成回复失败，请重试");
+        setIsLoading(false);
+        setIsStreaming(false);
+        setStreamingMessage("");
+      }
+    },
+    [
+      messages,
+      currentSession,
+      selectedModel,
+      thinkingMode,
+      updateSessionMessages,
+    ]
+  );
 
   // 处理重新生成AI回复
-  const handleRegenerateResponse = useCallback(async (messageId: string) => {
-    // 记录开始时间
-    const startTime = Date.now();
+  const handleRegenerateResponse = useCallback(
+    async (messageId: string) => {
+      // 记录开始时间
+      const startTime = Date.now();
 
-    // 找到对应的AI消息
-    const messageIndex = messages.findIndex(msg => msg.id === messageId);
-    if (messageIndex === -1) return;
+      // 找到对应的AI消息
+      const messageIndex = messages.findIndex((msg) => msg.id === messageId);
+      if (messageIndex === -1) return;
 
-    // 获取该AI消息之前的所有消息（包括用户消息）
-    const messagesToKeep = messages.slice(0, messageIndex);
+      // 获取该AI消息之前的所有消息（包括用户消息）
+      const messagesToKeep = messages.slice(0, messageIndex);
 
-    setMessages(messagesToKeep);
+      setMessages(messagesToKeep);
 
-    // 如果有当前会话，同步更新会话数据
-    if (currentSession) {
-      updateSessionMessages(currentSession, messagesToKeep);
-    }
+      // 如果有当前会话，同步更新会话数据
+      if (currentSession) {
+        updateSessionMessages(currentSession, messagesToKeep);
+      }
 
-    // 重新发送请求
-    setIsLoading(true);
+      // 重新发送请求
+      setIsLoading(true);
 
-    try {
-      // 转换消息格式为API格式
-      const apiMessages: APIChatMessage[] = messagesToKeep.map(msg => ({
-        role: msg.role,
-        content: msg.content,
-      }));
+      try {
+        // 转换消息格式为API格式
+        const apiMessages: APIChatMessage[] = messagesToKeep.map((msg) => ({
+          role: msg.role,
+          content: msg.content,
+        }));
 
-      let fullResponse = '';
+        let fullResponse = "";
 
-      // 显示思考状态
-      setTimeout(() => {
-        setIsLoading(false);
-        setIsStreaming(true);
-        setStreamingMessage(''); // 重置流式消息
-      }, 800);
-
-      // 直接调用真实的流式API
-      await chatService.createStreamingChatCompletion(
-        {
-          model: selectedModel,
-          messages: apiMessages,
-          temperature: 0.7,
-          max_tokens: 2048,
-          ...(selectedModelType && { chatType: selectedModelType }), // 添加chatType参数
-        },
-        (chunk) => {
-          const content = chunk.choices[0]?.delta?.content;
-          if (content) {
-            fullResponse += content;
-            // 直接设置累积的内容
-            setStreamingMessage(fullResponse);
-          }
-        },
-        () => {
-          // 计算响应时间
-          const endTime = Date.now();
-          const responseTime = Number(((endTime - startTime) / 1000).toFixed(1));
-
-          // 流式输出完成
-          const assistantMessage: ChatMessage = {
-            id: `msg_${Date.now()}_assistant`,
-            role: 'assistant',
-            content: fullResponse,
-            timestamp: new Date(),
-            thinking: thinkingMode,
-            streaming: true,
-            responseTime: responseTime, // 添加响应时间
-          };
-
-          const finalMessages = [...messagesToKeep, assistantMessage];
-          setMessages(finalMessages);
-          if (currentSession) {
-            updateSessionMessages(currentSession, finalMessages);
-          }
-          setIsStreaming(false);
-          setStreamingMessage('');
-        },
-        (error) => {
-          console.error('Chat error:', error);
-          antdMessage.error(`重新生成回复失败：${error.message}`);
+        // 显示思考状态
+        setTimeout(() => {
           setIsLoading(false);
-          setIsStreaming(false);
-          setStreamingMessage('');
-        }
-      );
-    } catch (error) {
-      console.error('Regenerate message error:', error);
-      antdMessage.error('重新生成回复失败，请重试');
-      setIsLoading(false);
-      setIsStreaming(false);
-      setStreamingMessage('');
-    }
-  }, [messages, currentSession, selectedModel, thinkingMode, updateSessionMessages]);
+          setIsStreaming(true);
+          setStreamingMessage(""); // 重置流式消息
+        }, 800);
+
+        // 直接调用真实的流式API
+        await chatService.createStreamingChatCompletion(
+          {
+            model: selectedModel,
+            messages: apiMessages,
+            temperature: 0.7,
+            max_tokens: 2048,
+            ...(selectedModelType && { chatType: selectedModelType }), // 添加chatType参数
+          },
+          (chunk) => {
+            const content = chunk.choices[0]?.delta?.content;
+            if (content) {
+              fullResponse += content;
+              // 直接设置累积的内容
+              setStreamingMessage(fullResponse);
+            }
+          },
+          () => {
+            // 计算响应时间
+            const endTime = Date.now();
+            const responseTime = Number(
+              ((endTime - startTime) / 1000).toFixed(1)
+            );
+
+            // 流式输出完成
+            const assistantMessage: ChatMessage = {
+              id: `msg_${Date.now()}_assistant`,
+              role: "assistant",
+              content: fullResponse,
+              timestamp: new Date(),
+              thinking: thinkingMode,
+              streaming: true,
+              responseTime: responseTime, // 添加响应时间
+            };
+
+            const finalMessages = [...messagesToKeep, assistantMessage];
+            setMessages(finalMessages);
+            if (currentSession) {
+              updateSessionMessages(currentSession, finalMessages);
+            }
+            setIsStreaming(false);
+            setStreamingMessage("");
+          },
+          (error) => {
+            console.error("Chat error:", error);
+            antdMessage.error(`重新生成回复失败：${error.message}`);
+            setIsLoading(false);
+            setIsStreaming(false);
+            setStreamingMessage("");
+          }
+        );
+      } catch (error) {
+        console.error("Regenerate message error:", error);
+        antdMessage.error("重新生成回复失败，请重试");
+        setIsLoading(false);
+        setIsStreaming(false);
+        setStreamingMessage("");
+      }
+    },
+    [
+      messages,
+      currentSession,
+      selectedModel,
+      thinkingMode,
+      updateSessionMessages,
+    ]
+  );
 
   // 更新会话信息
-  const updateSession = useCallback((sessionId: string, updates: Partial<ChatSession>) => {
-    setSessions(prevSessions => {
-      const updatedSessions = prevSessions.map(session => {
-        if (session.id === sessionId) {
-          return {
-            ...session,
-            ...updates,
-            updatedAt: new Date(),
-          };
-        }
-        return session;
+  const updateSession = useCallback(
+    (sessionId: string, updates: Partial<ChatSession>) => {
+      setSessions((prevSessions) => {
+        const updatedSessions = prevSessions.map((session) => {
+          if (session.id === sessionId) {
+            return {
+              ...session,
+              ...updates,
+              updatedAt: new Date(),
+            };
+          }
+          return session;
+        });
+        saveSessions(updatedSessions);
+        return updatedSessions;
       });
-      saveSessions(updatedSessions);
-      return updatedSessions;
-    });
-  }, [saveSessions]);
+    },
+    [saveSessions]
+  );
 
   // 删除对话
-  const handleDeleteSession = useCallback((sessionId: string) => {
-    const updatedSessions = sessions.filter(s => s.id !== sessionId);
-    setSessions(updatedSessions);
-    saveSessions(updatedSessions);
+  const handleDeleteSession = useCallback(
+    (sessionId: string) => {
+      const updatedSessions = sessions.filter((s) => s.id !== sessionId);
+      setSessions(updatedSessions);
+      saveSessions(updatedSessions);
 
-    if (currentSession === sessionId) {
-      // 如果删除的是当前会话，切换到最新的会话或清空
-      if (updatedSessions.length > 0) {
-        const latestSession = updatedSessions[0];
-        setCurrentSession(latestSession.id);
-        setMessages(latestSession.messages);
-        saveCurrentSession(latestSession.id);
-      } else {
-        setCurrentSession('');
-        setMessages([]);
-        localStorage.removeItem('chat-current-session');
+      if (currentSession === sessionId) {
+        // 如果删除的是当前会话，切换到最新的会话或清空
+        if (updatedSessions.length > 0) {
+          const latestSession = updatedSessions[0];
+          setCurrentSession(latestSession.id);
+          setMessages(latestSession.messages);
+          saveCurrentSession(latestSession.id);
+        } else {
+          setCurrentSession("");
+          setMessages([]);
+          localStorage.removeItem("chat-current-session");
+        }
       }
-    }
-  }, [currentSession, sessions, saveSessions, saveCurrentSession]);
+    },
+    [currentSession, sessions, saveSessions, saveCurrentSession]
+  );
 
   // 批量删除会话
   const handleDeleteAllSessions = useCallback(() => {
     Modal.confirm({
-      title: '清空所有对话',
+      title: "清空所有对话",
       icon: <DeleteOutlined />,
-      content: '确定要删除所有对话记录吗？此操作不可撤销。',
-      okText: '清空',
-      okType: 'danger',
-      cancelText: '取消',
+      content: "确定要删除所有对话记录吗？此操作不可撤销。",
+      okText: "清空",
+      okType: "danger",
+      cancelText: "取消",
       onOk() {
         setSessions([]);
-        setCurrentSession('');
+        setCurrentSession("");
         setMessages([]);
-        localStorage.removeItem('chat-sessions');
-        localStorage.removeItem('chat-current-session');
-        antdMessage.success('所有对话已清空');
+        localStorage.removeItem("chat-sessions");
+        localStorage.removeItem("chat-current-session");
+        antdMessage.success("所有对话已清空");
       },
     });
   }, []);
@@ -630,40 +691,43 @@ const ChatPage: React.FC = () => {
   const handleCopyMessage = useCallback(async (content: string) => {
     try {
       await navigator.clipboard.writeText(content);
-      antdMessage.success('消息已复制到剪贴板');
+      antdMessage.success("消息已复制到剪贴板");
     } catch (error) {
-      console.error('复制失败:', error);
-      antdMessage.error('复制失败，请手动复制');
+      console.error("复制失败:", error);
+      antdMessage.error("复制失败，请手动复制");
     }
   }, []);
 
   // 置顶/取消置顶会话
-  const handlePinSession = useCallback((sessionId: string, isPinned: boolean) => {
-    setSessions(prevSessions => {
-      const updatedSessions = prevSessions.map(session => {
-        if (session.id === sessionId) {
-          return {
-            ...session,
-            isPinned,
-            updatedAt: new Date(),
-          };
-        }
-        return session;
+  const handlePinSession = useCallback(
+    (sessionId: string, isPinned: boolean) => {
+      setSessions((prevSessions) => {
+        const updatedSessions = prevSessions.map((session) => {
+          if (session.id === sessionId) {
+            return {
+              ...session,
+              isPinned,
+              updatedAt: new Date(),
+            };
+          }
+          return session;
+        });
+        saveSessions(updatedSessions);
+        return updatedSessions;
       });
-      saveSessions(updatedSessions);
-      return updatedSessions;
-    });
-  }, [saveSessions]);
+    },
+    [saveSessions]
+  );
 
   // 用户头像下拉菜单
-  const getUserMenuItems = (): MenuProps['items'] => [
+  const getUserMenuItems = (): MenuProps["items"] => [
     {
-      key: 'profile',
+      key: "profile",
       label: (
         <div className="flex items-center gap-2">
           <Avatar size={24} icon={<UserOutlined />} src={userInfo?.avatar} />
           <div className="flex flex-col">
-            <span className="font-medium">{userInfo?.username || '用户'}</span>
+            <span className="font-medium">{userInfo?.username || "用户"}</span>
             <span className="text-xs text-gray-500">{userInfo?.email}</span>
           </div>
         </div>
@@ -671,56 +735,56 @@ const ChatPage: React.FC = () => {
       disabled: true,
     },
     {
-      type: 'divider',
+      type: "divider",
     },
     {
-      key: 'settings',
-      label: '设置',
+      key: "settings",
+      label: "设置",
       icon: <SettingOutlined />,
       onClick: () => {
-        antdMessage.info('设置功能开发中...');
+        antdMessage.info("设置功能开发中...");
       },
     },
     {
-      key: 'community',
-      label: '社区',
+      key: "community",
+      label: "社区",
       icon: <TeamOutlined />,
       onClick: () => {
-        antdMessage.info('社区功能开发中...');
+        antdMessage.info("社区功能开发中...");
       },
     },
     {
-      key: 'help',
-      label: '帮助中心',
+      key: "help",
+      label: "帮助中心",
       icon: <QuestionCircleOutlined />,
       onClick: () => {
-        antdMessage.info('帮助中心开发中...');
+        antdMessage.info("帮助中心开发中...");
       },
     },
     {
-      key: 'feedback',
-      label: '报告问题',
+      key: "feedback",
+      label: "报告问题",
       icon: <BugOutlined />,
       onClick: () => {
-        antdMessage.info('问题反馈功能开发中...');
+        antdMessage.info("问题反馈功能开发中...");
       },
     },
     {
-      type: 'divider',
+      type: "divider",
     },
     {
-      key: 'logout',
-      label: '退出登录',
+      key: "logout",
+      label: "退出登录",
       icon: <LogoutOutlined />,
       danger: true,
       onClick: () => {
         Modal.confirm({
-          title: '退出登录',
-          content: '确定要退出登录吗？',
-          okText: '确定',
-          cancelText: '取消',
+          title: "退出登录",
+          content: "确定要退出登录吗？",
+          okText: "确定",
+          cancelText: "取消",
           onOk() {
-            antdMessage.success('已退出登录');
+            antdMessage.success("已退出登录");
             // 这里应该调用登出API和清理用户状态
           },
         });
@@ -761,7 +825,7 @@ const ChatPage: React.FC = () => {
       <div className="flex flex-col items-center">
         <Dropdown
           menu={{ items: getUserMenuItems() }}
-          trigger={['click']}
+          trigger={["click"]}
           placement="topRight"
         >
           <Tooltip title="用户菜单" placement="right">
@@ -813,17 +877,13 @@ const ChatPage: React.FC = () => {
         <Divider className="my-2" />
         <Dropdown
           menu={{ items: getUserMenuItems() }}
-          trigger={['click']}
+          trigger={["click"]}
           placement="topRight"
         >
           <div className="user-avatar-container cursor-pointer hover:bg-gray-50 rounded-lg p-2 transition-colors">
-            <Avatar
-              size={40}
-              icon={<UserOutlined />}
-              src={userInfo?.avatar}
-            />
+            <Avatar size={40} icon={<UserOutlined />} src={userInfo?.avatar} />
             <div className="user-details">
-              <div className="user-name">{userInfo?.username || '用户'}</div>
+              <div className="user-name">{userInfo?.username || "用户"}</div>
               <div className="user-email">{userInfo?.email}</div>
             </div>
             <MoreOutlined className="text-gray-400" />
@@ -835,7 +895,9 @@ const ChatPage: React.FC = () => {
 
   // 侧边栏内容
   const renderSidebar = () => {
-    return sidebarCollapsed ? renderCollapsedSidebar() : renderExpandedSidebar();
+    return sidebarCollapsed
+      ? renderCollapsedSidebar()
+      : renderExpandedSidebar();
   };
 
   // 监听消息变化并自动滚动
@@ -894,7 +956,8 @@ const ChatPage: React.FC = () => {
                 size="large"
               />
               <Title level={4} className="chat-title">
-                {sessions.find(s => s.id === currentSession)?.title || 'AI 助手'}
+                {sessions.find((s) => s.id === currentSession)?.title ||
+                  "AI 助手"}
               </Title>
             </div>
 
@@ -942,7 +1005,11 @@ const ChatPage: React.FC = () => {
 
                   <div className="chat-input-container">
                     {/* 主要交互面板 */}
-                    <div className={`chat-interaction-panel ${isLoading ? 'loading' : ''}`}>
+                    <div
+                      className={`chat-interaction-panel ${
+                        isLoading ? "loading" : ""
+                      }`}
+                    >
                       {/* 输入区域 */}
                       <div className="chat-input-section">
                         {/* 文件附件显示区域 */}
@@ -965,14 +1032,8 @@ const ChatPage: React.FC = () => {
                           value={inputValue}
                           onChange={setInputValue}
                           onSubmit={handleSendMessage}
-                          onFocus={() => { }}
-                          onBlur={() => { }}
-                          onKeyPress={(e: React.KeyboardEvent) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                              e.preventDefault();
-                              handleSendMessage();
-                            }
-                          }}
+                          onFocus={() => {}}
+                          onBlur={() => {}}
                           placeholder="输入消息开始对话... (Shift + Enter 换行)"
                           loading={isLoading}
                           disabled={isLoading}
@@ -994,9 +1055,14 @@ const ChatPage: React.FC = () => {
                           </div>
 
                           {/* 思考模式 */}
-                          <Tooltip title="启用思考模式，AI会显示思考过程" className="chat-tool-tooltip">
+                          <Tooltip
+                            title="启用思考模式，AI会显示思考过程"
+                            className="chat-tool-tooltip"
+                          >
                             <div
-                              className={`chat-thinking-toggle ${thinkingMode ? 'active' : ''}`}
+                              className={`chat-thinking-toggle ${
+                                thinkingMode ? "active" : ""
+                              }`}
                               onClick={() => setThinkingMode(!thinkingMode)}
                             >
                               <BulbOutlined className="chat-thinking-icon" />
@@ -1040,39 +1106,42 @@ const ChatPage: React.FC = () => {
                   <div className="chat-messages-content">
                     {messages.map((message) => {
                       // 用户消息使用新的UserMessageBubble组件
-                      if (message.role === 'user') {
+                      if (message.role === "user") {
                         return (
                           <UserMessageBubble
                             key={message.id}
                             content={message.content}
                             attachments={message.attachments}
-                            onEdit={(newContent) => handleEditUserMessage(message.id, newContent)}
+                            onEdit={(newContent) =>
+                              handleEditUserMessage(message.id, newContent)
+                            }
                             onCopy={handleCopyMessage}
                             className="fade-in"
                           />
                         );
                       }
 
-                      // 所有助手消息统一使用新的AssistantMessageBubble组件
-                      if (message.role === 'assistant') {
+                      if (message.role === "assistant") {
                         return (
                           <AssistantMessageBubble
                             key={message.id}
                             content={message.content}
                             responseTime={message.responseTime}
                             thinking={message.thinking}
-                            onRegenerate={() => handleRegenerateResponse(message.id)}
+                            onRegenerate={() =>
+                              handleRegenerateResponse(message.id)
+                            }
                             onCopy={handleCopyMessage}
                             onShare={(content) => {
                               // 处理分享单条消息
                               navigator.clipboard.writeText(content);
-                              antdMessage.success('消息内容已复制到剪贴板');
+                              antdMessage.success("消息内容已复制到剪贴板");
                             }}
                             onLike={() => {
-                              console.log('用户点赞了消息:', message.id);
+                              console.log("用户点赞了消息:", message.id);
                             }}
                             onDislike={() => {
-                              console.log('用户点踩了消息:', message.id);
+                              console.log("用户点踩了消息:", message.id);
                             }}
                             className="fade-in"
                           />
@@ -1091,7 +1160,7 @@ const ChatPage: React.FC = () => {
                         isStreaming={isStreaming}
                         onComplete={() => {
                           // 流式输出完成的回调处理
-                          console.log('SSE Streaming completed');
+                          console.log("SSE Streaming completed");
                         }}
                       />
                     )}
@@ -1107,7 +1176,11 @@ const ChatPage: React.FC = () => {
                 <div className="chat-input-area">
                   <div className="chat-input-container">
                     {/* 主要交互面板 */}
-                    <div className={`chat-interaction-panel ${isLoading ? 'loading' : ''}`}>
+                    <div
+                      className={`chat-interaction-panel ${
+                        isLoading ? "loading" : ""
+                      }`}
+                    >
                       {/* 输入区域 */}
                       <div className="chat-input-section">
                         {/* 文件附件显示区域 */}
@@ -1130,10 +1203,10 @@ const ChatPage: React.FC = () => {
                           value={inputValue}
                           onChange={setInputValue}
                           onSubmit={handleSendMessage}
-                          onFocus={() => { }}
-                          onBlur={() => { }}
+                          onFocus={() => {}}
+                          onBlur={() => {}}
                           onKeyPress={(e: React.KeyboardEvent) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
+                            if (e.key === "Enter" && !e.shiftKey) {
                               e.preventDefault();
                               handleSendMessage();
                             }
@@ -1159,9 +1232,14 @@ const ChatPage: React.FC = () => {
                           </div>
 
                           {/* 思考模式 */}
-                          <Tooltip title="启用思考模式，AI会显示思考过程" className="chat-tool-tooltip">
+                          <Tooltip
+                            title="启用思考模式，AI会显示思考过程"
+                            className="chat-tool-tooltip"
+                          >
                             <div
-                              className={`chat-thinking-toggle ${thinkingMode ? 'active' : ''}`}
+                              className={`chat-thinking-toggle ${
+                                thinkingMode ? "active" : ""
+                              }`}
                               onClick={() => setThinkingMode(!thinkingMode)}
                             >
                               <BulbOutlined className="chat-thinking-icon" />
@@ -1202,10 +1280,7 @@ const ChatPage: React.FC = () => {
             {/* 代码/文档画布 */}
             {showCanvas && (
               <div className="chat-canvas">
-                <Canvas
-                  content=""
-                  onClose={() => setShowCanvas(false)}
-                />
+                <Canvas content="" onClose={() => setShowCanvas(false)} />
               </div>
             )}
           </div>
@@ -1221,11 +1296,17 @@ const ChatPage: React.FC = () => {
           <Button key="cancel" onClick={() => setShareModalVisible(false)}>
             取消
           </Button>,
-          <Button key="copy" type="primary" onClick={() => {
-            navigator.clipboard.writeText(window.location.href + '?share=' + currentSession);
-            antdMessage.success('分享链接已复制到剪贴板');
-            setShareModalVisible(false);
-          }}>
+          <Button
+            key="copy"
+            type="primary"
+            onClick={() => {
+              navigator.clipboard.writeText(
+                window.location.href + "?share=" + currentSession
+              );
+              antdMessage.success("分享链接已复制到剪贴板");
+              setShareModalVisible(false);
+            }}
+          >
             复制链接
           </Button>,
         ]}
@@ -1234,15 +1315,17 @@ const ChatPage: React.FC = () => {
           <p>分享此对话，其他人可以查看对话内容但无法继续对话。</p>
           <div className="share-input-container">
             <Input
-              value={window.location.href + '?share=' + currentSession}
+              value={window.location.href + "?share=" + currentSession}
               readOnly
               suffix={
                 <Button
                   type="link"
                   size="small"
                   onClick={() => {
-                    navigator.clipboard.writeText(window.location.href + '?share=' + currentSession);
-                    antdMessage.success('已复制');
+                    navigator.clipboard.writeText(
+                      window.location.href + "?share=" + currentSession
+                    );
+                    antdMessage.success("已复制");
                   }}
                 >
                   复制

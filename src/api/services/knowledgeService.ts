@@ -53,6 +53,8 @@ export enum KnowledgeApi {
   GetAiModelsByTypeId = "/aiModel/getByTypeId/{id}" , // 根据类型ID获取AI模型列表
   GetAntiforgerytoken = "/file/antiforgery/token",
   UploadFile = "/file/upload/{knowledgeId}",
+  ReprocessKnowledgeItem = "/knowledge/item/{id}/reprocess", // 重新执行知识项
+  GetKnowledgeItem = "/knowledge/item/{id}", // 获取知识项详情
 }
 
 /**
@@ -145,6 +147,24 @@ const knowledgeService = {
       headers,
       // 不要设置withCredentials为false，否则可能无法正确发送cookies
     withCredentials: false,
+    });
+  },
+
+  /**
+   * 重新执行知识项
+   */
+  reprocessKnowledgeItem: (id: string) => {
+    return apiClient.post<void>({
+      url: KnowledgeApi.ReprocessKnowledgeItem.replace('{id}', id),
+    });
+  },
+
+  /**
+   * 获取知识项详情
+   */
+  getKnowledgeItem: (id: string) => {
+    return apiClient.get<KnowledgeResponse>({
+      url: KnowledgeApi.GetKnowledgeItem.replace('{id}', id),
     });
   },
 };

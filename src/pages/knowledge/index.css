@@ -171,3 +171,311 @@
 .import-tip-alert .anticon {
   color: #9ca3af;
 }
+
+/* 知识项列表样式优化 - 清爽版本 */
+.knowledge-items-table {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+  border: 1px solid #f0f2f5;
+}
+
+.knowledge-items-table .ant-table {
+  border-radius: 16px;
+}
+
+/* 表头样式优化 - 增加分隔线 */
+.knowledge-items-table .ant-table-thead > tr > th {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  color: #334155;
+  font-weight: 600;
+  border: none;
+  padding: 18px 16px;
+  font-size: 14px;
+  letter-spacing: 0.3px;
+  text-align: center;
+  border-bottom: 2px solid #e2e8f0;
+  position: relative;
+}
+
+.knowledge-items-table .ant-table-thead > tr > th:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 20%;
+  height: 60%;
+  width: 1px;
+  background: #cbd5e1;
+}
+
+.knowledge-items-table .ant-table-thead > tr > th:first-child {
+  border-radius: 16px 0 0 0;
+}
+
+.knowledge-items-table .ant-table-thead > tr > th:last-child {
+  border-radius: 0 16px 0 0;
+}
+
+/* 表格行样式优化 - 增加分隔效果 */
+.knowledge-items-table .ant-table-tbody > tr {
+  transition: all 0.2s ease-in-out;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.knowledge-items-table .ant-table-tbody > tr:hover {
+  background: linear-gradient(90deg, #fafbff 0%, #f8fafc 100%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.knowledge-items-table .ant-table-tbody > tr > td {
+  padding: 16px;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+  text-align: center;
+  position: relative;
+}
+
+.knowledge-items-table .ant-table-tbody > tr > td:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 25%;
+  height: 50%;
+  width: 1px;
+  background: #f1f5f9;
+}
+
+/* 知识项数据单元格样式 - 修复自适应问题 */
+.knowledge-item-data-cell {
+  width: 100%; /* 自适应父容器宽度 */
+  text-align: left;
+  padding: 6px 0;
+}
+
+.knowledge-item-data-preview {
+  background: #ffffff;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #3b82f6;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #475569;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  word-break: break-word;
+  /* 完全自适应容器宽度 */
+  width: 100%;
+  min-height: 36px;
+  display: block;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.knowledge-item-data-preview:hover {
+  background: #fafbfc;
+  border-left-color: #2563eb;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
+}
+
+/* 操作按钮样式优化 - 更紧凑 */
+.knowledge-item-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  align-items: center;
+}
+
+.knowledge-item-action-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1.5px solid #e5e7eb;
+  cursor: pointer;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.knowledge-item-action-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transition: left 0.4s ease;
+}
+
+.knowledge-item-action-btn:hover::before {
+  left: 100%;
+}
+
+.knowledge-item-action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.knowledge-item-action-btn.view-btn {
+  color: #3b82f6;
+}
+
+.knowledge-item-action-btn.view-btn:hover {
+  background: #eff6ff;
+  border-color: #3b82f6;
+  color: #1d4ed8;
+}
+
+.knowledge-item-action-btn.delete-btn {
+  color: #ef4444;
+}
+
+.knowledge-item-action-btn.delete-btn:hover {
+  background: #fef2f2;
+  border-color: #ef4444;
+  color: #dc2626;
+}
+
+.knowledge-item-action-btn.reprocess-btn {
+  color: #10b981;
+}
+
+.knowledge-item-action-btn.reprocess-btn:hover {
+  background: #f0fdf4;
+  border-color: #10b981;
+  color: #059669;
+}
+
+/* ID 单元格样式 - 更紧凑 */
+.knowledge-item-id {
+  font-family: 'JetBrains Mono', 'Consolas', monospace;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+  display: inline-block;
+  max-width: 80px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* 简洁的数据量显示样式 */
+.knowledge-item-count-simple {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  background: #f9fafb;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  display: inline-block;
+  min-width: 32px;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.knowledge-item-count-simple:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+/* 时间显示样式 - 更紧凑 */
+.knowledge-item-time {
+  font-size: 10px;
+  color: #64748b;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  padding: 4px 6px;
+  border-radius: 6px;
+  border-left: 2px solid #94a3b8;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  display: inline-block;
+  line-height: 1.2;
+}
+
+/* 加载状态优化 */
+.knowledge-items-loading {
+  padding: 60px 0;
+  text-align: center;
+  background: #fafbfc;
+  border-radius: 16px;
+}
+
+.knowledge-items-loading .ant-spin-text {
+  color: #64748b;
+  margin-top: 12px;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+/* 空状态样式优化 */
+.knowledge-items-empty {
+  padding: 60px 40px;
+  text-align: center;
+  background: #fafbfc;
+  border-radius: 16px;
+  margin: 20px 0;
+  border: 1px dashed #cbd5e1;
+}
+
+.knowledge-items-empty .ant-empty-description {
+  color: #64748b;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+/* 分页器样式优化 */
+.knowledge-items-table .ant-pagination {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.knowledge-items-table .ant-pagination-total-text {
+  color: #64748b;
+  font-size: 13px;
+}
+
+/* 响应式优化 */
+@media (max-width: 768px) {
+  .knowledge-items-table .ant-table-thead > tr > th {
+    padding: 12px 8px;
+    font-size: 12px;
+  }
+  
+  .knowledge-items-table .ant-table-tbody > tr > td {
+    padding: 12px 8px;
+  }
+  
+  .knowledge-item-actions {
+    flex-direction: column;
+    gap: 6px;
+  }
+  
+  .knowledge-item-action-btn {
+    width: 28px;
+    height: 28px;
+  }
+
+  .knowledge-item-data-cell {
+    max-width: 200px;
+  }
+
+  .knowledge-item-data-preview {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+}

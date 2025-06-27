@@ -1,40 +1,61 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 // 添加apiClient导入
-import apiClient from "@/api/apiClient";
 import {
-  Button, Card, Tabs, Space, Typography, Tag, Descriptions, Empty,
-  Table, Input, Spin, Tooltip, Dropdown, Modal, Radio, Upload, Form, message,
-  Divider, Alert, Steps, Row, Col
+  Button,
+  Card,
+  Tabs,
+  Space,
+  Typography,
+  Tag,
+  Descriptions,
+  Empty,
+  Table,
+  Input,
+  Spin,
+  Tooltip,
+  Dropdown,
+  Modal,
+  Radio,
+  Upload,
+  Form,
+  message,
+  Divider,
+  Alert,
+  Steps,
+  Row,
+  Col,
+  Popconfirm,
 } from "antd";
-import type { MenuProps, UploadProps } from 'antd';
+import type { MenuProps, UploadProps } from "antd";
 import { useParams } from "@/router/hooks";
 import { useNavigate } from "react-router";
 import { useEffect, useState } from "react";
-import { InboxOutlined, DownloadOutlined } from '@ant-design/icons';
+import { InboxOutlined, DownloadOutlined } from "@ant-design/icons";
+import { useQueryClient } from "@tanstack/react-query";
+import { usePathname, useRouter } from "@/router/hooks";
 
 import knowledgeService from "@/api/services/knowledgeService";
-import { IconButton, Iconify } from "@/components/icon";
+import { Iconify } from "@/components/icon";
 
 // 导入样式文件
-import './index.css';
+import "./index.css";
 
-const { Title, Paragraph, Text, Link } = Typography;
+const { Title, Paragraph } = Typography;
 const { Search, TextArea } = Input;
-const { TabPane } = Tabs;
 const { Dragger } = Upload;
 
 // 导入类型枚举
 enum ImportType {
-  FILE = '3f8b38d6-f321-4d1a-89c0-93d7a5023a2c',
-  LINK = '47c5ab88-65e4-4ea8-a214-b384b9d37d27',
-  TEXT = 'd6a6eeb2-79d9-4a5f-8f1b-f2c9a7c4d2b0',
-  QA = 'c18b1f8a-4e70-49e5-b7cc-59af73c3bc6a'
+  FILE = "3f8b38d6-f321-4d1a-89c0-93d7a5023a2c",
+  LINK = "47c5ab88-65e4-4ea8-a214-b384b9d37d27",
+  TEXT = "d6a6eeb2-79d9-4a5f-8f1b-f2c9a7c4d2b0",
+  QA = "c18b1f8a-4e70-49e5-b7cc-59af73c3bc6a",
 }
 
 // 切分类型枚举
 enum SplitType {
-  DIRECT = 'direct',
-  QA = 'qa'
+  DIRECT = "direct",
+  QA = "qa",
 }
 
 // 添加文本省略显示的公共渲染函数
@@ -96,28 +117,31 @@ const QAImportGuide = () => (
         title: "下载模板",
         description: "选择您熟悉的格式，下载对应的QA数据模板",
         status: "process",
-        icon: <Iconify icon="mdi:download-outline" />
+        icon: <Iconify icon="mdi:download-outline" />,
       },
       {
         title: "填写数据",
         description: "按照模板格式填写您的问题和答案对",
         status: "process",
-        icon: <Iconify icon="mdi:file-edit-outline" />
+        icon: <Iconify icon="mdi:file-edit-outline" />,
       },
       {
         title: "上传文件",
         description: "将填写好的文件拖拽到上传区域或点击上传",
         status: "process",
-        icon: <Iconify icon="mdi:cloud-upload-outline" />
-      }
+        icon: <Iconify icon="mdi:cloud-upload-outline" />,
+      },
     ]}
   />
 );
 
 // 验证URL的正则表达式
-const URL_REGEX = /^(https?:\/\/)(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$/;
+const URL_REGEX =
+  /^(https?:\/\/)(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$/;
 
 export default function KnowledgeDetail() {
+  const { push } = useRouter();
+  const pathname = usePathname();
   const { id } = useParams();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("1");
@@ -126,6 +150,7 @@ export default function KnowledgeDetail() {
   const [importType, setImportType] = useState<ImportType>(ImportType.FILE);
   const [splitType, setSplitType] = useState<SplitType>(SplitType.DIRECT); // 默认直接导入
   const [form] = Form.useForm();
+  const queryClient = useQueryClient();
 
   // 获取知识库详情
   const { data: knowledgeResponse, isLoading: isLoadingKnowledge } = useQuery({
@@ -163,7 +188,7 @@ export default function KnowledgeDetail() {
   };
 
   // 处理导入菜单点击
-  const handleImportMenuClick: MenuProps['onClick'] = (e) => {
+  const handleImportMenuClick: MenuProps["onClick"] = (e) => {
     setImportType(e.key as ImportType);
     resetImportState(); // 重置状态
     setImportModalVisible(true);
@@ -182,20 +207,20 @@ export default function KnowledgeDetail() {
       knowledgeId,
       splitType,
       importType,
-      data
+      data,
     }: {
-      file?: File,
-      knowledgeId: string,
-      splitType: SplitType,
-      importType: ImportType,
-      data?: string
+      file?: File;
+      knowledgeId: string;
+      splitType: SplitType;
+      importType: ImportType;
+      data?: string;
     }) => {
       try {
         // 1. 获取CSRF令牌
         const tokenResponse = await knowledgeService.getAntiforgerytoken();
         const csrfToken = tokenResponse;
 
-        console.log('CSRF Token:', csrfToken);
+        console.log("CSRF Token:", csrfToken);
 
         // 2. 准备FormData - 确保字段名称与后端期望的完全匹配
         const formData = new FormData();
@@ -203,38 +228,47 @@ export default function KnowledgeDetail() {
         // 根据不同导入类型添加不同的数据
         if (importType === ImportType.FILE || importType === ImportType.QA) {
           // 文件上传类型
-          if (!file) throw new Error('File is required for file upload');
-          formData.append('formFile', file);
-          console.log('准备上传文件:', file.name, file.type, file.size);
+          if (!file) throw new Error("File is required for file upload");
+          formData.append("formFile", file);
+          console.log("准备上传文件:", file.name, file.type, file.size);
         } else if (data) {
           // 链接或文本导入类型，将数据添加到data字段
-          formData.append('data', data);
-          console.log('准备导入数据类型:', importType, '数据长度:', data.length);
+          formData.append("data", data);
+          console.log(
+            "准备导入数据类型:",
+            importType,
+            "数据长度:",
+            data.length
+          );
         }
 
         // 添加共通字段
-        formData.append('splitType', splitType);  // 切分方式
-        formData.append('importType', importType); // 导入类型
+        formData.append("splitType", splitType); // 切分方式
+        formData.append("importType", importType); // 导入类型
 
         // 3. 设置headers
         const headers = {
-          'Content-Type': 'multipart/form-data',
-
+          "Content-Type": "multipart/form-data",
         };
 
         // 4. 调用上传API，knowledgeId作为路由参数传递
-        return await knowledgeService.uploadFile(knowledgeId, formData, headers);
+        return await knowledgeService.uploadFile(
+          knowledgeId,
+          formData,
+          headers
+        );
       } catch (error) {
-        console.error('Upload file error:', error);
+        console.error("Upload file error:", error);
         throw error;
       }
     },
     onSuccess: () => {
-      message.success('导入成功');
+      message.success("导入成功");
+      queryClient.invalidateQueries(["knowledge", id]); // 刷新知识库详情
     },
     onError: (error) => {
       message.error(`导入失败: ${error}`);
-    }
+    },
   });
 
   // 自定义上传请求 - 更新以传递导入类型
@@ -251,51 +285,54 @@ export default function KnowledgeDetail() {
         knowledgeId: id as string,
         splitType,
         importType: ImportType.FILE, // 这里是文件上传，固定为FILE类型
-        data: undefined
+        data: undefined,
       });
 
-      console.log('上传成功，服务器响应:', result);
+      console.log("上传成功，服务器响应:", result);
 
       // 完成进度
       onProgress({ percent: 100 });
       onSuccess();
     } catch (error: any) {
-      console.error('上传失败:', error);
+      console.error("上传失败:", error);
       // 提供更详细的错误信息
-      const errorMessage = error.response ?
-        `错误 ${error.response.status}: ${error.response.statusText}` :
-        error.message || '未知错误';
+      const errorMessage = error.response
+        ? `错误 ${error.response.status}: ${error.response.statusText}`
+        : error.message || "未知错误";
       onError(new Error(errorMessage));
     }
   };
 
   // 更新文件上传配置 - 修改为单文件上传
   const uploadProps: UploadProps = {
-    name: 'formFile',
+    name: "formFile",
     multiple: false, // 修改为false，只支持单文件
     maxCount: 1, // 限制最多只能上传1个文件
     customRequest: customUploadRequest,
     onChange(info) {
       const { status } = info.file;
-      if (status !== 'uploading') {
+      if (status !== "uploading") {
         console.log(info.file, info.fileList);
       }
-      if (status === 'done') {
+      if (status === "done") {
         message.success(`${info.file.name} 文件上传成功。`);
-      } else if (status === 'error') {
+      } else if (status === "error") {
         message.error(`${info.file.name} 文件上传失败。`);
       }
     },
     onDrop(e) {
       // 如果用户尝试拖拽多个文件，只处理第一个
       if (e.dataTransfer.files.length > 1) {
-        message.warning('每次只能上传一个文件');
+        message.warning("每次只能上传一个文件");
       }
-      console.log('Dropped file:', e.dataTransfer.files[0]);
+      console.log("Dropped file:", e.dataTransfer.files[0]);
     },
-    accept: importType === ImportType.FILE ?
-      '.pdf,.doc,.docx,.txt,.md,.csv,.xlsx,.ppt,.pptx' :
-      (importType === ImportType.QA ? '.csv,.xlsx,.json' : undefined),
+    accept:
+      importType === ImportType.FILE
+        ? ".pdf,.doc,.docx,.txt,.md,.csv,.xlsx,.ppt,.pptx"
+        : importType === ImportType.QA
+        ? ".csv,.xlsx,.json"
+        : undefined,
     // 不再设置action属性，因为我们使用customRequest
   };
 
@@ -311,11 +348,12 @@ export default function KnowledgeDetail() {
 
   // 提交导入 - 修改以处理链接和文本导入
   const handleImportSubmit = () => {
-    form.validateFields().then(values => {
+    form.validateFields().then((values) => {
       // 不同的导入类型有不同的处理逻辑
       if (importType === ImportType.LINK) {
         // 处理链接导入
-        const links = values.links.split('\n')
+        const links = values.links
+          .split("\n")
           .map((url: string) => url.trim())
           .filter((url: string) => url);
 
@@ -324,24 +362,23 @@ export default function KnowledgeDetail() {
             knowledgeId: id as string,
             splitType,
             importType: ImportType.LINK,
-            data: JSON.stringify(links) // 将链接数组转为JSON字符串
+            data: JSON.stringify(links), // 将链接数组转为JSON字符串
           });
         } else {
-          message.error('请输入至少一个有效的链接');
+          message.error("请输入至少一个有效的链接");
           return;
         }
-      }
-      else if (importType === ImportType.TEXT) {
+      } else if (importType === ImportType.TEXT) {
         // 处理文本导入
         if (values.content) {
           uploadFileMutation.mutate({
             knowledgeId: id as string,
             splitType,
             importType: ImportType.TEXT,
-            data: values.content
+            data: values.content,
           });
         } else {
-          message.error('请输入文本内容');
+          message.error("请输入文本内容");
           return;
         }
       }
@@ -353,116 +390,248 @@ export default function KnowledgeDetail() {
   };
 
   // 导入菜单项
-  const importItems: MenuProps['items'] = [
+  const importItems: MenuProps["items"] = [
     {
       key: ImportType.FILE,
-      label: '文件导入',
+      label: "文件导入",
       icon: <Iconify icon="ic:round-file-upload" />,
     },
     {
       key: ImportType.LINK,
-      label: '链接导入',
+      label: "链接导入",
       icon: <Iconify icon="mdi:link-variant" />,
     },
     {
       key: ImportType.TEXT,
-      label: '文本导入',
+      label: "文本导入",
       icon: <Iconify icon="material-symbols:text-snippet" />,
     },
     {
       key: ImportType.QA,
-      label: 'QA导入',
+      label: "QA导入",
       icon: <Iconify icon="mdi:comment-question" />,
     },
   ];
 
-  // 知识项表格列定义 - 根据实际数据结构调整
+  // 知识项表格列定义 - 缩小行宽
   const columns = [
     {
-      title: 'ID',
-      dataIndex: 'id',
-      key: 'id',
-      width: 120,
+      title: "ID",
+      dataIndex: "id",
+      key: "id",
+      width: 80,
       ellipsis: true,
-      render: (text: string) => <EllipsisText text={text} />,
-    },
-    {
-      title: '数据',
-      dataIndex: 'data',
-      key: 'data',
-      width: 250,
-      ellipsis: true,
-      render: (text: string) => <EllipsisText text={text} />,
-    },
-    {
-      title: '文件ID',
-      dataIndex: 'fileId',
-      key: 'fileId',
-      width: 120,
-      ellipsis: true,
-      render: (text: string) => <EllipsisText text={text} />,
-    },
-    {
-      title: '数据量',
-      dataIndex: 'dataCount',
-      key: 'dataCount',
-      width: 100,
-    },
-    {
-      title: '导入类型',
-      dataIndex: 'importType',
-      key: 'importType',
-      width: 120,
-      ellipsis: true,
-      render: (text: string) => <EllipsisText text={text} />,
-    },
-    {
-      title: '状态',
-      dataIndex: 'knowledgeItemStatus',
-      key: 'knowledgeItemStatus',
-      width: 100,
-      render: (status: string) => (
-        <Tag color={status === '可用' ? 'success' : 'default'}>
-          {status}
-        </Tag>
+      render: (text: string) => (
+        <div className="knowledge-item-id">
+          <EllipsisText text={text} />
+        </div>
       ),
     },
     {
-      title: '创建时间',
-      dataIndex: 'creationTime',
-      key: 'creationTime',
-      width: 160,
-      render: (time: string) => {
-        const formattedTime = new Date(time).toLocaleString();
-        return <EllipsisText text={formattedTime} />;
+      title: "数据内容",
+      dataIndex: "data",
+      key: "data",
+      width: 180, // 减小列宽
+      ellipsis: true,
+      render: (text: string) => (
+        <div className="knowledge-item-data-cell">
+          <Tooltip title={text} placement="topLeft">
+            <div className="knowledge-item-data-preview">
+              {text
+                ? text.substring(0, 50) + (text.length > 50 ? "..." : "")
+                : "无内容"}
+            </div>
+          </Tooltip>
+        </div>
+      ),
+    },
+    {
+      title: "文件ID",
+      dataIndex: "fileId",
+      key: "fileId",
+      width: 80,
+      ellipsis: true,
+      render: (text: string) => (
+        <div className="knowledge-item-id">
+          <EllipsisText text={text} />
+        </div>
+      ),
+    },
+    {
+      title: "数据量",
+      dataIndex: "dataCount",
+      key: "dataCount",
+      width: 60,
+      align: "center",
+      render: (count: number) => (
+        <span className="knowledge-item-count-simple">{count || 0}</span>
+      ),
+    },
+    {
+      title: "导入类型",
+      dataIndex: "importType",
+      key: "importType",
+      width: 90,
+      render: (type: string) => {
+        const getImportTypeInfo = (importType: string) => {
+          switch (importType) {
+            case "3f8b38d6-f321-4d1a-89c0-93d7a5023a2c":
+              return { text: "文件", icon: "📁", className: "type-file" };
+            case "47c5ab88-65e4-4ea8-a214-b384b9d37d27":
+              return { text: "链接", icon: "🔗", className: "type-link" };
+            case "d6a6eeb2-79d9-4a5f-8f1b-f2c9a7c4d2b0":
+              return { text: "文本", icon: "📝", className: "type-text" };
+            case "c18b1f8a-4e70-49e5-b7cc-59af73c3bc6a":
+              return { text: "QA", icon: "💭", className: "type-qa" };
+            default:
+              return { text: "未知", icon: "❓", className: "type-file" };
+          }
+        };
+
+        const typeInfo = getImportTypeInfo(type);
+        return (
+          <div className={`knowledge-item-import-type ${typeInfo.className}`}>
+            <span>{typeInfo.icon}</span>
+            {typeInfo.text}
+          </div>
+        );
       },
     },
     {
-      title: 'QA类型',
-      dataIndex: 'isQA',
-      key: 'isQA',
+      title: "状态",
+      dataIndex: "knowledgeItemStatus",
+      key: "knowledgeItemStatus",
+      width: 80,
+      render: (status: string) => {
+        const getStatusClass = (status: string) => {
+          switch (status) {
+            case "可用":
+              return "status-available";
+            case "处理中":
+              return "status-processing";
+            case "失败":
+              return "status-failed";
+            default:
+              return "status-default";
+          }
+        };
+
+        return (
+          <div className={`knowledge-item-status ${getStatusClass(status)}`}>
+            {status}
+          </div>
+        );
+      },
+    },
+    {
+      title: "创建时间",
+      dataIndex: "creationTime",
+      key: "creationTime",
       width: 100,
+      render: (time: string) => {
+        const formattedTime = new Date(time).toLocaleString("zh-CN", {
+          year: "2-digit",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        });
+        return <div className="knowledge-item-time">{formattedTime}</div>;
+      },
+    },
+    {
+      title: "QA",
+      dataIndex: "isQA",
+      key: "isQA",
+      width: 60,
       render: (isQA: boolean) => (
-        isQA ? <Tag color="blue">是</Tag> : <Tag>否</Tag>
+        <div
+          className={`knowledge-item-qa-indicator ${isQA ? "is-qa" : "not-qa"}`}
+        >
+          {isQA ? "QA" : "普通"}
+        </div>
       ),
     },
     {
-      title: '操作',
-      key: 'action',
-      width: 120,
-      fixed: 'right',
+      title: "操作",
+      key: "action",
+      width: 100,
+      fixed: "right",
       render: (_, record: any) => (
-        <Space size="small">
-          <IconButton title="查看">
-            <Iconify icon="solar:eye-bold-duotone" size={18} />
-          </IconButton>
-          <IconButton title="删除">
-            <Iconify icon="mingcute:delete-2-fill" size={18} className="text-error" />
-          </IconButton>
-        </Space>
+        <div className="knowledge-item-actions">
+          <Tooltip title="查看详情">
+            <button
+              className="knowledge-item-action-btn view-btn"
+              onClick={() => handleView(record)}
+            >
+              <Iconify icon="solar:eye-bold-duotone" size={14} />
+            </button>
+          </Tooltip>
+          <Popconfirm
+            title="确定要删除吗？"
+            description="删除后无法恢复，请谨慎操作"
+            onConfirm={() => handleDelete(record.id)}
+            okText="确定"
+            cancelText="取消"
+            placement="topRight"
+          >
+            <Tooltip title="删除">
+              <button className="knowledge-item-action-btn delete-btn">
+                <Iconify icon="mingcute:delete-2-fill" size={14} />
+              </button>
+            </Tooltip>
+          </Popconfirm>
+          <Tooltip title="重新执行">
+            <button
+              className="knowledge-item-action-btn reprocess-btn"
+              onClick={() => handleReprocess(record.id)}
+            >
+              <Iconify icon="mdi:reload" size={14} />
+            </button>
+          </Tooltip>
+        </div>
       ),
     },
   ];
+
+  // 重新执行知识项
+  const reprocessKnowledgeItemMutation = useMutation({
+    mutationFn: knowledgeService.reprocessKnowledgeItem,
+    onSuccess: () => {
+      message.success("重新执行成功");
+      queryClient.invalidateQueries(["knowledge", id]); // 刷新知识库详情
+    },
+    onError: (error) => {
+      message.error(`重新执行失败: ${error}`);
+    },
+  });
+
+  // 处理重新执行
+  const handleReprocess = async (itemId: string) => {
+    try {
+      await reprocessKnowledgeItemMutation.mutateAsync(itemId);
+    } catch (error) {
+      console.error("Reprocess error:", error);
+    }
+  };
+
+  // 处理查看详情
+  const handleView = (record: any) => {
+    push(`${pathname}/item/${record.id}`);
+  };
+
+  // 删除知识项
+  const handleDelete = async (itemId: string) => {
+    try {
+      // 这里需要添加删除知识项的API调用
+      // await knowledgeService.deleteKnowledgeItem(itemId);
+      message.success("删除成功");
+      queryClient.invalidateQueries(["knowledge", id]); // 刷新知识库详情
+    } catch (error) {
+      message.error(`删除失败: ${error}`);
+    }
+  };
 
   // 渲染导入模态框内容
   const renderImportModalContent = () => {
@@ -470,11 +639,15 @@ export default function KnowledgeDetail() {
       case ImportType.FILE:
         return (
           <div className="import-form-container">
-            <Form.Item name="splitTypeOption" label="切分方式" initialValue={SplitType.DIRECT}>
+            <Form.Item
+              name="splitTypeOption"
+              label="切分方式"
+              initialValue={SplitType.DIRECT}
+            >
               <Radio.Group
                 className="import-split-selector"
                 value={splitType}
-                onChange={e => setSplitType(e.target.value)}
+                onChange={(e) => setSplitType(e.target.value)}
               >
                 <Radio.Button value={SplitType.DIRECT}>直接切分</Radio.Button>
                 <Radio.Button value={SplitType.QA}>QA切分</Radio.Button>
@@ -488,22 +661,22 @@ export default function KnowledgeDetail() {
               showIcon
               className="mb-6 import-tip-alert" // 将mb-4改为mb-6，增加底部边距
               style={{
-                backgroundColor: '#f9fafb',
-                borderColor: '#e5e7eb',
-                fontSize: '0.9rem',
-                opacity: 0.85
+                backgroundColor: "#f9fafb",
+                borderColor: "#e5e7eb",
+                fontSize: "0.9rem",
+                opacity: 0.85,
               }}
             />
 
-            <Form.Item name="files" className="mt-4"> {/* 添加上边距 */}
+            <Form.Item name="files" className="mt-4">
+              {" "}
+              {/* 添加上边距 */}
               <Dragger {...uploadProps}>
                 <p className="ant-upload-drag-icon">
                   <InboxOutlined />
                 </p>
                 <p className="ant-upload-text">点击或拖拽文件到此区域上传</p>
-                <p className="ant-upload-hint">
-                  {renderUploadHint()}
-                </p>
+                <p className="ant-upload-hint">{renderUploadHint()}</p>
               </Dragger>
             </Form.Item>
           </div>
@@ -512,11 +685,15 @@ export default function KnowledgeDetail() {
       case ImportType.LINK:
         return (
           <div className="import-form-container">
-            <Form.Item name="splitTypeOption" label="切分方式" initialValue={SplitType.DIRECT}>
+            <Form.Item
+              name="splitTypeOption"
+              label="切分方式"
+              initialValue={SplitType.DIRECT}
+            >
               <Radio.Group
                 className="import-split-selector"
                 value={splitType}
-                onChange={e => setSplitType(e.target.value)}
+                onChange={(e) => setSplitType(e.target.value)}
               >
                 <Radio.Button value={SplitType.DIRECT}>直接切分</Radio.Button>
                 <Radio.Button value={SplitType.QA}>QA切分</Radio.Button>
@@ -530,10 +707,10 @@ export default function KnowledgeDetail() {
               showIcon
               className="mb-6 import-tip-alert" // 增加边距
               style={{
-                backgroundColor: '#f9fafb',
-                borderColor: '#e5e7eb',
-                fontSize: '0.9rem',
-                opacity: 0.85
+                backgroundColor: "#f9fafb",
+                borderColor: "#e5e7eb",
+                fontSize: "0.9rem",
+                opacity: 0.85,
               }}
             />
 
@@ -542,22 +719,26 @@ export default function KnowledgeDetail() {
               label="链接地址"
               className="mt-4" // 增加上边距
               rules={[
-                { required: true, message: '请输入至少一个链接地址' },
+                { required: true, message: "请输入至少一个链接地址" },
                 {
                   validator: (_, value) => {
                     if (!value) return Promise.resolve();
 
-                    const urls = value.split('\n').filter(url => url.trim());
-                    const invalidUrls = urls.filter(url => !URL_REGEX.test(url.trim()));
+                    const urls = value.split("\n").filter((url) => url.trim());
+                    const invalidUrls = urls.filter(
+                      (url) => !URL_REGEX.test(url.trim())
+                    );
 
                     if (invalidUrls.length > 0) {
                       return Promise.reject(
-                        `���在无效的URL格式: ${invalidUrls.slice(0, 2).join(', ')}${invalidUrls.length > 2 ? '等' : ''}`
+                        `发现无效的URL格式: ${invalidUrls
+                          .slice(0, 2)
+                          .join(", ")}${invalidUrls.length > 2 ? "等" : ""}`
                       );
                     }
                     return Promise.resolve();
-                  }
-                }
+                  },
+                },
               ]}
               extra="示例: https://example.com/page"
             >
@@ -570,7 +751,9 @@ https://example.com/page1"
             </Form.Item>
 
             <div className="import-url-examples">
-              <Title level={5} className="mb-2">支持的链接类型</Title>
+              <Title level={5} className="mb-2">
+                支持的链接类型
+              </Title>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <Card size="small" className="import-url-example-card">
                   <div className="text-sm font-medium">✅ 支持</div>
@@ -598,11 +781,15 @@ https://example.com/page1"
       case ImportType.TEXT:
         return (
           <div className="import-form-container">
-            <Form.Item name="splitTypeOption" label="切分方式" initialValue={SplitType.DIRECT}>
+            <Form.Item
+              name="splitTypeOption"
+              label="切分方式"
+              initialValue={SplitType.DIRECT}
+            >
               <Radio.Group
                 className="import-split-selector"
                 value={splitType}
-                onChange={e => setSplitType(e.target.value)}
+                onChange={(e) => setSplitType(e.target.value)}
               >
                 <Radio.Button value={SplitType.DIRECT}>直接切分</Radio.Button>
                 <Radio.Button value={SplitType.QA}>QA切分</Radio.Button>
@@ -612,7 +799,7 @@ https://example.com/page1"
             <Form.Item
               name="content"
               label="文本内容"
-              rules={[{ required: true, message: '请输入文本内容' }]}
+              rules={[{ required: true, message: "请输入文本内容" }]}
             >
               <TextArea
                 placeholder="请输入要导入的文本内容"
@@ -652,7 +839,7 @@ https://example.com/page1"
                   <Form.Item
                     name="qaFiles"
                     className="mt-6" // 增加上边距
-                    rules={[{ required: true, message: '请上传QA文件' }]}
+                    rules={[{ required: true, message: "请上传QA文件" }]}
                   >
                     <Dragger
                       {...uploadProps}
@@ -660,12 +847,16 @@ https://example.com/page1"
                       listType="picture"
                     >
                       <p className="ant-upload-drag-icon">
-                        <Iconify icon="mdi:cloud-upload-outline" width={48} height={48} />
+                        <Iconify
+                          icon="mdi:cloud-upload-outline"
+                          width={48}
+                          height={48}
+                        />
                       </p>
-                      <p className="ant-upload-text">点击或拖拽QA文件到此区域</p>
-                      <p className="ant-upload-hint">
-                        {renderUploadHint()}
+                      <p className="ant-upload-text">
+                        点击或拖拽QA文件到此区域
                       </p>
+                      <p className="ant-upload-hint">{renderUploadHint()}</p>
                     </Dragger>
                   </Form.Item>
                 </Card>
@@ -683,7 +874,7 @@ https://example.com/page1"
   useEffect(() => {
     if (importModalVisible) {
       form.setFieldsValue({
-        splitTypeOption: SplitType.DIRECT
+        splitTypeOption: SplitType.DIRECT,
       });
     }
   }, [importModalVisible, form, importType]);
@@ -706,8 +897,13 @@ https://example.com/page1"
     <Space direction="vertical" size="large" className="w-full">
       <Card>
         <div className="flex items-center mb-4">
-          <Button icon={<Iconify icon="material-symbols:arrow-back" />} onClick={onBackClick} />
-          <Title level={4} className="ml-4 mb-0">知识库详情</Title>
+          <Button
+            icon={<Iconify icon="material-symbols:arrow-back" />}
+            onClick={onBackClick}
+          />
+          <Title level={4} className="ml-4 mb-0">
+            知识库详情
+          </Title>
         </div>
 
         {isLoadingKnowledge ? (
@@ -720,19 +916,43 @@ https://example.com/page1"
           <Descriptions bordered column={{ xs: 1, sm: 2, md: 3 }}>
             <Descriptions.Item label="名称">{knowledge.name}</Descriptions.Item>
             <Descriptions.Item label="状态">
-              <Tag color={knowledge.statusId === "DE546396-5B62-41E5-8814-4C072C74F26A" ? "success" : "error"}>
-                {knowledge.statusId === "DE546396-5B62-41E5-8814-4C072C74F26A" ? "Active" : "Inactive"}
+              <Tag
+                color={
+                  knowledge.statusId === "DE546396-5B62-41E5-8814-4C072C74F26A"
+                    ? "success"
+                    : "error"
+                }
+              >
+                {knowledge.statusId === "DE546396-5B62-41E5-8814-4C072C74F26A"
+                  ? "Active"
+                  : "Inactive"}
               </Tag>
             </Descriptions.Item>
             <Descriptions.Item label="OCR支持">
-              {knowledge.isOCR ? <Tag color="cyan">已启用</Tag> : <Tag>未启用</Tag>}
+              {knowledge.isOCR ? (
+                <Tag color="cyan">已启用</Tag>
+              ) : (
+                <Tag>未启用</Tag>
+              )}
             </Descriptions.Item>
-            <Descriptions.Item label="聊天模型">{knowledge.chatModel || '-'}</Descriptions.Item>
-            <Descriptions.Item label="嵌入模型">{knowledge.embeddingModel || '-'}</Descriptions.Item>
-            <Descriptions.Item label="文件数">{knowledge.fileCount || 0}</Descriptions.Item>
-            <Descriptions.Item label="段落令牌">{knowledge.maxTokensPerParagraph || '-'}</Descriptions.Item>
-            <Descriptions.Item label="行令牌">{knowledge.maxTokensPerLine || '-'}</Descriptions.Item>
-            <Descriptions.Item label="重叠令牌">{knowledge.overlappingTokens || '-'}</Descriptions.Item>
+            <Descriptions.Item label="聊天模型">
+              {knowledge.chatModel || "-"}
+            </Descriptions.Item>
+            <Descriptions.Item label="嵌入模型">
+              {knowledge.embeddingModel || "-"}
+            </Descriptions.Item>
+            <Descriptions.Item label="文件数">
+              {knowledge.fileCount || 0}
+            </Descriptions.Item>
+            <Descriptions.Item label="段落令牌">
+              {knowledge.maxTokensPerParagraph || "-"}
+            </Descriptions.Item>
+            <Descriptions.Item label="行令牌">
+              {knowledge.maxTokensPerLine || "-"}
+            </Descriptions.Item>
+            <Descriptions.Item label="重叠令牌">
+              {knowledge.overlappingTokens || "-"}
+            </Descriptions.Item>
             <Descriptions.Item label="描述" span={3}>
               {knowledge.description || "无描述"}
             </Descriptions.Item>
@@ -744,7 +964,9 @@ https://example.com/page1"
         <Tabs activeKey={activeTab} onChange={setActiveTab}>
           <Tabs.TabPane tab="知识项列表" key="1">
             <div className="flex justify-end mb-4">
-              <Dropdown menu={{ items: importItems, onClick: handleImportMenuClick }}>
+              <Dropdown
+                menu={{ items: importItems, onClick: handleImportMenuClick }}
+              >
                 <Button type="primary">
                   <Space>
                     导入
@@ -758,11 +980,26 @@ https://example.com/page1"
               dataSource={knowledgeItems}
               loading={isLoadingKnowledge}
               rowKey="id"
-              pagination={{ pageSize: 10 }}
+              pagination={{
+                pageSize: 10,
+                showSizeChanger: true,
+                showQuickJumper: true,
+                showTotal: (total, range) =>
+                  `第 ${range[0]}-${range[1]} 条，共 ${total} 条数据`,
+              }}
               scroll={{ x: 1300 }}
-              bordered
               size="middle"
-              className="overflow-hidden"
+              className="knowledge-items-table"
+              locale={{
+                emptyText: (
+                  <div className="knowledge-items-empty">
+                    <Empty
+                      description="暂无知识项数据"
+                      image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    />
+                  </div>
+                ),
+              }}
             />
           </Tabs.TabPane>
           <Tabs.TabPane tab="搜索测试" key="2">
@@ -781,7 +1018,9 @@ https://example.com/page1"
                 {searchResults?.data?.length ? (
                   <div>
                     {/* 搜索结果展示区域 */}
-                    <div className="mb-2 text-gray-500">找到 {searchResults.data.length} 条结果</div>
+                    <div className="mb-2 text-gray-500">
+                      找到 {searchResults.data.length} 条结果
+                    </div>
                     {searchResults.data.map((item, index) => (
                       <Card key={index} className="mb-4">
                         {/* 搜索结果内容 */}

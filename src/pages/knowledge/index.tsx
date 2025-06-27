@@ -32,17 +32,23 @@ const STATUS_TYPES = [
   { id: "DISABLED_STATUS_ID", name: "Inactive" },
 ];
 
-// 模型类型颜色映射
+// 模型类型颜色映射 - 使用更柔和的颜色
 const MODEL_TAG_COLORS = {
-  ChatModel: "blue",
-  EmbeddingModel: "green",
+  ChatModel: "geekblue",
+  EmbeddingModel: "purple",
+};
+
+// 更新颜色映射 - 使用更柔和的颜色
+const FEATURE_COLORS = {
+  active: "green",
+  inactive: "volcano",
+  ocr: "cyan",
 };
 
 // 添加一些颜色和图标对应
-const FEATURE_COLORS = {
+const STATUS_COLOR_MAP = {
   active: "success",
   inactive: "error",
-  ocr: "cyan",
 };
 
 // 更新搜索表单类型
@@ -65,35 +71,36 @@ export default function Knowledge() {
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10 });
   const queryClient = useQueryClient();
 
-  const [knowledgeModalProps, setKnowledgeModalProps] = useState<KnowledgeModalProps>({
-    formValue: {
-      id: "",
-      name: "",
-      description: "",
-      statusId: "DE546396-5B62-41E5-8814-4C072C74F26A",
-      chatModelID: "",
-      chatModel: "",
-      embeddingModelID: "",
-      embeddingModel: "",
-      maxTokensPerParagraph: 700,
-      maxTokensPerLine: 300,
-      overlappingTokens: 100,
-      isOCR: false,
-    },
-    title: "New",
-    show: false,
-    onOk: () => {
-      const values = form.getFieldsValue();
-      if (values.id) {
-        updateKnowledge.mutate(values);
-      } else {
-        createKnowledge.mutate(values);
-      }
-    },
-    onCancel: () => {
-      setKnowledgeModalProps((prev) => ({ ...prev, show: false }));
-    },
-  });
+  const [knowledgeModalProps, setKnowledgeModalProps] =
+    useState<KnowledgeModalProps>({
+      formValue: {
+        id: "",
+        name: "",
+        description: "",
+        statusId: "DE546396-5B62-41E5-8814-4C072C74F26A",
+        chatModelID: "",
+        chatModel: "",
+        embeddingModelID: "",
+        embeddingModel: "",
+        maxTokensPerParagraph: 700,
+        maxTokensPerLine: 300,
+        overlappingTokens: 100,
+        isOCR: false,
+      },
+      title: "New",
+      show: false,
+      onOk: () => {
+        const values = form.getFieldsValue();
+        if (values.id) {
+          updateKnowledge.mutate(values);
+        } else {
+          createKnowledge.mutate(values);
+        }
+      },
+      onCancel: () => {
+        setKnowledgeModalProps((prev) => ({ ...prev, show: false }));
+      },
+    });
 
   // Query for fetching knowledge bases with search params and pagination
   const { data, isLoading } = useQuery({
@@ -150,7 +157,7 @@ export default function Knowledge() {
   const onSearch = () => {
     const values = searchForm.getFieldsValue();
     setSearchParams(values);
-    setPagination(prev => ({ ...prev, current: 1 }));
+    setPagination((prev) => ({ ...prev, current: 1 }));
   };
 
   const onSearchFormReset = () => {
@@ -174,9 +181,6 @@ export default function Knowledge() {
   };
 
   const onView = (knowledgeBase: Knowledge) => {
-    console.log("Knowledge Base ID:", knowledgeBase.id);
-    console.log("Knowledge pathname:", pathname);
-
     push(`${pathname}/${knowledgeBase.id}`);
   };
 
@@ -209,16 +213,30 @@ export default function Knowledge() {
         <Form form={searchForm}>
           <Row gutter={[16, 16]}>
             <Col span={24} lg={8}>
-              <Form.Item<SearchFormFieldType> label="Name" name="name" className="!mb-0">
+              <Form.Item<SearchFormFieldType>
+                label="Name"
+                name="name"
+                className="!mb-0"
+              >
                 <Input />
               </Form.Item>
             </Col>
             <Col span={24} lg={8}>
-              <Form.Item<SearchFormFieldType> label="Status" name="statusId" className="!mb-0">
+              <Form.Item<SearchFormFieldType>
+                label="Status"
+                name="statusId"
+                className="!mb-0"
+              >
                 <Select allowClear placeholder="Select Status">
                   {STATUS_TYPES.map((status) => (
                     <Select.Option key={status.id} value={status.id}>
-                      <Tag color={status.id === "DE546396-5B62-41E5-8814-4C072C74F26A" ? "success" : "error"}>
+                      <Tag
+                        color={
+                          status.id === "DE546396-5B62-41E5-8814-4C072C74F26A"
+                            ? "success"
+                            : "error"
+                        }
+                      >
                         {status.name}
                       </Tag>
                     </Select.Option>
@@ -227,7 +245,11 @@ export default function Knowledge() {
               </Form.Item>
             </Col>
             <Col span={24} lg={8}>
-              <Form.Item<SearchFormFieldType> label="OCR" name="isOCR" className="!mb-0">
+              <Form.Item<SearchFormFieldType>
+                label="OCR"
+                name="isOCR"
+                className="!mb-0"
+              >
                 <Select placeholder="Select OCR Status" defaultValue={false}>
                   <Select.Option value={true}>Enabled</Select.Option>
                   <Select.Option value={false}>Disabled</Select.Option>
@@ -263,8 +285,16 @@ export default function Knowledge() {
                   <Title level={5} className="m-0">
                     {kb.name}
                   </Title>
-                  <Tag color={kb.statusId === "DE546396-5B62-41E5-8814-4C072C74F26A" ? "success" : "error"}>
-                    {kb.statusId === "DE546396-5B62-41E5-8814-4C072C74F26A" ? "Active" : "Inactive"}
+                  <Tag
+                    color={
+                      kb.statusId === "DE546396-5B62-41E5-8814-4C072C74F26A"
+                        ? "success"
+                        : "error"
+                    }
+                  >
+                    {kb.statusId === "DE546396-5B62-41E5-8814-4C072C74F26A"
+                      ? "Active"
+                      : "Inactive"}
                   </Tag>
                 </div>
 
@@ -275,14 +305,24 @@ export default function Knowledge() {
 
                 {/* 特性区域 */}
                 <div className="mb-4 flex flex-wrap gap-2">
-                  {kb.chatModel && <Tag color={MODEL_TAG_COLORS.ChatModel}>{kb.chatModel}</Tag>}
-                  {kb.embeddingModel && <Tag color={MODEL_TAG_COLORS.EmbeddingModel}>{kb.embeddingModel}</Tag>}
-                  {kb.isOCR && <Tag color={FEATURE_COLORS.ocr}>OCR Enabled</Tag>}
+                  {kb.chatModel && (
+                    <Tag color={MODEL_TAG_COLORS.ChatModel}>{kb.chatModel}</Tag>
+                  )}
+                  {kb.embeddingModel && (
+                    <Tag color={MODEL_TAG_COLORS.EmbeddingModel}>
+                      {kb.embeddingModel}
+                    </Tag>
+                  )}
+                  {kb.isOCR && (
+                    <Tag color={FEATURE_COLORS.ocr}>OCR Enabled</Tag>
+                  )}
                 </div>
 
                 {/* 统计信息 - 基本统计 */}
                 <div className="mb-4">
-                  <div className="text-sm font-medium text-gray-600 mb-1">基本统计</div>
+                  <div className="text-sm font-medium text-gray-600 mb-1">
+                    基本统计
+                  </div>
                   <div className="grid grid-cols-3 gap-2">
                     <div className="bg-gray-50 p-2 rounded">
                       <div className="text-xs text-gray-500">文件数</div>
@@ -294,26 +334,36 @@ export default function Knowledge() {
                     </div>
                     <div className="bg-gray-50 p-2 rounded">
                       <div className="text-xs text-gray-500">结构点数</div>
-                      <div className="font-medium">{kb.pointStructCount || 0}</div>
+                      <div className="font-medium">
+                        {kb.pointStructCount || 0}
+                      </div>
                     </div>
                   </div>
                 </div>
 
                 {/* 令牌配置 */}
                 <div className="mb-3">
-                  <div className="text-sm font-medium text-gray-600 mb-1">令牌配置</div>
+                  <div className="text-sm font-medium text-gray-600 mb-1">
+                    令牌配置
+                  </div>
                   <div className="grid grid-cols-3 gap-2">
                     <div className="bg-gray-50 p-2 rounded">
                       <div className="text-xs text-gray-500">段落令牌</div>
-                      <div className="font-medium">{kb.maxTokensPerParagraph || '-'}</div>
+                      <div className="font-medium">
+                        {kb.maxTokensPerParagraph || "-"}
+                      </div>
                     </div>
                     <div className="bg-gray-50 p-2 rounded">
                       <div className="text-xs text-gray-500">行令牌</div>
-                      <div className="font-medium">{kb.maxTokensPerLine || '-'}</div>
+                      <div className="font-medium">
+                        {kb.maxTokensPerLine || "-"}
+                      </div>
                     </div>
                     <div className="bg-gray-50 p-2 rounded">
                       <div className="text-xs text-gray-500">重叠令牌</div>
-                      <div className="font-medium">{kb.overlappingTokens || '-'}</div>
+                      <div className="font-medium">
+                        {kb.overlappingTokens || "-"}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -334,7 +384,11 @@ export default function Knowledge() {
                     onConfirm={() => onDelete(kb.id)}
                   >
                     <IconButton title="删除">
-                      <Iconify icon="mingcute:delete-2-fill" size={18} className="text-error" />
+                      <Iconify
+                        icon="mingcute:delete-2-fill"
+                        size={18}
+                        className="text-error"
+                      />
                     </IconButton>
                   </Popconfirm>
                 </div>
@@ -343,7 +397,9 @@ export default function Knowledge() {
           ))}
           {knowledgeBases.length === 0 && (
             <Col span={24}>
-              <div className="flex justify-center p-8 text-gray-500">No knowledge bases found</div>
+              <div className="flex justify-center p-8 text-gray-500">
+                No knowledge bases found
+              </div>
             </Col>
           )}
         </Row>
