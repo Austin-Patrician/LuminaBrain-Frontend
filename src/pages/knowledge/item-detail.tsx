@@ -28,8 +28,6 @@ interface QAItem {
   id: string;
   question: string;
   answer: string;
-  confidence: number;
-  source: string;
   timestamp: string;
 }
 
@@ -42,8 +40,6 @@ const mockApiResponse = {
       question: "什么是人工智能？",
       answer:
         "人工智能（Artificial Intelligence，简称AI）是计算机科学的一个分支，它试图理解智能的实质，并生产出一种新的能以人类智能相似的方式做出反应的智能机器。人工智能研究的领域包括机器学习、深度学习、自然语言处理、计算机视觉等。",
-      confidence: 0.95,
-      source: "知识库文档",
       timestamp: "2024-01-15 10:30:00",
     },
     {
@@ -51,8 +47,6 @@ const mockApiResponse = {
       question: "机器学习和深度学习有什么区别？",
       answer:
         "机器学习是人工智能的一个子集，它使计算机能够在没有明确编程的情况下学习。深度学习是机器学习的一个子集，它使用具有多个层（深层神经网络）的神经网络来模拟人脑的工作方式。深度学习在图像识别、语音识别和自然语言处理等领域表现出色。",
-      confidence: 0.88,
-      source: "技术文档",
       timestamp: "2024-01-15 11:45:00",
     },
     {
@@ -60,8 +54,6 @@ const mockApiResponse = {
       question: "如何开始学习人工智能？",
       answer:
         "学习人工智能可以从以下几个步骤开始：1. 掌握数学基础（线性代数、概率论、统计学）；2. 学习编程语言（Python、R）；3. 了解机器学习基础概念；4. 实践项目和案例；5. 深入学习深度学习框架（TensorFlow、PyTorch）；6. 持续关注最新技术发展。",
-      confidence: 0.92,
-      source: "学习指南",
       timestamp: "2024-01-15 14:20:00",
     },
     {
@@ -69,8 +61,6 @@ const mockApiResponse = {
       question: "什么是自然语言处理？",
       answer:
         "自然语言处理（Natural Language Processing，简称NLP）是人工智能的一个重要分支，旨在让计算机能够理解、解释和生成人类语言。NLP的应用包括机器翻译、情感分析、文本摘要、问答系统、语音识别等。现代NLP技术广泛使用深度学习模型，如Transformer架构。",
-      confidence: 0.9,
-      source: "技术百科",
       timestamp: "2024-01-15 16:10:00",
     },
     {
@@ -78,8 +68,6 @@ const mockApiResponse = {
       question: "AI在日常生活中有哪些应用？",
       answer:
         "AI在日常生活中的应用非常广泛：1. 智能手机的语音助手（Siri、Google Assistant）；2. 推荐系统（Netflix、YouTube、淘宝）；3. 导航和地图服务；4. 搜索引擎优化；5. 在线翻译服务；6. 智能家居设备；7. 医疗诊断辅助；8. 金融风控和投资建议；9. 自动驾驶汽车；10. 客服聊天机器人。",
-      confidence: 0.85,
-      source: "应用案例",
       timestamp: "2024-01-15 17:30:00",
     },
   ],
@@ -137,17 +125,6 @@ export default function KnowledgeItemDetail() {
     navigate(`/knowledgemanagement/${knowledgeId}`);
   };
 
-  const getConfidenceColor = (confidence: number) => {
-    if (confidence >= 0.9) return "success";
-    if (confidence >= 0.8) return "processing";
-    if (confidence >= 0.7) return "warning";
-    return "error";
-  };
-
-  const getConfidenceText = (confidence: number) => {
-    return `${(confidence * 100).toFixed(1)}%`;
-  };
-
   // 添加新的QA对
   const handleAddQA = () => {
     form
@@ -157,8 +134,6 @@ export default function KnowledgeItemDetail() {
           id: (qaData.length + 1).toString(),
           question: values.question,
           answer: values.answer,
-          confidence: 0.9, // 默认置信度
-          source: "手动添加",
           timestamp: new Date().toLocaleString("zh-CN"),
         };
 
