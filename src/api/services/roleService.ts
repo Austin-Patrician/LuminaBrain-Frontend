@@ -35,6 +35,8 @@ export enum RoleApi {
   AddRole = "/powers/add",
   UpdateRole = "/powers/update",
   DeleteRole = "/powers/delete",
+  UpdateRolePermissions = "/api/v1/role/permissions", // 新增更新角色权限的API
+  GetRolePermissions = "/permission/permissionByRole", // 获取角色权限的API
 }
 
 /**
@@ -95,6 +97,28 @@ const roleService = {
   deleteRole: (id: string) => {
     return apiClient.delete<void>({
       url: `${RoleApi.DeleteRole}/${id}`,
+    });
+  },
+
+  /**
+   * 更新角色权限
+   */
+  updateRolePermissions: (roleId: string, permissionIds: string[]) => {
+    return apiClient.put<void>({
+      url: RoleApi.UpdateRolePermissions,
+      data: {
+        roleId,
+        permissionIds,
+      },
+    });
+  },
+
+  /**
+   * 获取角色已有权限
+   */
+  getRolePermissions: (roleId: string) => {
+    return apiClient.get<{ data: { id: string; name: string; parentId?: string; permissionTypeId: string; label: string; icon?: string }[] }>({
+      url: `${RoleApi.GetRolePermissions}/${roleId}`,
     });
   },
 };
