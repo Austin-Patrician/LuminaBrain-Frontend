@@ -116,9 +116,14 @@ export interface Role {
 	id: string;
 	name: string;
 	label: string;
-	status: BasicStatus;
+	status: string; // 改为string类型，匹配后台返回的"Active"等字符串
+	statusId: string; // 新增statusId字段
+	code?: string; // 新增code字段
 	order?: number;
 	desc?: string;
+	description?: string; // 新增description字段，与后台保持一致
+	creationTime?: string; // 新增创建时间
+	modificationTime?: string; // 新增修改时间
 	permission?: Permission[];
 }
 
@@ -254,5 +259,16 @@ export interface DictionaryItemListResponse {
   data: {
     total: number;
     data: DictionaryItem[];
+  };
+}
+
+// Role列表响应类型
+export interface RoleListResponse {
+  success: boolean;
+  statusCode: number;
+  message: string;
+  data: {
+    total: number;
+    data: Role[];
   };
 }

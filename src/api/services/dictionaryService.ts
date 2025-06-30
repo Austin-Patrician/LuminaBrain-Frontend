@@ -16,7 +16,7 @@ interface DictionarySearchParams {
 
 // 字典项查询参数
 interface DictionaryItemSearchParams {
-  dictionaryId?: string;
+  dictionaryIds?: string[]; // 重命名为 dictionaryIds
   value?: string;
   label?: string;
   enabled?: boolean;

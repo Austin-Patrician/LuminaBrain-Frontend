@@ -1,38 +1,50 @@
-import { useState } from 'react';
-import { Tabs, type TabsProps } from 'antd';
-import { Iconify } from '@/components/icon';
-import DictionaryTab from './components/DictionaryTab';
-import DictionaryItemTab from './components/DictionaryItemTab';
+import { useState } from "react";
+import { Tabs, type TabsProps } from "antd";
+import { Iconify } from "@/components/icon";
+import DictionaryTab from "./components/DictionaryTab";
+import DictionaryItemTab from "./components/DictionaryItemTab";
 
 export default function DictionaryManagePage() {
-  const [activeTab, setActiveTab] = useState('dictionary');
-  const [selectedDictionaryId, setSelectedDictionaryId] = useState<string>();
+  const [activeTab, setActiveTab] = useState("dictionary");
+  const [selectedDictionaryIds, setSelectedDictionaryIds] = useState<string[]>(
+    []
+  ); // 修改为数组类型
 
   const handleDictionarySelect = (dictionaryId: string) => {
-    setSelectedDictionaryId(dictionaryId);
-    setActiveTab('dictionaryItem');
+    setSelectedDictionaryIds([dictionaryId]); // 单选时转换为数组
+    setActiveTab("dictionaryItem");
   };
 
-  const items: TabsProps['items'] = [
+  const items: TabsProps["items"] = [
     {
-      key: 'dictionary',
+      key: "dictionary",
       label: (
         <div className="flex items-center">
-          <Iconify icon="solar:book-bookmark-bold-duotone" size={20} className="mr-2" />
+          <Iconify
+            icon="solar:book-bookmark-bold-duotone"
+            size={20}
+            className="mr-2"
+          />
           <span>字典管理</span>
         </div>
       ),
       children: <DictionaryTab onDictionarySelect={handleDictionarySelect} />,
     },
     {
-      key: 'dictionaryItem',
+      key: "dictionaryItem",
       label: (
         <div className="flex items-center">
-          <Iconify icon="solar:list-arrow-down-bold-duotone" size={20} className="mr-2" />
+          <Iconify
+            icon="solar:list-arrow-down-bold-duotone"
+            size={20}
+            className="mr-2"
+          />
           <span>字典项管理</span>
         </div>
       ),
-      children: <DictionaryItemTab selectedDictionaryId={selectedDictionaryId} />,
+      children: (
+        <DictionaryItemTab selectedDictionaryIds={selectedDictionaryIds} />
+      ), // 传递数组
     },
   ];
 
