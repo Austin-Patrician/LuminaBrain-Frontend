@@ -35,7 +35,7 @@ export enum RoleApi {
   AddRole = "/powers/add",
   UpdateRole = "/powers/update",
   DeleteRole = "/powers/delete",
-  UpdateRolePermissions = "/api/v1/role/permissions", // 新增更新角色权限的API
+  UpdateRolePermissions = "/permission/byRoleId", // 新增更新角色权限的API
   GetRolePermissions = "/permission/permissionByRole", // 获取角色权限的API
 }
 
@@ -51,9 +51,7 @@ const roleService = {
       statusId: params?.statusId || null,
       name: params?.name || null,
       pageNumber: params?.pageNumber || 1,
-      pageSize: params?.pageSize || 10,
-      skip: params?.skip || 1,
-      take: params?.take || 1
+      pageSize: params?.pageSize || 10
     };
     
     return apiClient.post<RoleListResponse>({
