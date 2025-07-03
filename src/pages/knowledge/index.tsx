@@ -5,7 +5,6 @@ import {
   Col,
   Form,
   Input,
-  Modal,
   Popconfirm,
   Row,
   Select,
@@ -15,12 +14,12 @@ import {
   message,
   Pagination,
 } from "antd";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { usePathname, useRouter } from "@/router/hooks";
 
 import knowledgeService from "@/api/services/knowledgeService";
 import { IconButton, Iconify } from "@/components/icon";
-import StepFormModal from "@/components/organization/StepFormModal";
+import EditKnowledgeModal from "./components/EditKnowledgeModal";
 
 import type { Knowledge } from "#/entity";
 
@@ -45,12 +44,6 @@ const FEATURE_COLORS = {
   ocr: "cyan",
 };
 
-// 添加一些颜色和图标对应
-const STATUS_COLOR_MAP = {
-  active: "success",
-  inactive: "error",
-};
-
 // 更新搜索表单类型
 type SearchFormFieldType = {
   name: string;
@@ -62,7 +55,6 @@ export default function Knowledge() {
   const { push } = useRouter();
   const pathname = usePathname();
   const [searchForm] = Form.useForm();
-  const [form] = Form.useForm();
   const [searchParams, setSearchParams] = useState<SearchFormFieldType>({
     name: "",
     statusId: "",
@@ -71,36 +63,10 @@ export default function Knowledge() {
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10 });
   const queryClient = useQueryClient();
 
-  const [knowledgeModalProps, setKnowledgeModalProps] =
-    useState<KnowledgeModalProps>({
-      formValue: {
-        id: "",
-        name: "",
-        description: "",
-        statusId: "DE546396-5B62-41E5-8814-4C072C74F26A",
-        chatModelID: "",
-        chatModel: "",
-        embeddingModelID: "",
-        embeddingModel: "",
-        maxTokensPerParagraph: 700,
-        maxTokensPerLine: 300,
-        overlappingTokens: 100,
-        isOCR: false,
-      },
-      title: "New",
-      show: false,
-      onOk: () => {
-        const values = form.getFieldsValue();
-        if (values.id) {
-          updateKnowledge.mutate(values);
-        } else {
-          createKnowledge.mutate(values);
-        }
-      },
-      onCancel: () => {
-        setKnowledgeModalProps((prev) => ({ ...prev, show: false }));
-      },
-    });
+  // 编辑弹窗状态
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [currentKnowledge, setCurrentKnowledge] =
+    useState<Partial<Knowledge> | null>(null);
 
   // Query for fetching knowledge bases with search params and pagination
   const { data, isLoading } = useQuery({
@@ -113,36 +79,11 @@ export default function Knowledge() {
       }),
   });
 
-  console.log("Knowledge Data:", data);
   // 访问嵌套数据结构
   const knowledgeBases: Knowledge[] = data?.data || [];
   const totalCount = data?.total || 0;
 
-  // Mutations for create, update, delete
-  const createKnowledge = useMutation({
-    mutationFn: knowledgeService.createKnowledge,
-    onSuccess: () => {
-      message.success("Knowledge base created successfully");
-      setKnowledgeModalProps((prev) => ({ ...prev, show: false }));
-      queryClient.invalidateQueries({ queryKey: ["knowledge"] });
-    },
-    onError: (error) => {
-      message.error(`Failed to create knowledge base: ${error}`);
-    },
-  });
-
-  const updateKnowledge = useMutation({
-    mutationFn: knowledgeService.updateKnowledge,
-    onSuccess: () => {
-      message.success("Knowledge base updated successfully");
-      setKnowledgeModalProps((prev) => ({ ...prev, show: false }));
-      queryClient.invalidateQueries({ queryKey: ["knowledge"] });
-    },
-    onError: (error) => {
-      message.error(`Failed to update knowledge base: ${error}`);
-    },
-  });
-
+  // Mutations for delete
   const deleteKnowledge = useMutation({
     mutationFn: knowledgeService.deleteKnowledge,
     onSuccess: () => {
@@ -166,31 +107,17 @@ export default function Knowledge() {
   };
 
   const onCreate = () => {
-    setKnowledgeModalProps((prev) => ({
-      ...prev,
-      show: true,
-      title: "Create New Knowledge Base",
-      formValue: {
-        ...prev.formValue,
-        id: "",
-        name: "",
-        description: "",
-        statusId: "DE546396-5B62-41E5-8814-4C072C74F26A",
-      },
-    }));
+    // 这里可以添加创建弹窗的逻辑
+    message.info("创建功能待实现");
   };
 
   const onView = (knowledgeBase: Knowledge) => {
     push(`${pathname}/${knowledgeBase.id}`);
   };
 
-  const onEdit = (formValue: Knowledge) => {
-    setKnowledgeModalProps((prev) => ({
-      ...prev,
-      show: true,
-      title: "Edit Knowledge Base",
-      formValue,
-    }));
+  const onEdit = (knowledge: Knowledge) => {
+    setCurrentKnowledge(knowledge);
+    setEditModalVisible(true);
   };
 
   const onDelete = (id: string) => {
@@ -201,11 +128,10 @@ export default function Knowledge() {
     setPagination({ current: page, pageSize });
   };
 
-  useEffect(() => {
-    if (knowledgeModalProps.show) {
-      form.setFieldsValue(knowledgeModalProps.formValue);
-    }
-  }, [knowledgeModalProps.formValue, knowledgeModalProps.show, form]);
+  const handleEditSuccess = () => {
+    setEditModalVisible(false);
+    queryClient.invalidateQueries({ queryKey: ["knowledge"] });
+  };
 
   return (
     <Space direction="vertical" size="large" className="w-full">
@@ -415,22 +341,13 @@ export default function Knowledge() {
           </div>
         )}
       </Card>
-      <StepFormModal
-        title={knowledgeModalProps.title}
-        open={knowledgeModalProps.show}
-        formValue={knowledgeModalProps.formValue}
-        onOk={knowledgeModalProps.onOk}
-        onCancel={knowledgeModalProps.onCancel}
-        form={form}
+
+      <EditKnowledgeModal
+        visible={editModalVisible}
+        knowledge={currentKnowledge}
+        onCancel={() => setEditModalVisible(false)}
+        onSuccess={handleEditSuccess}
       />
     </Space>
   );
 }
-
-type KnowledgeModalProps = {
-  formValue: Partial<Knowledge>;
-  title: string;
-  show: boolean;
-  onOk: VoidFunction;
-  onCancel: VoidFunction;
-};

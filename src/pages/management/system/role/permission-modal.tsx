@@ -28,13 +28,9 @@ export default function PermissionModal({
   const fetchRolePermissions = async () => {
     try {
       const response = await roleService.getRolePermissions(role.id);
-      console.log("Role Permissions Response:", response); // 调试信息
-
       // 提取权限ID列表
       const rolePermissionIds = response.map((p: any) => p.id);
       setCheckedKeys(rolePermissionIds);
-
-      console.log("Role Permission IDs:", rolePermissionIds); // 调试信息
     } catch (error) {
       console.error("Failed to fetch role permissions:", error);
       // 如果获取失败，保持原有逻辑作为备用
@@ -50,17 +46,14 @@ export default function PermissionModal({
     try {
       setLoading(true);
       const response = await permissionService.getPermissionList();
-
-      console.log("API Response:", response); // 调试信息
-
       // 递归转换API返回的类型字符串为枚举值
-      const convertPermissionType = (type: string): PermissionType => {
+      const convertPermissionType = (type): PermissionType => {
         switch (type) {
-          case "CATALOGUE":
+          case 0:
             return PermissionType.CATALOGUE;
-          case "MENU":
+          case 1:
             return PermissionType.MENU;
-          case "BUTTON":
+          case 2:
             return PermissionType.BUTTON;
           default:
             return PermissionType.MENU; // 默认为菜单类型
@@ -86,10 +79,8 @@ export default function PermissionModal({
         response || []
       );
 
-      console.log("Converted Permissions:", convertedPermissions); // 调试信息
       setPermissions(convertedPermissions);
     } catch (error) {
-      console.error("Failed to fetch permissions:", error);
       message.error("获取权限数据失败");
     } finally {
       setLoading(false);
@@ -119,7 +110,6 @@ export default function PermissionModal({
       (p) => !p.parentId || p.parentId === ""
     );
 
-    console.log("Permission Tree:", rootPermissions); // 调试信息
     return rootPermissions;
   }, [permissions]);
 

@@ -67,7 +67,6 @@ export const useSignIn = () => {
 	const signIn = async (data: SignInReq) => {
 		try {
 			const res = await signInMutation.mutateAsync(data);
-			console.log(res);
 			const { user, accessToken, refreshToken } = res;
 			setUserToken({ accessToken, refreshToken });
 			setUserInfo(user); // user中应该包含permissions字段
