@@ -55,6 +55,8 @@ export enum KnowledgeApi {
   UploadFile = "/file/upload/{knowledgeId}",
   ReprocessKnowledgeItem = "/knowledge/item/{id}/reprocess", // 重新执行知识项
   GetKnowledgeItem = "/knowledge/item/{id}", // 获取知识项详情
+  GetKnowledgeItemPoint = "/knowledge/{knowledgeItemId}/knowledgeItemPoint/{id}", // 获取知识项详情
+
 }
 
 /**
@@ -126,6 +128,14 @@ const knowledgeService = {
       url: KnowledgeApi.GetAiModelsByTypeId.replace('{id}', id),
     });
   },
+
+
+  getKnowledgeItemPoint: (id: string,knowledgeId:string) => {
+    return apiClient.get<AiModelListResponse>({
+      url: KnowledgeApi.GetKnowledgeItemPoint.replace('{knowledgeItemId}', knowledgeId).replace('{id}', id),
+    });
+  },
+
 
   /**
    * 获取CSRF令牌

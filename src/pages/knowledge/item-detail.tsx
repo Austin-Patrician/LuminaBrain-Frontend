@@ -19,111 +19,65 @@ import {
 } from "antd";
 import { Iconify } from "@/components/icon";
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import type { QAItem } from "#/entity";
+import knowledgeService from "@/api/services/knowledgeService";
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
-
-// Q&A 数据类型定义
-interface QAItem {
-  id: string;
-  question: string;
-  answer: string;
-  timestamp: string;
-}
-
-// Mock API 响应数据
-const mockApiResponse = {
-  success: true,
-  data: [
-    {
-      id: "1",
-      question: "什么是人工智能？",
-      answer:
-        "人工智能（Artificial Intelligence，简称AI）是计算机科学的一个分支，它试图理解智能的实质，并生产出一种新的能以人类智能相似的方式做出反应的智能机器。人工智能研究的领域包括机器学习、深度学习、自然语言处理、计算机视觉等。",
-      timestamp: "2024-01-15 10:30:00",
-    },
-    {
-      id: "2",
-      question: "机器学习和深度学习有什么区别？",
-      answer:
-        "机器学习是人工智能的一个子集，它使计算机能够在没有明确编程的情况下学习。深度学习是机器学习的一个子集，它使用具有多个层（深层神经网络）的神经网络来模拟人脑的工作方式。深度学习在图像识别、语音识别和自然语言处理等领域表现出色。",
-      timestamp: "2024-01-15 11:45:00",
-    },
-    {
-      id: "3",
-      question: "如何开始学习人工智能？",
-      answer:
-        "学习人工智能可以从以下几个步骤开始：1. 掌握数学基础（线性代数、概率论、统计学）；2. 学习编程语言（Python、R）；3. 了解机器学习基础概念；4. 实践项目和案例；5. 深入学习深度学习框架（TensorFlow、PyTorch）；6. 持续关注最新技术发展。",
-      timestamp: "2024-01-15 14:20:00",
-    },
-    {
-      id: "4",
-      question: "什么是自然语言处理？",
-      answer:
-        "自然语言处理（Natural Language Processing，简称NLP）是人工智能的一个重要分支，旨在让计算机能够理解、解释和生成人类语言。NLP的应用包括机器翻译、情感分析、文本摘要、问答系统、语音识别等。现代NLP技术广泛使用深度学习模型，如Transformer架构。",
-      timestamp: "2024-01-15 16:10:00",
-    },
-    {
-      id: "5",
-      question: "AI在日常生活中有哪些应用？",
-      answer:
-        "AI在日常生活中的应用非常广泛：1. 智能手机的语音助手（Siri、Google Assistant）；2. 推荐系统（Netflix、YouTube、淘宝）；3. 导航和地图服务；4. 搜索引擎优化；5. 在线翻译服务；6. 智能家居设备；7. 医疗诊断辅助；8. 金融风控和投资建议；9. 自动驾驶汽车；10. 客服聊天机器人。",
-      timestamp: "2024-01-15 17:30:00",
-    },
-  ],
-};
-
-// Mock API 调用函数
-const fetchKnowledgeItemDetails = async (itemId: string): Promise<QAItem[]> => {
-  console.log(`正在获取知识项详情，itemId: ${itemId}`);
-
-  // 模拟 API 请求延迟
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-
-  if (mockApiResponse.success) {
-    return mockApiResponse.data;
-  } else {
-    throw new Error("获取数据失败");
-  }
-};
 
 export default function KnowledgeItemDetail() {
   const { knowledgeId, itemId } = useParams();
   const navigate = useNavigate();
   const [qaData, setQaData] = useState<QAItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [form] = Form.useForm();
 
-  // 页面加载时获取数据
-  useEffect(() => {
-    const loadData = async () => {
+  // 使用 useQuery 获取知识项详情
+  const {
+    data: fetchedData,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["knowledgeItemDetails", itemId],
+    queryFn: async (): Promise<QAItem[]> => {
       if (!itemId) {
-        setError("缺少知识项ID");
-        setLoading(false);
-        return;
+        throw new Error("缺少知识项ID");
       }
 
-      try {
-        setLoading(true);
-        setError(null);
-        const data = await fetchKnowledgeItemDetails(itemId);
-        setQaData(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "获取数据失败");
-        setQaData([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+      console.log(`正在获取知识项详情，itemId: ${itemId}`);
 
-    loadData();
-  }, [itemId]);
+      const response = await knowledgeService.getKnowledgeItemPoint(
+        itemId,
+        knowledgeId
+      );
 
-  const onBackClick = () => {
-    navigate(`/knowledgemanagement/${knowledgeId}`);
-  };
+      // 将API响应转换为QAItem格式
+      const qaItems: QAItem[] = response.map((item: any) => ({
+        id: item.id,
+        question: item.question || "暂无问题",
+        answer: item.answer || "暂无答案",
+        timestamp: new Date(item.timestamp).toLocaleString("zh-CN"),
+      }));
+
+      return qaItems;
+    },
+    enabled: !!itemId, // 只有当 itemId 存在时才执行查询
+  });
+
+  // 使用 useEffect 来处理数据更新
+  useEffect(() => {
+    if (fetchedData) {
+      setQaData(fetchedData);
+    }
+  }, [fetchedData]);
+
+  useEffect(() => {
+    if (error) {
+      console.error("获取知识项详情失败:", error);
+      setQaData([]);
+    }
+  }, [error]);
 
   // 添加新的QA对
   const handleAddQA = () => {
@@ -160,7 +114,7 @@ export default function KnowledgeItemDetail() {
     form.resetFields();
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
         <Spin size="large" tip="加载知识项详情中..." />
@@ -175,7 +129,7 @@ export default function KnowledgeItemDetail() {
           <div className="flex items-center">
             <Button
               icon={<Iconify icon="material-symbols:arrow-back" />}
-              onClick={onBackClick}
+              onClick={() => navigate(`/knowledgemanagement/${knowledgeId}`)}
             />
             <Title level={4} className="ml-4 mb-0">
               知识项详情
@@ -183,7 +137,14 @@ export default function KnowledgeItemDetail() {
           </div>
         </Card>
         <Card>
-          <Alert message="加载失败" description={error} type="error" showIcon />
+          <Alert
+            message="加载失败"
+            description={
+              error instanceof Error ? error.message : "获取数据失败"
+            }
+            type="error"
+            showIcon
+          />
         </Card>
       </Space>
     );
@@ -197,7 +158,7 @@ export default function KnowledgeItemDetail() {
           <div className="flex items-center">
             <Button
               icon={<Iconify icon="material-symbols:arrow-back" />}
-              onClick={onBackClick}
+              onClick={() => navigate(`/knowledgemanagement/${knowledgeId}`)}
             />
             <Title level={4} className="ml-4 mb-0">
               知识项详情
@@ -237,7 +198,7 @@ export default function KnowledgeItemDetail() {
             dataSource={qaData}
             split={false}
             className="qa-list"
-            renderItem={(item, index) => (
+            renderItem={(item) => (
               <List.Item className="!p-0 !border-none">
                 <div className="bg-white border border-gray-200 rounded-lg p-6 mb-4 shadow-sm hover:shadow-md transition-shadow duration-200 relative">
                   {/* 删除按钮 */}

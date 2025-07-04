@@ -272,3 +272,12 @@ export interface RoleListResponse {
     data: Role[];
   };
 }
+
+
+// Q&A 数据类型定义
+export interface QAItem {
+  id: string;
+  question: string;
+  answer: string;
+  timestamp: string;
+}
