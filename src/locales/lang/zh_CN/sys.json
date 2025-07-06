@@ -89,7 +89,9 @@
       "user": {
         "index": "用户",
         "profile": "个人资料",
-        "account": "账户"
+        "account": "账户",
+        "role": "角色",
+        "status": "状态"
       },
       "system": {
         "index": "系统",

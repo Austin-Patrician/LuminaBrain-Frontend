@@ -1,5 +1,3 @@
-import apiClient from '../apiClient';
-
 // OpenAI兼容的消息格式
 export interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
@@ -78,7 +76,30 @@ export class ChatService {
         throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
 
-      return response.json();
+      // 检查响应的Content-Type来判断返回格式
+      const contentType = response.headers.get('content-type');
+      
+      if (contentType && contentType.includes('application/json')) {
+        // 如果是JSON格式，直接解析
+        return response.json();
+      } else {
+        // 如果是文本格式，包装成标准的ChatCompletionResponse格式
+        const textContent = await response.text();
+        return {
+          id: `chatcmpl-${Date.now()}`,
+          object: 'chat.completion',
+          created: Math.floor(Date.now() / 1000),
+          model: request.model,
+          choices: [{
+            index: 0,
+            message: {
+              role: 'assistant',
+              content: textContent,
+            },
+            finish_reason: 'stop',
+          }],
+        };
+      }
     } catch (error) {
       console.error('Chat completion error:', error);
       throw new Error('Failed to create chat completion');

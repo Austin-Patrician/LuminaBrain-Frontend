@@ -5,7 +5,7 @@ import { themeVars } from "@/theme/theme.css";
 import { Col, Row } from "antd";
 
 export default function BannerCard() {
-	const { username } = useUserInfo();
+	const { userName, username } = useUserInfo();
 
 	const bg = `linear-gradient(135deg, rgba(${themeVars.colors.palette.primary.lightChannel}, .2), rgba(${themeVars.colors.palette.primary.defaultChannel}, .2)) ${themeVars.colors.common.white}`;
 
@@ -14,7 +14,7 @@ export default function BannerCard() {
 			<Col span={24} md={12} xl={16} className="flex-1 text-center md:text-left">
 				<div className="mt-4 text-lg font-semibold md:text-xl" style={{ color: themeVars.colors.palette.primary.dark }}>
 					<h4>Welcome back 👋 </h4>
-					<h4>{username}</h4>
+					<h4>{userName || username}</h4>
 				</div>
 				<div
 					style={{ color: themeVars.colors.palette.primary.dark }}

@@ -1,8 +1,9 @@
 import { Form, Input, Modal, Radio, Select, message } from "antd";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
-import type { UserInfo } from "#/entity";
+import type { UserInfo, Role } from "#/entity";
 import { BasicStatus } from "#/enum";
+import roleService from "@/api/services/roleService";
 
 export type UserModalProps = {
   formValue: UserInfo;
@@ -20,20 +21,49 @@ export default function UserModal({
   onCancel,
 }: UserModalProps) {
   const [form] = Form.useForm();
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [loadingRoles, setLoadingRoles] = useState(false);
 
   useEffect(() => {
-    form.setFieldsValue({ ...formValue });
-  }, [formValue, form]);
+    // 设置表单初始值
+    if (formValue) {
+      form.setFieldsValue({ ...formValue });
+    }
+  }, [formValue, form, roles]);
+
+  // 获取角色列表
+  useEffect(() => {
+    const fetchRoles = async () => {
+      if (!show) return; // 只有在模态框显示时才获取角色数据
+      
+      setLoadingRoles(true);
+      try {
+        const response = await roleService.getRoleList({
+          pageNumber: 1,
+          pageSize: 100, // 获取所有角色，假设不会超过100个
+        });
+        setRoles(response.data); // 注意这里是 response.data.data
+      } catch (error) {
+        console.error("Failed to fetch roles:", error);
+        message.error("获取角色列表失败");
+        setRoles([]);
+      } finally {
+        setLoadingRoles(false);
+      }
+    };
+
+    fetchRoles();
+  }, [show]);
 
   const handleOk = async () => {
     try {
       const values = await form.validateFields();
       console.log("User form values:", values);
-      message.success(formValue.id ? "用户更新成功" : "用户创建成功");
+      message.success(formValue?.id ? "用户更新成功" : "用户创建成功");
       onOk();
     } catch (error) {
       console.error("Failed to save user:", error);
-      message.error(formValue.id ? "用户更新失败" : "用户创建失败");
+      message.error(formValue?.id ? "用户更新失败" : "用户创建失败");
     }
   };
 
@@ -54,7 +84,7 @@ export default function UserModal({
       >
         <Form.Item<UserInfo>
           label="Username"
-          name="username"
+          name="userName"
           rules={[{ required: true, message: "Please input username!" }]}
         >
           <Input placeholder="Enter username" />
@@ -71,7 +101,7 @@ export default function UserModal({
           <Input placeholder="Enter email" />
         </Form.Item>
 
-        {!formValue.id && (
+        {!formValue?.id && (
           <Form.Item<UserInfo>
             label="Password"
             name="password"
@@ -83,13 +113,19 @@ export default function UserModal({
 
         <Form.Item<UserInfo>
           label="Role"
-          name={["role", "name"]}
+          name={["role", "id"]}
           rules={[{ required: true, message: "Please select role!" }]}
         >
-          <Select placeholder="Select role">
-            <Select.Option value="Admin">Admin</Select.Option>
-            <Select.Option value="User">User</Select.Option>
-            <Select.Option value="Manager">Manager</Select.Option>
+          <Select 
+            placeholder="Select role" 
+            loading={loadingRoles}
+            disabled={loadingRoles}
+          >
+            {roles.map((role) => (
+              <Select.Option key={role.id} value={role.id}>
+                {role.name}
+              </Select.Option>
+            ))}
           </Select>
         </Form.Item>
 

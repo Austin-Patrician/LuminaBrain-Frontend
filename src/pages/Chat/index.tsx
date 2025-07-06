@@ -33,7 +33,7 @@ import ModelSelector from "./components/ModelSelector";
 import AttachmentUpload from "./components/AttachmentUpload";
 import ChatHistory from "./components/ChatHistory";
 import ThinkingBubble from "./components/ThinkingBubble";
-import SSEStreamingBubble from "./components/SSEStreamingBubble";
+import StreamingBubbleSelector from "./components/StreamingBubbleSelector";
 import {
   chatService,
   type ChatMessage as APIChatMessage,
@@ -93,6 +93,7 @@ const ChatPage: React.FC = () => {
   const [inputValue, setInputValue] = useState("");
   const [selectedModel, setSelectedModel] = useState("");
   const [selectedModelType, setSelectedModelType] = useState<string>(""); // 新增：存储模型类型
+  const [selectedModelIsStream, setSelectedModelIsStream] = useState<boolean>(true); // 新增：存储模型是否支持流式
   const [thinkingMode, setThinkingMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState<string>("");
@@ -119,10 +120,13 @@ const ChatPage: React.FC = () => {
 
   // 处理模型选择变化
   const handleModelChange = useCallback(
-    (modelId: string, modelType?: string) => {
+    (modelId: string, modelType?: string, isStream?: boolean) => {
       setSelectedModel(modelId);
       if (modelType) {
         setSelectedModelType(modelType);
+      }
+      if (typeof isStream === 'boolean') {
+        setSelectedModelIsStream(isStream);
       }
     },
     []
@@ -327,128 +331,15 @@ const ChatPage: React.FC = () => {
       // 记录开始时间
       const startTime = Date.now();
 
-      await chatService.createStreamingChatCompletion(
-        {
-          model: selectedModel,
-          messages: apiMessages,
-          temperature: 0.7,
-          max_tokens: 8000,
-          ...(selectedModelType && { chatType: selectedModelType }), // 添加chatType参数
-        },
-        (chunk) => {
-          const content = chunk.choices[0]?.delta?.content;
-          if (content) {
-            fullResponse += content;
-            // 直接设置累积的内容
-            setStreamingMessage(fullResponse);
-          }
-        },
-        () => {
-          // 计算响应时间
-          const endTime = Date.now();
-          const responseTime = Number(
-            ((endTime - startTime) / 1000).toFixed(1)
-          );
-
-          // 流式输出完成
-          const assistantMessage: ChatMessage = {
-            id: `msg_${Date.now()}_assistant`,
-            role: "assistant",
-            content: fullResponse,
-            timestamp: new Date(),
-            thinking: thinkingMode,
-            streaming: true,
-            responseTime: responseTime, // 添加响应时间
-          };
-
-          const finalMessages = [...newMessages, assistantMessage];
-          setMessages(finalMessages);
-          updateSessionMessages(activeSessionId, finalMessages);
-          setIsStreaming(false);
-          setStreamingMessage("");
-        },
-        (error) => {
-          console.error("Chat error:", error);
-          antdMessage.error(`消息发送失败：${error.message}`);
-          setIsLoading(false);
-          setIsStreaming(false);
-          setStreamingMessage("");
-        }
-      );
-    } catch (error) {
-      console.error("Send message error:", error);
-      antdMessage.error("消息发送失败，请重试");
-      setIsLoading(false);
-      setIsStreaming(false);
-      setStreamingMessage("");
-    }
-  }, [
-    inputValue,
-    attachedFiles,
-    selectedModel,
-    thinkingMode,
-    currentSession,
-    sessions,
-    messages,
-    updateSessionMessages,
-    saveSessions,
-    saveCurrentSession,
-  ]);
-
-  // 编辑用户消息
-  const handleEditUserMessage = useCallback(
-    async (messageId: string, newContent: string) => {
-      // 记录开始时间
-      const startTime = Date.now();
-
-      // 找到消息在列表中的位置
-      const messageIndex = messages.findIndex((msg) => msg.id === messageId);
-      if (messageIndex === -1) return;
-
-      // 更新消息内容
-      const updatedMessages = [...messages];
-      updatedMessages[messageIndex] = {
-        ...updatedMessages[messageIndex],
-        content: newContent,
-        timestamp: new Date(), // 更新时间戳
-      };
-
-      // 删除该消息之后的所有消息（包括AI回复）
-      const messagesToKeep = updatedMessages.slice(0, messageIndex + 1);
-
-      setMessages(messagesToKeep);
-
-      // 如果有当前会话，同步更新会话数据
-      if (currentSession) {
-        updateSessionMessages(currentSession, messagesToKeep);
-      }
-
-      // 重新发送请求
-      setIsLoading(true);
-
-      try {
-        // 转换消息格式为API格式
-        const apiMessages: APIChatMessage[] = messagesToKeep.map((msg) => ({
-          role: msg.role,
-          content: msg.content,
-        }));
-
-        let fullResponse = "";
-
-        // 显示思考状态
-        setTimeout(() => {
-          setIsLoading(false);
-          setIsStreaming(true);
-          setStreamingMessage(""); // 重置流式消息
-        }, 800);
-
-        // 直接调用真实的流式API
+      // 根据模型的流式支持情况选择不同的API调用方式
+      if (selectedModelIsStream) {
+        // 使用流式API
         await chatService.createStreamingChatCompletion(
           {
             model: selectedModel,
             messages: apiMessages,
             temperature: 0.7,
-            max_tokens: 2048,
+            max_tokens: 8000,
             ...(selectedModelType && { chatType: selectedModelType }), // 添加chatType参数
           },
           (chunk) => {
@@ -477,22 +368,227 @@ const ChatPage: React.FC = () => {
               responseTime: responseTime, // 添加响应时间
             };
 
-            const finalMessages = [...messagesToKeep, assistantMessage];
+            const finalMessages = [...newMessages, assistantMessage];
             setMessages(finalMessages);
-            if (currentSession) {
-              updateSessionMessages(currentSession, finalMessages);
-            }
+            updateSessionMessages(activeSessionId, finalMessages);
             setIsStreaming(false);
             setStreamingMessage("");
           },
           (error) => {
             console.error("Chat error:", error);
-            antdMessage.error(`重新生成回复失败：${error.message}`);
+            antdMessage.error(`消息发送失败：${error.message}`);
             setIsLoading(false);
             setIsStreaming(false);
             setStreamingMessage("");
           }
         );
+      } else {
+        // 使用非流式API
+        try {
+          const response = await chatService.createChatCompletion({
+            model: selectedModel,
+            messages: apiMessages,
+            temperature: 0.7,
+            max_tokens: 8000,
+            ...(selectedModelType && { chatType: selectedModelType }), // 添加chatType参数
+          });
+
+          // 计算响应时间
+          const endTime = Date.now();
+          const responseTime = Number(
+            ((endTime - startTime) / 1000).toFixed(1)
+          );
+
+          // 非流式输出完成
+          const assistantMessage: ChatMessage = {
+            id: `msg_${Date.now()}_assistant`,
+            role: "assistant",
+            content: response.choices[0]?.message?.content || '',
+            timestamp: new Date(),
+            thinking: thinkingMode,
+            streaming: false,
+            responseTime: responseTime,
+          };
+
+          const finalMessages = [...newMessages, assistantMessage];
+          setMessages(finalMessages);
+          updateSessionMessages(activeSessionId, finalMessages);
+          setIsLoading(false);
+          setIsStreaming(false);
+          setStreamingMessage("");
+        } catch (error) {
+          console.error("Chat error:", error);
+          antdMessage.error(`消息发送失败：${error instanceof Error ? error.message : '未知错误'}`);
+          setIsLoading(false);
+          setIsStreaming(false);
+          setStreamingMessage("");
+        }
+      }
+    } catch (error) {
+      console.error("Send message error:", error);
+      antdMessage.error("消息发送失败，请重试");
+      setIsLoading(false);
+      setIsStreaming(false);
+      setStreamingMessage("");
+    }
+  }, [
+    inputValue,
+    attachedFiles,
+    selectedModel,
+    selectedModelType,
+    selectedModelIsStream,
+    thinkingMode,
+    currentSession,
+    sessions,
+    messages,
+    updateSessionMessages,
+    saveSessions,
+    saveCurrentSession,
+  ]);
+
+  // 编辑用户消息
+  const handleEditUserMessage = useCallback(
+    async (messageId: string, newContent: string) => {
+      // 记录开始时间
+      const startTime = Date.now();
+
+      // 找到消息在列表中的位置
+      const messageIndex = messages.findIndex((msg) => msg.id === messageId);
+      if (messageIndex === -1) return;
+
+      // 更新消息内容
+      const updatedMessages = [...messages];
+      updatedMessages[messageIndex] = {
+        ...updatedMessages[messageIndex],
+        content: newContent,
+        timestamp: new Date(),
+      };
+
+      // 删除该消息之后的所有消息（包括AI回复）
+      const messagesToKeep = updatedMessages.slice(0, messageIndex + 1);
+
+      setMessages(messagesToKeep);
+
+      // 如果有当前会话，同步更新会话数据
+      if (currentSession) {
+        updateSessionMessages(currentSession, messagesToKeep);
+      }
+
+      // 重新发送请求
+      setIsLoading(true);
+
+      try {
+        // 转换消息格式为API格式
+        const apiMessages: APIChatMessage[] = messagesToKeep.map((msg) => ({
+          role: msg.role,
+          content: msg.content,
+        }));
+
+        let fullResponse = "";
+
+        // 根据模型的流式支持情况选择不同的API调用方式
+        if (selectedModelIsStream) {
+          // 显示思考状态
+          setTimeout(() => {
+            setIsLoading(false);
+            setIsStreaming(true);
+            setStreamingMessage("");
+          }, 800);
+
+          // 使用流式API
+          await chatService.createStreamingChatCompletion(
+            {
+              model: selectedModel,
+              messages: apiMessages,
+              temperature: 0.7,
+              max_tokens: 2048,
+              ...(selectedModelType && { chatType: selectedModelType }),
+            },
+            (chunk) => {
+              const content = chunk.choices[0]?.delta?.content;
+              if (content) {
+                fullResponse += content;
+                setStreamingMessage(fullResponse);
+              }
+            },
+            () => {
+              // 计算响应时间
+              const endTime = Date.now();
+              const responseTime = Number(
+                ((endTime - startTime) / 1000).toFixed(1)
+              );
+
+              // 流式输出完成
+              const assistantMessage: ChatMessage = {
+                id: `msg_${Date.now()}_assistant`,
+                role: "assistant",
+                content: fullResponse,
+                timestamp: new Date(),
+                thinking: thinkingMode,
+                streaming: true,
+                responseTime: responseTime,
+              };
+
+              const finalMessages = [...messagesToKeep, assistantMessage];
+              setMessages(finalMessages);
+              if (currentSession) {
+                updateSessionMessages(currentSession, finalMessages);
+              }
+              setIsStreaming(false);
+              setStreamingMessage("");
+            },
+            (error) => {
+              console.error("Chat error:", error);
+              antdMessage.error(`重新生成回复失败：${error.message}`);
+              setIsLoading(false);
+              setIsStreaming(false);
+              setStreamingMessage("");
+            }
+          );
+        } else {
+          // 使用非流式API
+          try {
+            const response = await chatService.createChatCompletion({
+              model: selectedModel,
+              messages: apiMessages,
+              temperature: 0.7,
+              max_tokens: 2048,
+              ...(selectedModelType && { chatType: selectedModelType }),
+            });
+
+            // 计算响应时间
+            const endTime = Date.now();
+            const responseTime = Number(
+              ((endTime - startTime) / 1000).toFixed(1)
+            );
+
+            // 非流式输出完成
+            const assistantMessage: ChatMessage = {
+              id: `msg_${Date.now()}_assistant`,
+              role: "assistant",
+              content: response.choices[0]?.message?.content || '',
+              timestamp: new Date(),
+              thinking: thinkingMode,
+              streaming: false,
+              responseTime: responseTime,
+            };
+
+            const finalMessages = [...messagesToKeep, assistantMessage];
+            setMessages(finalMessages);
+            if (currentSession) {
+              updateSessionMessages(currentSession, finalMessages);
+            }
+            setIsLoading(false);
+            setIsStreaming(false);
+            setStreamingMessage("");
+          } catch (error) {
+            console.error("Chat error:", error);
+            antdMessage.error(`重新生成回复失败：${error instanceof Error ? error.message : '未知错误'}`);
+            setIsLoading(false);
+            setIsStreaming(false);
+            setStreamingMessage("");
+          }
+        }
       } catch (error) {
         console.error("Regenerate message error:", error);
         antdMessage.error("重新生成回复失败，请重试");
@@ -505,6 +601,8 @@ const ChatPage: React.FC = () => {
       messages,
       currentSession,
       selectedModel,
+      selectedModelType,
+      selectedModelIsStream,
       thinkingMode,
       updateSessionMessages,
     ]
@@ -542,46 +640,91 @@ const ChatPage: React.FC = () => {
 
         let fullResponse = "";
 
-        // 显示思考状态
-        setTimeout(() => {
-          setIsLoading(false);
-          setIsStreaming(true);
-          setStreamingMessage(""); // 重置流式消息
-        }, 800);
+        // 根据模型的流式支持情况选择不同的API调用方式
+        if (selectedModelIsStream) {
+          // 显示思考状态
+          setTimeout(() => {
+            setIsLoading(false);
+            setIsStreaming(true);
+            setStreamingMessage("");
+          }, 800);
 
-        // 直接调用真实的流式API
-        await chatService.createStreamingChatCompletion(
-          {
-            model: selectedModel,
-            messages: apiMessages,
-            temperature: 0.7,
-            max_tokens: 2048,
-            ...(selectedModelType && { chatType: selectedModelType }), // 添加chatType参数
-          },
-          (chunk) => {
-            const content = chunk.choices[0]?.delta?.content;
-            if (content) {
-              fullResponse += content;
-              // 直接设置累积的内容
-              setStreamingMessage(fullResponse);
+          // 使用流式API
+          await chatService.createStreamingChatCompletion(
+            {
+              model: selectedModel,
+              messages: apiMessages,
+              temperature: 0.7,
+              max_tokens: 2048,
+              ...(selectedModelType && { chatType: selectedModelType }),
+            },
+            (chunk) => {
+              const content = chunk.choices[0]?.delta?.content;
+              if (content) {
+                fullResponse += content;
+                setStreamingMessage(fullResponse);
+              }
+            },
+            () => {
+              // 计算响应时间
+              const endTime = Date.now();
+              const responseTime = Number(
+                ((endTime - startTime) / 1000).toFixed(1)
+              );
+
+              // 流式输出完成
+              const assistantMessage: ChatMessage = {
+                id: `msg_${Date.now()}_assistant`,
+                role: "assistant",
+                content: fullResponse,
+                timestamp: new Date(),
+                thinking: thinkingMode,
+                streaming: true,
+                responseTime: responseTime,
+              };
+
+              const finalMessages = [...messagesToKeep, assistantMessage];
+              setMessages(finalMessages);
+              if (currentSession) {
+                updateSessionMessages(currentSession, finalMessages);
+              }
+              setIsStreaming(false);
+              setStreamingMessage("");
+            },
+            (error) => {
+              console.error("Chat error:", error);
+              antdMessage.error(`重新生成回复失败：${error.message}`);
+              setIsLoading(false);
+              setIsStreaming(false);
+              setStreamingMessage("");
             }
-          },
-          () => {
+          );
+        } else {
+          // 使用非流式API
+          try {
+            const response = await chatService.createChatCompletion({
+              model: selectedModel,
+              messages: apiMessages,
+              temperature: 0.7,
+              max_tokens: 2048,
+              ...(selectedModelType && { chatType: selectedModelType }),
+            });
+
             // 计算响应时间
             const endTime = Date.now();
             const responseTime = Number(
               ((endTime - startTime) / 1000).toFixed(1)
             );
 
-            // 流式输出完成
+            // 非流式输出完成
             const assistantMessage: ChatMessage = {
               id: `msg_${Date.now()}_assistant`,
               role: "assistant",
-              content: fullResponse,
+              content: response.choices[0]?.message?.content || '',
               timestamp: new Date(),
               thinking: thinkingMode,
-              streaming: true,
-              responseTime: responseTime, // 添加响应时间
+              streaming: false,
+              responseTime: responseTime,
             };
 
             const finalMessages = [...messagesToKeep, assistantMessage];
@@ -589,17 +732,17 @@ const ChatPage: React.FC = () => {
             if (currentSession) {
               updateSessionMessages(currentSession, finalMessages);
             }
+            setIsLoading(false);
             setIsStreaming(false);
             setStreamingMessage("");
-          },
-          (error) => {
+          } catch (error) {
             console.error("Chat error:", error);
-            antdMessage.error(`重新生成回复失败：${error.message}`);
+            antdMessage.error(`重新生成回复失败：${error instanceof Error ? error.message : '未知错误'}`);
             setIsLoading(false);
             setIsStreaming(false);
             setStreamingMessage("");
           }
-        );
+        }
       } catch (error) {
         console.error("Regenerate message error:", error);
         antdMessage.error("重新生成回复失败，请重试");
@@ -612,6 +755,8 @@ const ChatPage: React.FC = () => {
       messages,
       currentSession,
       selectedModel,
+      selectedModelType,
+      selectedModelIsStream,
       thinkingMode,
       updateSessionMessages,
     ]
@@ -727,7 +872,7 @@ const ChatPage: React.FC = () => {
         <div className="flex items-center gap-2">
           <Avatar size={24} icon={<UserOutlined />} src={userInfo?.avatar} />
           <div className="flex flex-col">
-            <span className="font-medium">{userInfo?.username || "用户"}</span>
+            <span className="font-medium">{userInfo?.userName || userInfo?.username || "用户"}</span>
             <span className="text-xs text-gray-500">{userInfo?.email}</span>
           </div>
         </div>
@@ -883,7 +1028,7 @@ const ChatPage: React.FC = () => {
           <div className="user-avatar-container cursor-pointer hover:bg-gray-50 rounded-lg p-2 transition-colors">
             <Avatar size={40} icon={<UserOutlined />} src={userInfo?.avatar} />
             <div className="user-details">
-              <div className="user-name">{userInfo?.username || "用户"}</div>
+              <div className="user-name">{userInfo?.userName || userInfo?.username || "用户"}</div>
               <div className="user-email">{userInfo?.email}</div>
             </div>
             <MoreOutlined className="text-gray-400" />
@@ -1078,7 +1223,7 @@ const ChatPage: React.FC = () => {
                             <ModelSelector
                               value={selectedModel}
                               onChange={handleModelChange}
-                            />
+                            />                            
                           </div>
 
                           {/* 发送按钮 */}
@@ -1154,13 +1299,14 @@ const ChatPage: React.FC = () => {
 
                     {/* 流式输出消息 */}
                     {isStreaming && streamingMessage && (
-                      <SSEStreamingBubble
+                      <StreamingBubbleSelector
                         content={streamingMessage}
                         thinking={thinkingMode}
                         isStreaming={isStreaming}
+                        useSSE={selectedModelIsStream}
                         onComplete={() => {
                           // 流式输出完成的回调处理
-                          console.log("SSE Streaming completed");
+                          console.log("Streaming completed");
                         }}
                       />
                     )}

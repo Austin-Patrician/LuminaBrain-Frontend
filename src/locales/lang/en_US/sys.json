@@ -90,7 +90,9 @@
       "user": {
         "index": "User",
         "profile": "Profile",
-        "account": "Account"
+        "account": "Account",
+        "role": "Role",
+        "status": "Status"
       },
       "system": {
         "index": "System",

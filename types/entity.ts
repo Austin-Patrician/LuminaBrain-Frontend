@@ -8,7 +8,8 @@ export interface UserToken {
 export interface UserInfo {
 	id: string;
 	email: string;
-	username: string;
+	userName: string;
+	username?: string; // 保持向后兼容
 	password?: string;
 	avatar?: string;
 	role?: Role;
@@ -199,6 +200,8 @@ export interface AiModelAndKnowledgeItem {
   id: string;
   label: string;
   type: "AI Model" | "Knowledge";
+	isThink: boolean;
+	isStream: boolean;
 }
 
 // AI模型和知识库列表响应类型

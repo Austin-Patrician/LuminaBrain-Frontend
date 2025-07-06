@@ -7,7 +7,7 @@ const { OptGroup } = Select;
 
 interface ModelSelectorProps {
   value: string;
-  onChange: (value: string, type?: string) => void;
+  onChange: (value: string, type?: string, isStream?: boolean) => void;
 }
 
 const ModelSelector: React.FC<ModelSelectorProps> = ({
@@ -40,7 +40,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
   // 处理选择变化，找到对应的类型信息
   const handleChange = (selectedValue: string) => {
     const selectedItem = apiOptions.find(item => item.id === selectedValue);
-    onChange(selectedValue, selectedItem?.type);
+    onChange(selectedValue, selectedItem?.type, selectedItem?.isStream);
   };
 
   // 按类型分组（新API数据）
