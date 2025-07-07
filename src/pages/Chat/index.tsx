@@ -93,7 +93,8 @@ const ChatPage: React.FC = () => {
   const [inputValue, setInputValue] = useState("");
   const [selectedModel, setSelectedModel] = useState("");
   const [selectedModelType, setSelectedModelType] = useState<string>(""); // 新增：存储模型类型
-  const [selectedModelIsStream, setSelectedModelIsStream] = useState<boolean>(true); // 新增：存储模型是否支持流式
+  const [selectedModelIsStream, setSelectedModelIsStream] =
+    useState<boolean>(true); // 新增：存储模型是否支持流式
   const [thinkingMode, setThinkingMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState<string>("");
@@ -125,7 +126,7 @@ const ChatPage: React.FC = () => {
       if (modelType) {
         setSelectedModelType(modelType);
       }
-      if (typeof isStream === 'boolean') {
+      if (typeof isStream === "boolean") {
         setSelectedModelIsStream(isStream);
       }
     },
@@ -262,9 +263,15 @@ const ChatPage: React.FC = () => {
     setAttachedFiles((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
-  // 发送消息 - 修改为包含文件附件
   const handleSendMessage = useCallback(async () => {
+    // 校验：需要有输入内容或文件附件
     if (!inputValue.trim() && attachedFiles.length === 0) return;
+
+    // 校验：必须选择模型
+    if (!selectedModel) {
+      antdMessage.error("请先选择一个模型");
+      return;
+    }
 
     // 如果没有当前会话，先创建一个
     let activeSessionId = currentSession;
@@ -377,6 +384,22 @@ const ChatPage: React.FC = () => {
           (error) => {
             console.error("Chat error:", error);
             antdMessage.error(`消息发送失败：${error.message}`);
+
+            // 添加一条友好的系统错误消息到对话中
+            const errorMessage: ChatMessage = {
+              id: `msg_${Date.now()}_error`,
+              role: "assistant",
+              content:
+                "抱歉，当前程序发生故障，我们正在马不停蹄修复中...请稍后再试或重新发送消息 🔧",
+              timestamp: new Date(),
+              thinking: false,
+              streaming: false,
+            };
+
+            const finalMessages = [...newMessages, errorMessage];
+            setMessages(finalMessages);
+            updateSessionMessages(activeSessionId, finalMessages);
+
             setIsLoading(false);
             setIsStreaming(false);
             setStreamingMessage("");
@@ -403,7 +426,7 @@ const ChatPage: React.FC = () => {
           const assistantMessage: ChatMessage = {
             id: `msg_${Date.now()}_assistant`,
             role: "assistant",
-            content: response.choices[0]?.message?.content || '',
+            content: response.choices[0]?.message?.content || "",
             timestamp: new Date(),
             thinking: thinkingMode,
             streaming: false,
@@ -418,7 +441,27 @@ const ChatPage: React.FC = () => {
           setStreamingMessage("");
         } catch (error) {
           console.error("Chat error:", error);
-          antdMessage.error(`消息发送失败：${error instanceof Error ? error.message : '未知错误'}`);
+          antdMessage.error(
+            `消息发送失败：${
+              error instanceof Error ? error.message : "未知错误"
+            }`
+          );
+
+          // 添加一条友好的系统错误消息到对话中
+          const errorMessage: ChatMessage = {
+            id: `msg_${Date.now()}_error`,
+            role: "assistant",
+            content:
+              "抱歉，当前程序发生故障，我们正在马不停蹄修复中...请稍后再试或重新发送消息 🔧",
+            timestamp: new Date(),
+            thinking: false,
+            streaming: false,
+          };
+
+          const finalMessages = [...newMessages, errorMessage];
+          setMessages(finalMessages);
+          updateSessionMessages(activeSessionId, finalMessages);
+
           setIsLoading(false);
           setIsStreaming(false);
           setStreamingMessage("");
@@ -540,6 +583,23 @@ const ChatPage: React.FC = () => {
             (error) => {
               console.error("Chat error:", error);
               antdMessage.error(`重新生成回复失败：${error.message}`);
+
+              // 添加一条友好的系统错误消息到对话中
+              const errorMessage: ChatMessage = {
+                id: `msg_${Date.now()}_error`,
+                role: "assistant",
+                content:
+                  "抱歉，当前程序发生故障，我们正在马不停蹄修复中...请稍后再试或重新发送消息 🔧",
+                timestamp: new Date(),
+                thinking: false,
+                streaming: false,
+              };
+
+              const finalMessages = [...messagesToKeep, errorMessage];
+              setMessages(finalMessages);
+              if (currentSession) {
+                updateSessionMessages(currentSession, finalMessages);
+              }
               setIsLoading(false);
               setIsStreaming(false);
               setStreamingMessage("");
@@ -566,7 +626,7 @@ const ChatPage: React.FC = () => {
             const assistantMessage: ChatMessage = {
               id: `msg_${Date.now()}_assistant`,
               role: "assistant",
-              content: response.choices[0]?.message?.content || '',
+              content: response.choices[0]?.message?.content || "",
               timestamp: new Date(),
               thinking: thinkingMode,
               streaming: false,
@@ -583,7 +643,29 @@ const ChatPage: React.FC = () => {
             setStreamingMessage("");
           } catch (error) {
             console.error("Chat error:", error);
-            antdMessage.error(`重新生成回复失败：${error instanceof Error ? error.message : '未知错误'}`);
+            antdMessage.error(
+              `重新生成回复失败：${
+                error instanceof Error ? error.message : "未知错误"
+              }`
+            );
+
+            // 添加一条友好的系统错误消息到对话中
+            const errorMessage: ChatMessage = {
+              id: `msg_${Date.now()}_error`,
+              role: "assistant",
+              content:
+                "抱歉，当前程序发生故障，我们正在马不停蹄修复中...请稍后再试或重新发送消息 🔧",
+              timestamp: new Date(),
+              thinking: false,
+              streaming: false,
+            };
+
+            const finalMessages = [...messagesToKeep, errorMessage];
+            setMessages(finalMessages);
+            if (currentSession) {
+              updateSessionMessages(currentSession, finalMessages);
+            }
+
             setIsLoading(false);
             setIsStreaming(false);
             setStreamingMessage("");
@@ -694,6 +776,23 @@ const ChatPage: React.FC = () => {
             (error) => {
               console.error("Chat error:", error);
               antdMessage.error(`重新生成回复失败：${error.message}`);
+
+              // 添加一条友好的系统错误消息到对话中
+              const errorMessage: ChatMessage = {
+                id: `msg_${Date.now()}_error`,
+                role: "assistant",
+                content:
+                  "抱歉，当前程序发生故障，我们正在马不停蹄修复中...请稍后再试或重新发送消息 🔧",
+                timestamp: new Date(),
+                thinking: false,
+                streaming: false,
+              };
+
+              const finalMessages = [...messagesToKeep, errorMessage];
+              setMessages(finalMessages);
+              if (currentSession) {
+                updateSessionMessages(currentSession, finalMessages);
+              }
               setIsLoading(false);
               setIsStreaming(false);
               setStreamingMessage("");
@@ -720,7 +819,7 @@ const ChatPage: React.FC = () => {
             const assistantMessage: ChatMessage = {
               id: `msg_${Date.now()}_assistant`,
               role: "assistant",
-              content: response.choices[0]?.message?.content || '',
+              content: response.choices[0]?.message?.content || "",
               timestamp: new Date(),
               thinking: thinkingMode,
               streaming: false,
@@ -737,7 +836,29 @@ const ChatPage: React.FC = () => {
             setStreamingMessage("");
           } catch (error) {
             console.error("Chat error:", error);
-            antdMessage.error(`重新生成回复失败：${error instanceof Error ? error.message : '未知错误'}`);
+            antdMessage.error(
+              `重新生成回复失败：${
+                error instanceof Error ? error.message : "未知错误"
+              }`
+            );
+
+            // 添加一条友好的系统错误消息到对话中
+            const errorMessage: ChatMessage = {
+              id: `msg_${Date.now()}_error`,
+              role: "assistant",
+              content:
+                "抱歉，当前程序发生故障，我们正在马不停蹄修复中...请稍后再试或重新发送消息 🔧",
+              timestamp: new Date(),
+              thinking: false,
+              streaming: false,
+            };
+
+            const finalMessages = [...messagesToKeep, errorMessage];
+            setMessages(finalMessages);
+            if (currentSession) {
+              updateSessionMessages(currentSession, finalMessages);
+            }
+
             setIsLoading(false);
             setIsStreaming(false);
             setStreamingMessage("");
@@ -872,7 +993,9 @@ const ChatPage: React.FC = () => {
         <div className="flex items-center gap-2">
           <Avatar size={24} icon={<UserOutlined />} src={userInfo?.avatar} />
           <div className="flex flex-col">
-            <span className="font-medium">{userInfo?.userName || userInfo?.username || "用户"}</span>
+            <span className="font-medium">
+              {userInfo?.userName || userInfo?.username || "用户"}
+            </span>
             <span className="text-xs text-gray-500">{userInfo?.email}</span>
           </div>
         </div>
@@ -1028,7 +1151,9 @@ const ChatPage: React.FC = () => {
           <div className="user-avatar-container cursor-pointer hover:bg-gray-50 rounded-lg p-2 transition-colors">
             <Avatar size={40} icon={<UserOutlined />} src={userInfo?.avatar} />
             <div className="user-details">
-              <div className="user-name">{userInfo?.userName || userInfo?.username || "用户"}</div>
+              <div className="user-name">
+                {userInfo?.userName || userInfo?.username || "用户"}
+              </div>
               <div className="user-email">{userInfo?.email}</div>
             </div>
             <MoreOutlined className="text-gray-400" />
@@ -1223,7 +1348,7 @@ const ChatPage: React.FC = () => {
                             <ModelSelector
                               value={selectedModel}
                               onChange={handleModelChange}
-                            />                            
+                            />
                           </div>
 
                           {/* 发送按钮 */}
@@ -1231,7 +1356,9 @@ const ChatPage: React.FC = () => {
                             type="primary"
                             icon={<SendOutlined />}
                             onClick={handleSendMessage}
-                            disabled={!inputValue.trim() || isLoading}
+                            disabled={
+                              !inputValue.trim() || isLoading || !selectedModel
+                            }
                             loading={isLoading}
                             className="chat-send-button"
                           >
@@ -1409,7 +1536,9 @@ const ChatPage: React.FC = () => {
                             type="primary"
                             icon={<SendOutlined />}
                             onClick={handleSendMessage}
-                            disabled={!inputValue.trim() || isLoading}
+                            disabled={
+                              !inputValue.trim() || isLoading || !selectedModel
+                            }
                             loading={isLoading}
                             className="chat-send-button"
                           >
