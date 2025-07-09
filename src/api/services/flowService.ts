@@ -11,6 +11,7 @@ import {
 // 基于节点类型的强类型配置
 export type NodeConfig = 
   | AIDialogNodeConfig
+  | AISummaryNodeConfig
   | DatabaseNodeConfig  
   | KnowledgeBaseNodeConfig
   | HTTPNodeConfig
@@ -26,9 +27,27 @@ export interface AIDialogNodeConfig {
   nodeType: 'aiDialogNode';
   model: string;
   systemPrompt?: string;
+  userMessage?: string;
   temperature?: number;
   maxTokens?: number;
   stream?: boolean;
+}
+
+// AI摘要节点配置
+export interface AISummaryNodeConfig {
+  nodeType: 'aiSummaryNode';
+  model: string;
+  systemPrompt?: string;
+  userMessage?: string;
+  temperature?: number;
+  maxTokens?: number;
+  stream?: boolean;
+  summaryStyle?: 'bullet_points' | 'paragraph' | 'keywords' | 'outline';
+  summaryLength?: 'short' | 'medium' | 'long';
+  maxSummaryLength?: number;
+  language?: string;
+  includeKeyPoints?: boolean;
+  extractKeywords?: boolean;
 }
 
 // 数据库节点配置
@@ -315,6 +334,8 @@ export const flowService = {
     return convertToFrontendFormat(response);
   },
 
+  
+
   // 创建新流程 - 发送实体格式，status为必需参数
   createFlow: async (flowData: Omit<FlowDataRaw, 'id'>): Promise<FlowDataRaw> => {
     // 前端生成唯一ID
@@ -339,8 +360,6 @@ export const flowService = {
     // 转换为后端实体格式
     const backendData = convertToBackendFormat(rawDataWithId);
     
-    console.log('Creating flow with data:', backendData);
-
     // 将ID拼接在路由中：POST /flows/{flowId}，发送实体格式
     const response = await apiClient.post({
       url: `/flows/${flowId}`,
@@ -450,22 +469,12 @@ export const flowService = {
   },
 
   // 发布流程
-  publishFlow: async (id: string): Promise<FlowDataRaw> => {
-    const response = await apiClient.put({
-      url: `/flows/${id}/publish`,
-      data: { 
-        status: 'published',
-        statusId: getFlowStatusId('published')
-      }
-    });
-    
-    const result = convertToFrontendFormat(response);
-    // 确保返回的状态正确
-    result.status = 'published';
-    result.statusId = getFlowStatusId('published');
-    
-    return result;
+
+  // 根据ID获取流程详情
+  publishFlow: async (id: string) => {
+     await apiClient.get({ url: `/flows/publish/${id}` });
   },
+
 
 /**
    * 根据AI模型类型ID获取AI模型集合
@@ -585,10 +594,28 @@ export const flowService = {
           nodeType: 'aiDialogNode',
           model: config.model || '',
           systemPrompt: config.systemPrompt,
+          userMessage: config.userMessage,
           temperature: config.temperature,
           maxTokens: config.maxTokens,
           stream: config.stream
         } as AIDialogNodeConfig;
+
+      case 'aiSummaryNode':
+        return {
+          nodeType: 'aiSummaryNode',
+          model: config.model || '',
+          systemPrompt: config.systemPrompt,
+          userMessage: config.userMessage,
+          temperature: config.temperature,
+          maxTokens: config.maxTokens,
+          stream: config.stream,
+          summaryStyle: config.summaryStyle || 'paragraph',
+          summaryLength: config.summaryLength || 'medium',
+          maxSummaryLength: config.maxSummaryLength || 300,
+          language: config.language || 'zh-CN',
+          includeKeyPoints: config.includeKeyPoints || false,
+          extractKeywords: config.extractKeywords || false
+        } as AISummaryNodeConfig;
 
       case 'databaseNode':
         return {

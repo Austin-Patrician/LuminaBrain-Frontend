@@ -121,25 +121,20 @@ const AgentFlowListPage: React.FC = () => {
     }
   };
 
-  // 运行流程 - 使用 flowService.runFlow()
+  // 运行流程 - 跳转到运行页面
   const handleRunFlow = async (flow: FlowData) => {
     if (flow.status !== "published") {
       message.warning("只有已发布的流程才能运行");
       return;
     }
 
-    try {
-      if (!flow.id) {
-        message.error("流程ID不存在");
-        return;
-      }
-
-      await flowService.runFlow(flow.id);
-      message.success(`流程 "${flow.name}" 开始运行`);
-    } catch (error) {
-      console.error("Run flow error:", error);
-      message.error("运行流程失败");
+    if (!flow.id) {
+      message.error("流程ID不存在");
+      return;
     }
+
+    // 跳转到运行页面
+    navigate(`/agentFlow/run/${flow.id}`);
   };
 
   // 获取状态标签
@@ -233,7 +228,7 @@ const AgentFlowListPage: React.FC = () => {
         </div>
       ),
       sorter: (a, b) =>
-        new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime(),
+        new Date(a.updatedAt || 0).getTime() - new Date(b.updatedAt || 0).getTime(),
     },
     {
       title: "操作",
@@ -245,7 +240,7 @@ const AgentFlowListPage: React.FC = () => {
             type="link"
             size="small"
             icon={<EyeOutlined />}
-            onClick={() => handleEditFlow(record.id)}
+            onClick={() => handleEditFlow(record.id || '')}
           >
             查看
           </Button>
@@ -253,7 +248,7 @@ const AgentFlowListPage: React.FC = () => {
             type="link"
             size="small"
             icon={<EditOutlined />}
-            onClick={() => handleEditFlow(record.id)}
+            onClick={() => handleEditFlow(record.id || '')}
           >
             编辑
           </Button>
@@ -277,7 +272,7 @@ const AgentFlowListPage: React.FC = () => {
           <Popconfirm
             title="确定要删除这个流程吗？"
             description="删除后无法恢复，请谨慎操作。"
-            onConfirm={() => handleDeleteFlow(record.id)}
+            onConfirm={() => handleDeleteFlow(record.id || '')}
             okText="确定"
             cancelText="取消"
           >
@@ -345,7 +340,7 @@ const AgentFlowListPage: React.FC = () => {
           <Card>
             <Statistic
               title="总节点数"
-              value={flows.reduce((sum, f) => sum + f.nodeCount, 0)}
+              value={flows.reduce((sum, f) => sum + (f.nodeCount || 0), 0)}
               valueStyle={{ color: "#722ed1" }}
             />
           </Card>

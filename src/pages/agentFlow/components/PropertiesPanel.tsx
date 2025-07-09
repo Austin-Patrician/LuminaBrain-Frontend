@@ -18,8 +18,7 @@ import {
   EditOutlined,
   RobotOutlined,
   EyeInvisibleOutlined,
-  BugOutlined,
-  SaveOutlined
+  BugOutlined
 } from "@ant-design/icons";
 import type { Node, Edge } from "@xyflow/react";
 import { flowService } from "../../../api/services/flowService";
@@ -42,6 +41,14 @@ interface NodeData {
   temperature?: number;
   maxTokens?: number;
   stream?: boolean;
+  // AI摘要节点专属属性
+  summaryStyle?: 'bullet_points' | 'paragraph' | 'keywords' | 'outline';
+  summaryLength?: 'short' | 'medium' | 'long';
+  maxSummaryLength?: number;
+  language?: string;
+  includeKeyPoints?: boolean;
+  extractKeywords?: boolean;
+  // 其他节点属性
   dbType?: string;
   connectionString?: string;
   query?: string;
@@ -95,7 +102,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ node, edges, onChange
     try {
       const response = await flowService.getAiModelsByTypeId();
 
-      setAiModels(response);
+      setAiModels(response || []);
 
     } catch (error) {
       console.error('Failed to load AI models:', error);
@@ -751,13 +758,267 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ node, edges, onChange
     </div>
   );
 
+  // 渲染AI摘要节点属性
+  const renderAISummaryProperties = () => (
+    <div className="space-y-4">
+      {/* AI模型配置 */}
+      <div className="bg-gray-50 rounded-lg border border-gray-200">
+        {/* 标题栏 */}
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200 bg-gray-100 rounded-t-lg">
+          <RobotOutlined className="text-gray-600" />
+          <Text strong className="text-sm">AI模型配置</Text>
+        </div>
+
+        {/* 配置区域 */}
+        <div className="p-4">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Text strong className="text-sm">AI模型</Text>
+                <span className="text-red-500">*</span>
+                <Tooltip title="选择不同的AI模型会影响摘要质量和速度">
+                  <InfoCircleOutlined className="text-black text-xs" />
+                </Tooltip>
+              </div>
+            </div>
+            <Select
+              value={nodeData.model}
+              onChange={(value) => handlePropertyChange('model', value)}
+              className="w-full"
+              size="large"
+              placeholder="请选择AI模型"
+              loading={aiModelsLoading}
+              status={!nodeData.model ? 'error' : ''}
+            >
+              {(aiModels || []).map((model) => (
+                <Option key={model.aiModelId} value={model.aiModelId}>
+                  <div className="py-1">
+                    <div className="font-medium">{model.aiModelName}</div>
+                  </div>
+                </Option>
+              ))}
+            </Select>
+            {!nodeData.model && (
+              <div className="text-red-500 text-xs mt-1">请选择AI模型</div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 摘要配置 */}
+      <div className="bg-gray-50 rounded-lg border border-gray-200">
+        {/* 标题栏 */}
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200 bg-gray-100 rounded-t-lg">
+          <EditOutlined className="text-gray-600" />
+          <Text strong className="text-sm">摘要配置</Text>
+        </div>
+
+        {/* 配置区域 */}
+        <div className="p-4 space-y-4">
+          {/* 摘要风格 */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Text strong className="text-sm">摘要风格</Text>
+              <Tooltip title="选择摘要的输出风格">
+                <InfoCircleOutlined className="text-black text-xs" />
+              </Tooltip>
+            </div>
+            <Select
+              value={nodeData.summaryStyle || 'paragraph'}
+              onChange={(value) => handlePropertyChange('summaryStyle', value)}
+              className="w-full"
+              size="large"
+            >
+              <Option value="paragraph">段落摘要</Option>
+              <Option value="bullet_points">要点列表</Option>
+              <Option value="keywords">关键词</Option>
+              <Option value="outline">大纲形式</Option>
+            </Select>
+          </div>
+
+          {/* 摘要长度 */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Text strong className="text-sm">摘要长度</Text>
+              <Tooltip title="控制摘要的详细程度">
+                <InfoCircleOutlined className="text-black text-xs" />
+              </Tooltip>
+            </div>
+            <Select
+              value={nodeData.summaryLength || 'medium'}
+              onChange={(value) => handlePropertyChange('summaryLength', value)}
+              className="w-full"
+              size="large"
+            >
+              <Option value="short">简短 (50-100字)</Option>
+              <Option value="medium">中等 (100-300字)</Option>
+              <Option value="long">详细 (300-500字)</Option>
+            </Select>
+          </div>
+
+          {/* 最大摘要长度 */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Text strong className="text-sm">最大摘要长度</Text>
+                <Tooltip title="限制摘要的最大字符数">
+                  <InfoCircleOutlined className="text-black text-xs" />
+                </Tooltip>
+              </div>
+              <Text className="text-xs text-gray-500">
+                {nodeData.maxSummaryLength || 300} 字符
+              </Text>
+            </div>
+            <Slider
+              min={50}
+              max={1000}
+              step={50}
+              value={nodeData.maxSummaryLength || 300}
+              onChange={(value) => handlePropertyChange('maxSummaryLength', value)}
+              marks={{ 50: '50', 300: '300', 500: '500', 1000: '1000' }}
+            />
+          </div>
+
+          {/* 语言设置 */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Text strong className="text-sm">输出语言</Text>
+              <Tooltip title="选择摘要的输出语言">
+                <InfoCircleOutlined className="text-black text-xs" />
+              </Tooltip>
+            </div>
+            <Select
+              value={nodeData.language || 'zh-CN'}
+              onChange={(value) => handlePropertyChange('language', value)}
+              className="w-full"
+              size="large"
+            >
+              <Option value="zh-CN">中文</Option>
+              <Option value="en-US">英文</Option>
+              <Option value="ja-JP">日文</Option>
+              <Option value="ko-KR">韩文</Option>
+            </Select>
+          </div>
+        </div>
+      </div>
+
+      {/* 高级功能 */}
+      <div className="bg-gray-50 rounded-lg border border-gray-200">
+        {/* 标题栏 */}
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200 bg-gray-100 rounded-t-lg">
+          <SettingOutlined className="text-gray-600" />
+          <Text strong className="text-sm">高级功能</Text>
+        </div>
+
+        {/* 配置区域 */}
+        <div className="p-4 space-y-4">
+          {/* 包含要点 */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Text strong className="text-sm">包含要点</Text>
+              <Tooltip title="在摘要中包含关键要点">
+                <InfoCircleOutlined className="text-black text-xs" />
+              </Tooltip>
+            </div>
+            <Switch
+              checked={nodeData.includeKeyPoints || false}
+              onChange={(checked) => handlePropertyChange('includeKeyPoints', checked)}
+              size="default"
+            />
+          </div>
+
+          {/* 提取关键词 */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Text strong className="text-sm">提取关键词</Text>
+              <Tooltip title="额外提取文本中的关键词">
+                <InfoCircleOutlined className="text-black text-xs" />
+              </Tooltip>
+            </div>
+            <Switch
+              checked={nodeData.extractKeywords || false}
+              onChange={(checked) => handlePropertyChange('extractKeywords', checked)}
+              size="default"
+            />
+          </div>
+
+          {/* 创造性调节 */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Text strong className="text-sm">创造性 (Temperature)</Text>
+                <Tooltip title="控制摘要的创造性，数值越高越有创意">
+                  <InfoCircleOutlined className="text-black text-xs" />
+                </Tooltip>
+              </div>
+              <div className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium min-w-[40px] text-center">
+                {nodeData.temperature || 0.3}
+              </div>
+            </div>
+            <div className="px-2">
+              <Slider
+                min={0}
+                max={1}
+                step={0.1}
+                value={nodeData.temperature || 0.3}
+                onChange={(value) => handlePropertyChange('temperature', value)}
+                marks={{
+                  0: { label: <span className="text-xs text-gray-500">精确</span>, style: { fontSize: '10px' } },
+                  0.3: { label: <span className="text-xs text-gray-500">平衡</span>, style: { fontSize: '10px' } },
+                  0.7: { label: <span className="text-xs text-gray-500">创意</span>, style: { fontSize: '10px' } }
+                }}
+                tooltip={{
+                  formatter: (value) => {
+                    if (!value) return '0.3';
+                    if (value < 0.3) return `${value} - 更精确`;
+                    if (value > 0.7) return `${value} - 更创意`;
+                    return `${value} - 平衡`;
+                  }
+                }}
+                trackStyle={{ backgroundColor: '#1677ff' }}
+                handleStyle={{ borderColor: '#1677ff' }}
+              />
+            </div>
+          </div>
+
+          {/* 最大令牌数 */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Text strong className="text-sm">最大令牌数</Text>
+                <Tooltip title="控制摘要的最大长度">
+                  <InfoCircleOutlined className="text-black text-xs" />
+                </Tooltip>
+              </div>
+              <Text className="text-xs text-gray-500">
+                约 {Math.round((nodeData.maxTokens || 1000) * 0.75)} 字
+              </Text>
+            </div>
+            <InputNumber
+              min={100}
+              max={4000}
+              value={nodeData.maxTokens || 1000}
+              onChange={(value) => handlePropertyChange('maxTokens', value)}
+              className="w-full"
+              placeholder="1000"
+              formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+              size="middle"
+              addonAfter="tokens"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   const renderSpecificProperties = () => {
     switch (node.type) {
       case 'aiDialogNode':
-      case 'aiSummaryNode':
       case 'aiExtractNode':
       case 'aiJsonNode':
         return renderAIDialogProperties();
+      case 'aiSummaryNode':
+        return renderAISummaryProperties();
       case 'databaseNode':
         return renderDatabaseProperties();
       case 'knowledgeBaseNode':

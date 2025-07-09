@@ -8,6 +8,7 @@ import type { AppRouteObject } from "#/router";
 
 const AgentFlowListPage = lazy(() => import("@/pages/agentFlow/list"));
 const AgentFlowEditorPage = lazy(() => import("@/pages/agentFlow/index"));
+const AgentFlowRunPage = lazy(() => import("@/pages/agentFlow/run"));
 
 const agentFlow: AppRouteObject = {
   order: 3,
@@ -51,6 +52,15 @@ const agentFlow: AppRouteObject = {
         label: "流程编辑器",
         key: "/agentFlow/editor",
         hideMenu: true, // 不在菜单中显示编辑器页面
+      },
+    },
+    {
+      path: "run/:id",
+      element: <AgentFlowRunPage />,
+      meta: {
+        label: "流程运行",
+        key: "/agentFlow/run/:id",
+        hideMenu: true, // 不在菜单中显示运行页面
       },
     },
   ],
