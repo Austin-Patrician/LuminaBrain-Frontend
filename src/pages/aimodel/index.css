@@ -240,3 +240,186 @@
   text-align: center;
   padding: 20px;
 }
+
+/* 已配置的提供商卡片样式 */
+.configured-provider-card {
+  height: 280px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.configured-provider-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.configured-provider-icon-section {
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.configured-provider-icon-container {
+  background: rgba(24, 144, 255, 0.1);
+  border-radius: 50%;
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  transition: all 0.3s ease;
+}
+
+.configured-provider-card:hover .configured-provider-icon-container {
+  background: rgba(24, 144, 255, 0.15);
+  transform: scale(1.05);
+}
+
+.configured-provider-name-section {
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.configured-provider-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.configured-provider-models-section {
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.configured-provider-models-tag {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.configured-provider-divider {
+  margin: 12px 0;
+}
+
+.configured-provider-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.configured-provider-edit-btn,
+.configured-provider-expand-btn {
+  height: 32px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 6px;
+  font-family: system-ui, -apple-system, sans-serif;
+  transition: all 0.3s ease;
+}
+
+.configured-provider-edit-btn {
+  background: #f0f0f0;
+  border: 1px solid #d9d9d9;
+  color: #595959;
+}
+
+.configured-provider-edit-btn:hover {
+  background: #e6f7ff;
+  border-color: #1890ff;
+  color: #1890ff;
+}
+
+.configured-provider-expand-btn {
+  box-shadow: 0 2px 4px rgba(24, 144, 255, 0.2);
+}
+
+/* 模型展开区域网格样式 */
+.models-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.model-item {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 12px;
+  transition: all 0.3s ease;
+}
+
+.model-item:hover {
+  background: #ffffff;
+  border-color: #1890ff;
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.1);
+}
+
+.model-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.model-item-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a1a;
+  flex: 1;
+  margin-right: 8px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.model-item-type-tag {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 6px;
+  line-height: 14px;
+  height: auto;
+  margin: 0;
+  border-radius: 4px;
+  border: none;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.model-item-description {
+  margin-bottom: 10px;
+  min-height: 32px;
+  display: flex;
+  align-items: flex-start;
+}
+
+.model-item-description-text {
+  font-size: 11px;
+  line-height: 16px;
+  color: #595959;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.model-item-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: auto;
+}
+
+.model-item-config-button {
+  height: 24px;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 4px;
+  padding: 0 8px;
+  font-family: system-ui, -apple-system, sans-serif;
+}

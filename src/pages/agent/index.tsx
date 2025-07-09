@@ -43,8 +43,8 @@ const SERVICE_IDS = [
 
 // 状态选项
 const STATUS_TYPES = [
-  { id: "active", name: "活跃" },
-  { id: "inactive", name: "非活跃" },
+  { id: "DE546396-5B62-41E5-8814-4C072C74F26A", name: "活跃" },
+  { id: "57B7ADD1-2A86-4BFF-8A22-2324658D604A", name: "非活跃" },
 ];
 
 // 搜索表单类型
@@ -86,14 +86,17 @@ export default function AgentPage() {
   // 获取AI模型服务列表，用于在卡片中显示服务名称
   const { data: aiModelData } = useQuery({
     queryKey: ["aiModels"],
-    queryFn: () => agentService.getAiModelsByTypeId("0D826A41-45CE-4870-8893-A8D4FAECD3A4"),
+    queryFn: () =>
+      agentService.getAiModelsByTypeId("0D826A41-45CE-4870-8893-A8D4FAECD3A4"),
   });
 
   const serviceOptions = aiModelData?.data || [];
 
   // 通过serviceId查找对应的模型名称
   const getServiceNameById = (serviceId: string) => {
-    const model = serviceOptions.find((model: AiModelItem) => model.aiModelId === serviceId);
+    const model = serviceOptions.find(
+      (model: AiModelItem) => model.aiModelId === serviceId
+    );
     return model?.aiModelName || serviceId;
   };
 
@@ -147,16 +150,30 @@ export default function AgentPage() {
         <Form form={searchForm}>
           <Row gutter={[16, 16]}>
             <Col span={24} lg={6}>
-              <Form.Item<SearchFormFieldType> label="名称" name="name" className="!mb-0">
+              <Form.Item<SearchFormFieldType>
+                label="名称"
+                name="name"
+                className="!mb-0"
+              >
                 <Input placeholder="搜索Agent名称" />
               </Form.Item>
             </Col>
             <Col span={24} lg={6}>
-              <Form.Item<SearchFormFieldType> label="状态" name="statusId" className="!mb-0">
+              <Form.Item<SearchFormFieldType>
+                label="状态"
+                name="statusId"
+                className="!mb-0"
+              >
                 <Select allowClear placeholder="选择状态">
                   {STATUS_TYPES.map((status) => (
                     <Select.Option key={status.id} value={status.id}>
-                      <Tag color={status.id === "active" ? "success" : "error"}>
+                      <Tag
+                        color={
+                          status.id === "DE546396-5B62-41E5-8814-4C072C74F26A"
+                            ? "success"
+                            : "error"
+                        }
+                      >
                         {status.name}
                       </Tag>
                     </Select.Option>
@@ -165,7 +182,11 @@ export default function AgentPage() {
               </Form.Item>
             </Col>
             <Col span={24} lg={6}>
-              <Form.Item<SearchFormFieldType> label="服务" name="serviceId" className="!mb-0">
+              <Form.Item<SearchFormFieldType>
+                label="服务"
+                name="serviceId"
+                className="!mb-0"
+              >
                 <Select allowClear placeholder="选择服务">
                   {SERVICE_IDS.map((service) => (
                     <Select.Option key={service.id} value={service.id}>
@@ -209,8 +230,18 @@ export default function AgentPage() {
                     <Title level={5} className="m-0 mr-2">
                       {agent.name}
                     </Title>
-                    <Tag color={agent.statusId === "active" ? "success" : "error"} className="ml-1">
-                      {agent.statusId === "active" ? "活跃" : "非活跃"}
+                    <Tag
+                      color={
+                        agent.statusId ===
+                        "DE546396-5B62-41E5-8814-4C072C74F26A"
+                          ? "success"
+                          : "error"
+                      }
+                      className="ml-1"
+                    >
+                      {agent.statusId === "DE546396-5B62-41E5-8814-4C072C74F26A"
+                        ? "活跃"
+                        : "非活跃"}
                     </Tag>
                   </div>
                 </div>
@@ -222,7 +253,10 @@ export default function AgentPage() {
                   </Tag>
                   {agent.functionChoiceBehavior && (
                     <Tag color="green" className="mr-1">
-                      函数选择: {FUNCTION_CHOICE_BEHAVIORS.find(f => f.id === agent.functionChoiceBehavior)?.name || agent.functionChoiceBehavior}
+                      函数选择:{" "}
+                      {FUNCTION_CHOICE_BEHAVIORS.find(
+                        (f) => f.id === agent.functionChoiceBehavior
+                      )?.name || agent.functionChoiceBehavior}
                     </Tag>
                   )}
                 </div>
@@ -237,7 +271,10 @@ export default function AgentPage() {
                   )}
                   {agent.topP && (
                     <div className="flex items-center text-gray-600 text-sm">
-                      <Iconify icon="mdi:chart-bell-curve-cumulative" className="mr-1" />
+                      <Iconify
+                        icon="mdi:chart-bell-curve-cumulative"
+                        className="mr-1"
+                      />
                       Top P: {agent.topP}
                     </div>
                   )}
@@ -269,7 +306,11 @@ export default function AgentPage() {
                     onConfirm={() => onDelete(agent.id)}
                   >
                     <IconButton>
-                      <Iconify icon="mingcute:delete-2-fill" size={18} className="text-error" />
+                      <Iconify
+                        icon="mingcute:delete-2-fill"
+                        size={18}
+                        className="text-error"
+                      />
                     </IconButton>
                   </Popconfirm>
                 </div>
@@ -278,7 +319,9 @@ export default function AgentPage() {
           ))}
           {agents.length === 0 && (
             <Col span={24}>
-              <div className="flex justify-center p-8 text-gray-500">未找到Agent</div>
+              <div className="flex justify-center p-8 text-gray-500">
+                未找到Agent
+              </div>
             </Col>
           )}
         </Row>

@@ -8,7 +8,7 @@ import {
   Button,
   message,
   Switch,
-  Spin
+  Spin,
 } from "antd";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { CreateAgentDto } from "#/dto/agent";
@@ -24,8 +24,8 @@ const FUNCTION_CHOICE_BEHAVIORS = [
 
 // 状态选项
 const STATUS_TYPES = [
-  { id: "active", name: "活跃" },
-  { id: "inactive", name: "非活跃" },
+  { id: "DE546396-5B62-41E5-8814-4C072C74F26A", name: "活跃" },
+  { id: "57B7ADD1-2A86-4BFF-8A22-2324658D604A", name: "非活跃" },
 ];
 
 interface CreateAgentModalProps {
@@ -45,7 +45,8 @@ const CreateAgentModal: React.FC<CreateAgentModalProps> = ({
   // 获取AI模型服务列表
   const { data: aiModelData, isLoading: aiModelLoading } = useQuery({
     queryKey: ["aiModels"],
-    queryFn: () => agentService.getAiModelsByTypeId("0D826A41-45CE-4870-8893-A8D4FAECD3A4"),
+    queryFn: () =>
+      agentService.getAiModelsByTypeId("0D826A41-45CE-4870-8893-A8D4FAECD3A4"),
     enabled: visible, // 只在modal可见时加载数据
   });
 
@@ -60,11 +61,11 @@ const CreateAgentModal: React.FC<CreateAgentModalProps> = ({
       onSuccess();
     },
     onError: (error: any) => {
-      message.error(`创建Agent失败: ${error.message || '未知错误'}`);
+      message.error(`创建Agent失败: ${error.message || "未知错误"}`);
     },
     onSettled: () => {
       setLoading(false);
-    }
+    },
   });
 
   // 处理表单提交
@@ -109,7 +110,12 @@ const CreateAgentModal: React.FC<CreateAgentModalProps> = ({
         <Button key="back" onClick={handleCancel}>
           取消
         </Button>,
-        <Button key="submit" type="primary" loading={loading} onClick={handleSubmit}>
+        <Button
+          key="submit"
+          type="primary"
+          loading={loading}
+          onClick={handleSubmit}
+        >
           创建
         </Button>,
       ]}
@@ -139,10 +145,7 @@ const CreateAgentModal: React.FC<CreateAgentModalProps> = ({
           label="指令说明"
           rules={[{ required: true, message: "请输入指令说明" }]}
         >
-          <Input.TextArea
-            rows={4}
-            placeholder="请输入Agent的指令说明"
-          />
+          <Input.TextArea rows={4} placeholder="请输入Agent的指令说明" />
         </Form.Item>
 
         <Form.Item
@@ -177,10 +180,7 @@ const CreateAgentModal: React.FC<CreateAgentModalProps> = ({
           </Select>
         </Form.Item>
 
-        <Form.Item
-          name="functionChoiceBehavior"
-          label="函数选择行为"
-        >
+        <Form.Item name="functionChoiceBehavior" label="函数选择行为">
           <Select placeholder="请选择函数选择行为">
             {FUNCTION_CHOICE_BEHAVIORS.map((behavior) => (
               <Select.Option key={behavior.id} value={behavior.id}>
@@ -201,7 +201,7 @@ const CreateAgentModal: React.FC<CreateAgentModalProps> = ({
                 min={0}
                 max={1}
                 step={0.1}
-                style={{ width: '100%' }}
+                style={{ width: "100%" }}
               />
             </Form.Item>
             <Form.Item name="topP" label="Top P" className="mb-0">
@@ -209,15 +209,19 @@ const CreateAgentModal: React.FC<CreateAgentModalProps> = ({
                 min={0}
                 max={1}
                 step={0.1}
-                style={{ width: '100%' }}
+                style={{ width: "100%" }}
               />
             </Form.Item>
-            <Form.Item name="frequencyPenalty" label="频率惩罚" className="mb-0">
+            <Form.Item
+              name="frequencyPenalty"
+              label="频率惩罚"
+              className="mb-0"
+            >
               <InputNumber
                 min={0}
                 max={2}
                 step={0.1}
-                style={{ width: '100%' }}
+                style={{ width: "100%" }}
               />
             </Form.Item>
             <Form.Item name="presencePenalty" label="存在惩罚" className="mb-0">
@@ -225,15 +229,11 @@ const CreateAgentModal: React.FC<CreateAgentModalProps> = ({
                 min={0}
                 max={2}
                 step={0.1}
-                style={{ width: '100%' }}
+                style={{ width: "100%" }}
               />
             </Form.Item>
             <Form.Item name="maxTokens" label="最大令牌数" className="mb-0">
-              <InputNumber
-                min={1}
-                step={10}
-                style={{ width: '100%' }}
-              />
+              <InputNumber min={1} step={10} style={{ width: "100%" }} />
             </Form.Item>
           </div>
         </Form.Item>

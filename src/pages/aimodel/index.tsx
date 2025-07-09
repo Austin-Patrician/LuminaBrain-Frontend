@@ -19,7 +19,7 @@ import {
   ShareAltOutlined,
   PlusOutlined,
   CopyOutlined,
-  CaretRightOutlined
+  CaretRightOutlined,
 } from "@ant-design/icons";
 import { aimodelService } from "@/api/services/aimodelService";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -49,8 +49,11 @@ const ModelManagementPage: React.FC = () => {
   const [shareUrl, setShareUrl] = useState<string>("");
 
   // 添加提供商模态框状态
-  const [providerModalVisible, setProviderModalVisible] = useState<boolean>(false);
-  const [currentProvider, setCurrentProvider] = useState<AIProvider | null>(null);
+  const [providerModalVisible, setProviderModalVisible] =
+    useState<boolean>(false);
+  const [currentProvider, setCurrentProvider] = useState<AIProvider | null>(
+    null
+  );
   const [providerForm] = Form.useForm();
 
   // 使用 React Query 获取模型数据
@@ -103,20 +106,26 @@ const ModelManagementPage: React.FC = () => {
   });
 
   // 添加展开状态管理
-  const [expandedProviders, setExpandedProviders] = useState<Record<string, boolean>>({});
+  const [expandedProviders, setExpandedProviders] = useState<
+    Record<string, boolean>
+  >({});
 
   // 切换展开状态
   const toggleProviderExpand = (providerId: string) => {
-    setExpandedProviders(prev => ({
+    setExpandedProviders((prev) => ({
       ...prev,
-      [providerId]: !prev[providerId]
+      [providerId]: !prev[providerId],
     }));
   };
 
   // 根据 isConfigured 过滤提供商
   const providers: AIProvider[] = data || [];
-  const configuredProviders = providers.filter((provider) => provider.isConfigured);
-  const availableProviders = providers.filter((provider) => !provider.isConfigured);
+  const configuredProviders = providers.filter(
+    (provider) => provider.isConfigured
+  );
+  const availableProviders = providers.filter(
+    (provider) => !provider.isConfigured
+  );
 
   // 处理设置编辑
   const handleEditSettings = (model: AIModel) => {
@@ -129,27 +138,9 @@ const ModelManagementPage: React.FC = () => {
     setIsModalVisible(true);
   };
 
-  // 处理分享
-  const handleShare = (model: AIModel) => {
-    setCurrentModel(model);
-    aimodelService
-      .shareModel(model.id)
-      .then((response: any) => {
-        if (response.success) {
-          setShareUrl(response.data.shareUrl);
-          setShareModalVisible(true);
-        } else {
-          message.error("生成分享链接失败: 无效响应");
-        }
-      })
-      .catch((error) => {
-        console.error("Share model error:", error);
-        message.error("生成分享链接失败");
-      });
-  };
-
   const handleCopyShareUrl = () => {
-    navigator.clipboard.writeText(shareUrl)
+    navigator.clipboard
+      .writeText(shareUrl)
       .then(() => {
         message.success("分享链接已复制到剪贴板");
       })
@@ -160,20 +151,18 @@ const ModelManagementPage: React.FC = () => {
 
   // 保存设置
   const handleSaveSettings = () => {
-    console.log('执行UpdatreModelMutation');
+    console.log("执行UpdatreModelMutation");
     form.validateFields().then((values) => {
       if (currentModel) {
         const updatedModel: UpdateProviderModel = {
           id: currentModel.id,
           endpoint: values.apiUrl,
-          modelKey: values.apiKey
+          modelKey: values.apiKey,
         };
         updateModelMutation.mutate(updatedModel);
       }
     });
   };
-
-
 
   // 处理添加提供商
   const handleAddProvider = (provider: AIProvider) => {
@@ -184,24 +173,31 @@ const ModelManagementPage: React.FC = () => {
 
   // 保存提供商配置
   const handleSaveProviderSettings = () => {
-    providerForm.validateFields().then((values) => {
-      if (currentProvider) {
-        // 显示加载中状态，设置duration为0表示不自动关闭
-        message.loading({ content: "正在更新提供商配置...", key: "providerUpdate", duration: 0 });
+    providerForm
+      .validateFields()
+      .then((values) => {
+        if (currentProvider) {
+          // 显示加载中状态，设置duration为0表示不自动关闭
+          message.loading({
+            content: "正在更新提供商配置...",
+            key: "providerUpdate",
+            duration: 0,
+          });
 
-        // 构建API请求数据
-        const updatedProvider: UpdateProviderModel = {
-          id: currentProvider.id,
-          endpoint: values.apiEndpoint,
-          modelKey: values.apiKey
-        };
+          // 构建API请求数据
+          const updatedProvider: UpdateProviderModel = {
+            id: currentProvider.id,
+            endpoint: values.apiEndpoint,
+            modelKey: values.apiKey,
+          };
 
-        // 调用mutation更新提供商
-        updateProviderMutation.mutate(updatedProvider);
-      }
-    }).catch(errorInfo => {
-      console.error("表单验证失败:", errorInfo);
-    });
+          // 调用mutation更新提供商
+          updateProviderMutation.mutate(updatedProvider);
+        }
+      })
+      .catch((errorInfo) => {
+        console.error("表单验证失败:", errorInfo);
+      });
   };
 
   // 渲染提供商卡片 - 重新设计
@@ -209,7 +205,7 @@ const ModelManagementPage: React.FC = () => {
     <Card
       key={provider.id}
       className="provider-card"
-      bodyStyle={{ padding: '16px' }}
+      bodyStyle={{ padding: "16px" }}
     >
       {/* 提供商信息和操作按钮区域 */}
       <Row align="middle" justify="space-between" gutter={16}>
@@ -233,9 +229,12 @@ const ModelManagementPage: React.FC = () => {
             </Button>
             <Button
               type={expandedProviders[provider.id] ? "primary" : "default"}
-              icon={expandedProviders[provider.id] ?
-                <CaretRightOutlined rotate={90} /> :
-                <CaretRightOutlined />
+              icon={
+                expandedProviders[provider.id] ? (
+                  <CaretRightOutlined rotate={90} />
+                ) : (
+                  <CaretRightOutlined />
+                )
               }
               onClick={() => toggleProviderExpand(provider.id)}
             >
@@ -256,10 +255,10 @@ const ModelManagementPage: React.FC = () => {
                   hoverable
                   className="model-card"
                   bodyStyle={{
-                    padding: '16px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    height: '100%'
+                    padding: "16px",
+                    display: "flex",
+                    flexDirection: "column",
+                    height: "100%",
                   }}
                 >
                   {/* 模型头部区域 */}
@@ -274,7 +273,11 @@ const ModelManagementPage: React.FC = () => {
                       </Text>
                     </div>
                     <Tag
-                      color={MODEL_TYPE_COLORS[model.aiModelTypeName as keyof typeof MODEL_TYPE_COLORS]}
+                      color={
+                        MODEL_TYPE_COLORS[
+                          model.aiModelTypeName as keyof typeof MODEL_TYPE_COLORS
+                        ]
+                      }
                       className="model-type-tag"
                     >
                       {model.aiModelTypeName}
@@ -331,7 +334,11 @@ const ModelManagementPage: React.FC = () => {
 
       <Collapse defaultActiveKey={["1"]} bordered={false}>
         <Panel
-          header={<Title level={4}>已添加的提供商 ({configuredProviders.length})</Title>}
+          header={
+            <Title level={4}>
+              已添加的提供商 ({configuredProviders.length})
+            </Title>
+          }
           key="1"
           className="panel-style configured-panel"
         >
@@ -339,16 +346,24 @@ const ModelManagementPage: React.FC = () => {
             {isLoading ? (
               <div className="loading-section">加载中...</div>
             ) : (
-              configuredProviders.map((provider: AIProvider) => renderProviderCard(provider))
+              configuredProviders.map((provider: AIProvider) =>
+                renderProviderCard(provider)
+              )
             )}
             {!isLoading && configuredProviders.length === 0 && (
-              <div className="empty-configured-providers">暂无已配置的模型提供商</div>
+              <div className="empty-configured-providers">
+                暂无已配置的模型提供商
+              </div>
             )}
           </div>
         </Panel>
 
         <Panel
-          header={<Title level={4}>待添加的提供商 ({availableProviders.length})</Title>}
+          header={
+            <Title level={4}>
+              待添加的提供商 ({availableProviders.length})
+            </Title>
+          }
           key="2"
           className="panel-style"
         >
@@ -364,10 +379,10 @@ const ModelManagementPage: React.FC = () => {
                     hoverable
                     className="available-provider-card"
                     bodyStyle={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      height: '100%',
-                      padding: '20px'
+                      display: "flex",
+                      flexDirection: "column",
+                      height: "100%",
+                      padding: "20px",
                     }}
                   >
                     {/* 图标居中显示 */}
@@ -387,7 +402,7 @@ const ModelManagementPage: React.FC = () => {
                     {/* 标签居中显示 */}
                     <div className="available-provider-tags-section">
                       <div className="available-provider-tags-container">
-                        {provider.tag.split(',').map((tag, index) => (
+                        {provider.tag.split(",").map((tag, index) => (
                           <Tag
                             key={index}
                             color="default"
@@ -433,10 +448,18 @@ const ModelManagementPage: React.FC = () => {
         destroyOnClose
       >
         <Form form={form} layout="vertical">
-          <Form.Item name="apiUrl" label="API URL" rules={[{ required: true, message: "请输入API URL" }]}>
+          <Form.Item
+            name="apiUrl"
+            label="API URL"
+            rules={[{ required: true, message: "请输入API URL" }]}
+          >
             <Input placeholder="https://api.example.com/v1" />
           </Form.Item>
-          <Form.Item name="apiKey" label="API Key" rules={[{ required: true, message: "请输入API Key" }]}>
+          <Form.Item
+            name="apiKey"
+            label="API Key"
+            rules={[{ required: true, message: "请输入API Key" }]}
+          >
             <Input.Password placeholder="您的API密钥" />
           </Form.Item>
         </Form>
@@ -452,68 +475,100 @@ const ModelManagementPage: React.FC = () => {
         destroyOnClose
         className="share-invitation-modal"
         bodyStyle={{ padding: 0 }}
-        style={{ background: 'transparent' }}
-        modalRender={(node) => (
-          <div className="modal-wrapper">{node}</div>
-        )}
+        style={{ background: "transparent" }}
+        modalRender={(node) => <div className="modal-wrapper">{node}</div>}
       >
-        <div style={{
-          position: 'relative',
-          background: 'linear-gradient(135deg, #1a365d 0%, #3490dc 100%)',
-          borderRadius: '12px',
-          overflow: 'hidden',
-          padding: 0,
-          color: 'white',
-          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.2)',
-        }}>
+        <div
+          style={{
+            position: "relative",
+            background: "linear-gradient(135deg, #1a365d 0%, #3490dc 100%)",
+            borderRadius: "12px",
+            overflow: "hidden",
+            padding: 0,
+            color: "white",
+            boxShadow: "0 8px 24px rgba(0, 0, 0, 0.2)",
+          }}
+        >
           {/* 简化的背景 */}
-          <div style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            background: 'radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.1) 0%, transparent 20%), radial-gradient(circle at 70% 60%, rgba(255, 255, 255, 0.08) 0%, transparent 20%)'
-          }} />
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              background:
+                "radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.1) 0%, transparent 20%), radial-gradient(circle at 70% 60%, rgba(255, 255, 255, 0.08) 0%, transparent 20%)",
+            }}
+          />
 
           {/* 内容区域 - 添加内边距 */}
-          <div style={{ padding: '30px' }}>
+          <div style={{ padding: "30px" }}>
             {/* LuminaBrain 标志 */}
-            <div style={{ position: 'relative', marginBottom: '20px' }}>
-              <Text style={{ color: 'white', fontSize: '18px', fontWeight: 'bold' }}>
+            <div style={{ position: "relative", marginBottom: "20px" }}>
+              <Text
+                style={{ color: "white", fontSize: "18px", fontWeight: "bold" }}
+              >
                 LuminaBrain
               </Text>
             </div>
 
             {/* 邀请标题 */}
-            <div style={{ position: 'relative', textAlign: 'center', marginBottom: '30px' }}>
-              <Text style={{ color: 'white', fontSize: '24px', fontWeight: 'bold', display: 'block' }}>
+            <div
+              style={{
+                position: "relative",
+                textAlign: "center",
+                marginBottom: "30px",
+              }}
+            >
+              <Text
+                style={{
+                  color: "white",
+                  fontSize: "24px",
+                  fontWeight: "bold",
+                  display: "block",
+                }}
+              >
                 模型分享邀请
               </Text>
             </div>
 
             {/* 模型图标 */}
-            <div style={{
-              position: 'relative',
-              display: 'flex',
-              justifyContent: 'center',
-              margin: '20px 0'
-            }}>
-              <div style={{
-                background: 'rgba(255, 255, 255, 0.15)',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)'
-              }}>
-                {currentModel && <LLMIcon provider={currentModel.provider} size={80} />}
+            <div
+              style={{
+                position: "relative",
+                display: "flex",
+                justifyContent: "center",
+                margin: "20px 0",
+              }}
+            >
+              <div
+                style={{
+                  background: "rgba(255, 255, 255, 0.15)",
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
+                }}
+              >
+                {currentModel && (
+                  <LLMIcon provider={currentModel.provider} size={80} />
+                )}
               </div>
             </div>
 
             {/* 模型名称 */}
-            <div style={{ position: 'relative', textAlign: 'center', margin: '20px 0' }}>
-              <Text style={{ color: 'white', fontSize: '28px', fontWeight: 'bold' }}>
+            <div
+              style={{
+                position: "relative",
+                textAlign: "center",
+                margin: "20px 0",
+              }}
+            >
+              <Text
+                style={{ color: "white", fontSize: "28px", fontWeight: "bold" }}
+              >
                 {currentModel?.modelName}
               </Text>
               {currentModel?.provider && (
@@ -524,10 +579,10 @@ const ModelManagementPage: React.FC = () => {
             </div>
 
             {/* 分享链接 */}
-            <div style={{ position: 'relative', margin: '30px 0' }}>
+            <div style={{ position: "relative", margin: "30px 0" }}>
               <Input.Group compact>
                 <Input
-                  style={{ width: 'calc(100% - 40px)' }}
+                  style={{ width: "calc(100% - 40px)" }}
                   value={shareUrl}
                   readOnly
                   placeholder="分享链接"
@@ -537,12 +592,14 @@ const ModelManagementPage: React.FC = () => {
             </div>
 
             {/* 按钮区域 */}
-            <div style={{
-              position: 'relative',
-              display: 'flex',
-              justifyContent: 'center',
-              marginTop: '30px'
-            }}>
+            <div
+              style={{
+                position: "relative",
+                display: "flex",
+                justifyContent: "center",
+                marginTop: "30px",
+              }}
+            >
               <Space>
                 <Button onClick={() => setShareModalVisible(false)}>
                   取消
@@ -551,9 +608,10 @@ const ModelManagementPage: React.FC = () => {
                   type="primary"
                   onClick={handleCopyShareUrl}
                   style={{
-                    background: 'linear-gradient(45deg, #36d1dc 0%, #5b86e5 100%)',
-                    border: 'none',
-                    boxShadow: '0 4px 12px rgba(91, 134, 229, 0.4)'
+                    background:
+                      "linear-gradient(45deg, #36d1dc 0%, #5b86e5 100%)",
+                    border: "none",
+                    boxShadow: "0 4px 12px rgba(91, 134, 229, 0.4)",
                   }}
                 >
                   确认分享
@@ -566,17 +624,29 @@ const ModelManagementPage: React.FC = () => {
 
       {/* 添加提供商模态框 */}
       <Modal
-        title={currentProvider ? `配置 ${currentProvider.providerName} 提供商` : "提供商配置"}
+        title={
+          currentProvider
+            ? `配置 ${currentProvider.providerName} 提供商`
+            : "提供商配置"
+        }
         open={providerModalVisible}
         onOk={handleSaveProviderSettings}
         onCancel={() => setProviderModalVisible(false)}
         destroyOnClose
       >
         <Form form={providerForm} layout="vertical">
-          <Form.Item name="apiEndpoint" label="API 端点" rules={[{ required: true, message: "请输入API端点" }]}>
+          <Form.Item
+            name="apiEndpoint"
+            label="API 端点"
+            rules={[{ required: true, message: "请输入API端点" }]}
+          >
             <Input placeholder="https://api.provider.com/v1" />
           </Form.Item>
-          <Form.Item name="apiKey" label="API Key" rules={[{ required: true, message: "请输入API Key" }]}>
+          <Form.Item
+            name="apiKey"
+            label="API Key"
+            rules={[{ required: true, message: "请输入API Key" }]}
+          >
             <Input.Password placeholder="您的API密钥" />
           </Form.Item>
         </Form>

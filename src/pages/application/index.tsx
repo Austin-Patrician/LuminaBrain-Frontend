@@ -38,7 +38,7 @@ const APPLICATION_TYPES = [
 // 状态ID常量
 const STATUS_TYPES = [
   { id: "DE546396-5B62-41E5-8814-4C072C74F26A", name: "Active" },
-  { id: "DISABLED_STATUS_ID", name: "Inactive" },
+  { id: "57B7ADD1-2A86-4BFF-8A22-2324658D604A", name: "Inactive" },
 ];
 
 // 模型类型颜色映射
