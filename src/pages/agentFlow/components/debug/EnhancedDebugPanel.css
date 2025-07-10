@@ -1,0 +1,267 @@
+/* 增强调试面板样式 */
+.enhanced-debug-panel .ant-modal-content {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.enhanced-debug-panel .ant-modal-header {
+  border-bottom: 1px solid #e5e7eb;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.enhanced-debug-panel .ant-modal-title {
+  color: white !important;
+}
+
+.enhanced-debug-panel .ant-modal-close {
+  color: white !important;
+}
+
+.enhanced-debug-panel .ant-modal-close:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* 标签页样式优化 */
+.debug-panel-tabs .ant-tabs-tab {
+  margin: 0 !important;
+  padding: 8px 16px !important;
+  border-radius: 6px 6px 0 0 !important;
+  transition: all 0.2s ease !important;
+}
+
+.debug-panel-tabs .ant-tabs-tab:hover {
+  background-color: #f3f4f6 !important;
+}
+
+.debug-panel-tabs .ant-tabs-tab-active {
+  background-color: white !important;
+  border-bottom: 2px solid #3b82f6 !important;
+}
+
+.debug-panel-tabs .ant-tabs-content-holder {
+  background-color: #f9fafb;
+}
+
+.debug-panel-tabs .ant-tabs-tabpane {
+  height: 100%;
+  padding: 0;
+}
+
+/* 时间线样式 */
+.custom-timeline .ant-timeline-item-head {
+  border: 2px solid #e5e7eb;
+  background-color: white;
+}
+
+.custom-timeline .ant-timeline-item-head-blue {
+  border-color: #3b82f6;
+}
+
+.custom-timeline .ant-timeline-item-head-green {
+  border-color: #10b981;
+}
+
+.custom-timeline .ant-timeline-item-head-red {
+  border-color: #ef4444;
+}
+
+.custom-timeline .ant-timeline-item-tail {
+  border-left: 2px solid #e5e7eb;
+}
+
+/* 卡片悬停效果 */
+.shadow-sm {
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.2s ease;
+}
+
+.shadow-sm:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* 进度条样式 */
+.ant-progress-line .ant-progress-bg {
+  border-radius: 4px;
+}
+
+.ant-progress-success-bg {
+  background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+}
+
+.ant-progress-bg {
+  background: linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%);
+}
+
+/* 统计卡片渐变背景 */
+.stat-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 8px;
+  padding: 16px;
+  color: white;
+  text-align: center;
+}
+
+.stat-card .ant-statistic-title {
+  color: rgba(255, 255, 255, 0.8) !important;
+  font-size: 12px !important;
+}
+
+.stat-card .ant-statistic-content {
+  color: white !important;
+}
+
+/* 节点状态指示器 */
+.node-status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 8px;
+}
+
+.node-status-indicator.running {
+  background-color: #3b82f6;
+  animation: pulse 2s infinite;
+}
+
+.node-status-indicator.completed {
+  background-color: #10b981;
+}
+
+.node-status-indicator.failed {
+  background-color: #ef4444;
+}
+
+.node-status-indicator.waiting {
+  background-color: #f59e0b;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* 代码块样式 */
+.code-block {
+  background-color: #1f2937;
+  color: #e5e7eb;
+  border-radius: 6px;
+  padding: 12px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 13px;
+  line-height: 1.4;
+  overflow-x: auto;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .enhanced-debug-panel .ant-modal {
+    width: 95vw !important;
+    height: 90vh !important;
+    top: 5vh !important;
+  }
+  
+  .enhanced-debug-panel .ant-modal-body {
+    height: calc(90vh - 110px) !important;
+  }
+}
+
+/* 滚动条美化 */
+.enhanced-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.enhanced-scrollbar::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.enhanced-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.enhanced-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* 加载动画 */
+.loading-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 50%;
+  border-top-color: #3b82f6;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 错误提示样式 */
+.error-message {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  border: 1px solid #f87171;
+  border-radius: 6px;
+  padding: 12px;
+  margin: 8px 0;
+}
+
+.error-message .error-icon {
+  color: #dc2626;
+  margin-right: 8px;
+}
+
+/* 成功提示样式 */
+.success-message {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  border: 1px solid #34d399;
+  border-radius: 6px;
+  padding: 12px;
+  margin: 8px 0;
+}
+
+.success-message .success-icon {
+  color: #059669;
+  margin-right: 8px;
+}
+
+/* 警告提示样式 */
+.warning-message {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 1px solid #fbbf24;
+  border-radius: 6px;
+  padding: 12px;
+  margin: 8px 0;
+}
+
+.warning-message .warning-icon {
+  color: #d97706;
+  margin-right: 8px;
+}
+
+/* 信息提示样式 */
+.info-message {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  border: 1px solid #60a5fa;
+  border-radius: 6px;
+  padding: 12px;
+  margin: 8px 0;
+}
+
+.info-message .info-icon {
+  color: #2563eb;
+  margin-right: 8px;
+}

@@ -104,8 +104,8 @@ export abstract class NodeExecutor {
           summaryLength: config.summaryLength || 'medium',
           maxSummaryLength: config.maxSummaryLength || 300,
           language: config.language || 'zh-CN',
-          includeKeyPoints: config.includeKeyPoints || false,
-          extractKeywords: config.extractKeywords || false
+          includeKeyPoints: config.includeKeyPoints ?? false,
+          extractKeywords: config.extractKeywords ?? false
         };
       
       case 'databaseNode':

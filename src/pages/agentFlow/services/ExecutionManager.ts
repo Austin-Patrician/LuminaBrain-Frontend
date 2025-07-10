@@ -424,18 +424,48 @@ export class ExecutionManager {
     if (!nodeData || typeof nodeData !== 'object') return nodeData;
     
     const allowedFields = [
+      // 基础字段
       'label', 'description', 'inputSource',
+      
+      // AI节点通用字段
       'model', 'systemPrompt', 'temperature', 'maxTokens', 'stream', 'userMessage',
+      
+      // AI摘要节点专属字段
+      'summaryStyle', 'summaryLength', 'maxSummaryLength', 'language', 
+      'includeKeyPoints', 'extractKeywords',
+      
+      // AI提取节点专属字段
+      'extractType', 'extractPrompt',
+      
+      // 数据库节点字段
       'dbType', 'connectionString', 'query', 'parameters', 'operation',
+      
+      // 知识库节点字段
       'knowledgeBaseId', 'searchQuery', 'topK', 'threshold', 'similarityThreshold', 'searchType',
+      
+      // HTTP节点字段
       'url', 'method', 'headers', 'body', 'timeout', 'retryCount',
-      'condition', 'conditionType',
+      
+      // 条件判断节点字段
+      'condition', 'conditionType', 'trueBranch', 'falseBranch',
+      
+      // 数据处理节点字段
       'processType', 'transformScript', 'filterCondition', 'aggregateFields', 
       'sortBy', 'sortOrder', 'groupBy', 'jsonPath', 'extractMode',
+      
+      // 开始节点字段
       'triggerType', 'initialData',
+      
+      // 结束节点字段
       'outputFormat', 'returnCode', 'finalMessage', 'saveResult', 'resultFormat',
+      
+      // 用户输入节点字段
       'userInputType', 'placeholder', 'defaultValue', 'validation', 'options',
+      
+      // 响应节点字段
       'responseTemplate', 'responseFormat', 'statusCode',
+      
+      // 通用字段
       'required', 'disabled', 'data'
     ];
     

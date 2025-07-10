@@ -613,8 +613,9 @@ export const flowService = {
           summaryLength: config.summaryLength || 'medium',
           maxSummaryLength: config.maxSummaryLength || 300,
           language: config.language || 'zh-CN',
-          includeKeyPoints: config.includeKeyPoints || false,
-          extractKeywords: config.extractKeywords || false
+          // 修复布尔值处理 - 使用 ?? 运算符确保正确处理用户的真实选择
+          includeKeyPoints: config.includeKeyPoints ?? false,
+          extractKeywords: config.extractKeywords ?? false
         } as AISummaryNodeConfig;
 
       case 'databaseNode':

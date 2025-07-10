@@ -61,18 +61,10 @@ import { useNavigate, useSearchParams, useParams } from "react-router";
 import DebugPanel from "./components/DebugPanel";
 import WorkflowExecutor, { DebugNodeResult } from "./services/workflowExecutor";
 import ReactMarkdown from "react-markdown";
+import { generateGUID } from "@/utils/uuid";
 
 const { TextArea } = Input;
 const { Option } = Select;
-
-// 生成36位GUID的工具函数
-const generateGUID = (): string => {
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
-    const r = (Math.random() * 16) | 0;
-    const v = c === "x" ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
-};
 
 // 获取节点默认属性的函数
 const getDefaultNodeData = (nodeType: string, label: string) => {
