@@ -40,23 +40,12 @@ export interface ConditionNodeConfig {
     outputData?: any;
   };
 
-  // 高级配置
-  enableLogging?: boolean;
-  logLevel?: 'debug' | 'info' | 'warn' | 'error';
-  timeout?: number; // 超时时间（毫秒）
-  retryCount?: number; // 重试次数
-  
   // 错误处理
   errorHandling?: {
     onError: 'throw' | 'false' | 'true' | 'custom';
     customValue?: any;
     fallbackCondition?: string;
   };
-
-  // 性能优化
-  enableCaching?: boolean;
-  cacheKey?: string;
-  cacheTTL?: number; // 缓存时间（秒）
 
   // 调试和测试
   testCases?: Array<{
@@ -209,15 +198,9 @@ export const DEFAULT_CONDITION_CONFIG: ConditionNodeConfig = {
     label: '条件为假',
     description: '当条件判断为假时执行此分支',
   },
-  enableLogging: false,
-  logLevel: 'info',
-  timeout: 5000,
-  retryCount: 0,
   errorHandling: {
     onError: 'false',
   },
-  enableCaching: false,
-  cacheTTL: 300,
   extractVariables: false,
   enableMultipleConditions: false,
   logicalOperator: 'AND',

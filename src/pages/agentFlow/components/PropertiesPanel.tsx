@@ -127,7 +127,7 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
     try {
       const response = await flowService.getAiModelsByTypeId();
 
-      setAiModels(response?.data || []);
+      setAiModels(response || []);
     } catch (error) {
       console.error("Failed to load AI models:", error);
       // 设置默认模型作为fallback
@@ -268,6 +268,11 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
       },
       startNode: { icon: <EditOutlined />, color: "#52c41a", label: "开始" },
       endNode: { icon: <EditOutlined />, color: "#f5222d", label: "结束" },
+      jsonProcessNode: {
+        icon: <SettingOutlined />,
+        color: "#722ed1",
+        label: "JSON处理器",
+      },
       default: {
         icon: <SettingOutlined />,
         color: "#8c8c8c",
@@ -869,9 +874,6 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                   <Option key={template.id} value={template.id}>
                     <div className="py-1">
                       <div className="font-medium">{template.name}</div>
-                      <div className="text-xs text-gray-500">
-                        {template.description}
-                      </div>
                     </div>
                   </Option>
                 ))}
@@ -1172,101 +1174,6 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                 <Option value="custom">自定义值</Option>
               </Select>
             </div>
-
-            {/* 性能优化 */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Text strong className="text-sm">
-                  启用缓存
-                </Text>
-                <Tooltip title="缓存条件判断结果以提升性能">
-                  <InfoCircleOutlined className="text-black text-xs" />
-                </Tooltip>
-              </div>
-              <Switch
-                checked={conditionConfig.enableCaching}
-                onChange={(checked) =>
-                  handlePropertyChange("enableCaching", checked)
-                }
-              />
-            </div>
-
-            {/* 缓存配置 */}
-            {conditionConfig.enableCaching && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <div className="space-y-2">
-                  <div>
-                    <Text className="text-sm">缓存时间 (秒)</Text>
-                    <InputNumber
-                      min={1}
-                      max={3600}
-                      value={conditionConfig.cacheTTL || 300}
-                      onChange={(value) =>
-                        handlePropertyChange("cacheTTL", value)
-                      }
-                      className="w-full mt-1"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* 执行超时 */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <Text strong className="text-sm">
-                  执行超时 (ms)
-                </Text>
-                <Text className="text-xs text-gray-500">
-                  {conditionConfig.timeout || 5000}ms
-                </Text>
-              </div>
-              <Slider
-                min={1000}
-                max={30000}
-                step={1000}
-                value={conditionConfig.timeout || 5000}
-                onChange={(value) => handlePropertyChange("timeout", value)}
-                marks={{ 1000: "1s", 5000: "5s", 15000: "15s", 30000: "30s" }}
-              />
-            </div>
-
-            {/* 调试日志 */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Text strong className="text-sm">
-                  调试日志
-                </Text>
-                <Tooltip title="记录条件执行的详细日志">
-                  <InfoCircleOutlined className="text-black text-xs" />
-                </Tooltip>
-              </div>
-              <Switch
-                checked={conditionConfig.enableLogging}
-                onChange={(checked) =>
-                  handlePropertyChange("enableLogging", checked)
-                }
-              />
-            </div>
-
-            {/* 日志级别 */}
-            {conditionConfig.enableLogging && (
-              <div>
-                <Text strong className="text-sm mb-2 block">
-                  日志级别
-                </Text>
-                <Select
-                  value={conditionConfig.logLevel || "info"}
-                  onChange={(value) => handlePropertyChange("logLevel", value)}
-                  className="w-full"
-                >
-                  <Option value="debug">Debug</Option>
-                  <Option value="info">Info</Option>
-                  <Option value="warn">Warning</Option>
-                  <Option value="error">Error</Option>
-                </Select>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -1338,6 +1245,402 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
           className="w-full"
           size="large"
         />
+      </div>
+    </div>
+  );
+
+  // 渲染JSON处理节点属性
+  const renderJsonProcessProperties = () => (
+    <div className="space-y-4">
+      {/* 操作类型配置 */}
+      <div className="bg-gray-50 rounded-lg border border-gray-200">
+        {/* 标题栏 */}
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200 bg-gray-100 rounded-t-lg">
+          <SettingOutlined className="text-gray-600" />
+          <Text strong className="text-sm">
+            操作配置
+          </Text>
+        </div>
+
+        {/* 配置区域 */}
+        <div className="p-4 space-y-4">
+          {/* 操作类型 */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Text strong className="text-sm">
+                操作类型
+              </Text>
+              <span className="text-red-500">*</span>
+              <Tooltip title="选择要执行的JSON处理操作">
+                <InfoCircleOutlined className="text-black text-xs" />
+              </Tooltip>
+            </div>
+            <Select
+              value={nodeData.operation || 'extract'}
+              onChange={(value) => handlePropertyChange('operation', value)}
+              className="w-full"
+              size="large"
+              placeholder="选择操作类型"
+            >
+              <Option value="extract">数据提取</Option>
+              <Option value="transform">数据转换</Option>
+              <Option value="validate">数据验证</Option>
+              <Option value="merge">数据合并</Option>
+              <Option value="filter">数据过滤</Option>
+              <Option value="sort">数据排序</Option>
+              <Option value="aggregate">数据聚合</Option>
+              <Option value="format">格式化输出</Option>
+              <Option value="schema">Schema生成</Option>
+              <Option value="compress">数据压缩</Option>
+            </Select>
+          </div>
+
+          {/* 输入格式 */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Text strong className="text-sm">
+                输入格式
+              </Text>
+              <Tooltip title="指定输入数据的格式类型">
+                <InfoCircleOutlined className="text-black text-xs" />
+              </Tooltip>
+            </div>
+            <Select
+              value={nodeData.inputFormat || 'auto'}
+              onChange={(value) => handlePropertyChange('inputFormat', value)}
+              className="w-full"
+              size="large"
+            >
+              <Option value="auto">自动检测</Option>
+              <Option value="json">JSON对象</Option>
+              <Option value="string">JSON字符串</Option>
+            </Select>
+          </div>
+
+          {/* 输出格式 */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Text strong className="text-sm">
+                输出格式
+              </Text>
+              <Tooltip title="选择处理结果的输出格式">
+                <InfoCircleOutlined className="text-black text-xs" />
+              </Tooltip>
+            </div>
+            <Select
+              value={nodeData.outputFormat?.format || 'json'}
+              onChange={(value) => handlePropertyChange('outputFormat', {
+                ...nodeData.outputFormat,
+                format: value
+              })}
+              className="w-full"
+              size="large"
+            >
+              <Option value="json">JSON格式</Option>
+              <Option value="csv">CSV格式</Option>
+              <Option value="xml">XML格式</Option>
+              <Option value="yaml">YAML格式</Option>
+              <Option value="table">表格格式</Option>
+            </Select>
+          </div>
+
+          {/* 美化输出 */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Text strong className="text-sm">
+                美化输出
+              </Text>
+              <Tooltip title="是否格式化输出结果以便阅读">
+                <InfoCircleOutlined className="text-black text-xs" />
+              </Tooltip>
+            </div>
+            <Switch
+              checked={nodeData.outputFormat?.pretty || true}
+              onChange={(checked) => handlePropertyChange('outputFormat', {
+                ...nodeData.outputFormat,
+                pretty: checked
+              })}
+              size="default"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* 数据提取配置 */}
+      {nodeData.operation === 'extract' && (
+        <div className="bg-gray-50 rounded-lg border border-gray-200">
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200 bg-gray-100 rounded-t-lg">
+            <EditOutlined className="text-gray-600" />
+            <Text strong className="text-sm">
+              提取配置
+            </Text>
+          </div>
+
+          <div className="p-4 space-y-4">
+            {/* 路径类型 */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Text strong className="text-sm">
+                  路径类型
+                </Text>
+                <Tooltip title="选择JSON路径表达式的类型">
+                  <InfoCircleOutlined className="text-black text-xs" />
+                </Tooltip>
+              </div>
+              <Select
+                value={nodeData.extractConfig?.pathType || 'jsonpath'}
+                onChange={(value) => handlePropertyChange('extractConfig', {
+                  ...nodeData.extractConfig,
+                  pathType: value
+                })}
+                className="w-full"
+                size="large"
+              >
+                <Option value="jsonpath">JSONPath语法</Option>
+                <Option value="javascript">JavaScript表达式</Option>
+                <Option value="lodash">Lodash语法</Option>
+                <Option value="simple">简单点号语法</Option>
+              </Select>
+            </div>
+
+            {/* 提取路径 */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Text strong className="text-sm">
+                  提取路径
+                </Text>
+                <Tooltip title="输入要提取的JSON路径表达式，每行一个">
+                  <InfoCircleOutlined className="text-black text-xs" />
+                </Tooltip>
+              </div>
+              <TextArea
+                value={nodeData.extractConfig?.paths?.join('\n') || '$.*'}
+                onChange={(e) => handlePropertyChange('extractConfig', {
+                  ...nodeData.extractConfig,
+                  paths: e.target.value.split('\n').filter(path => path.trim())
+                })}
+                placeholder="$.data.items[*].name&#10;$.data.items[*].id&#10;$.metadata.total"
+                rows={4}
+                className="rounded-lg font-mono text-sm"
+              />
+              <div className="mt-1 text-xs text-gray-500">
+                每行一个路径表达式，支持数组索引和通配符
+              </div>
+            </div>
+
+            {/* 高级选项 */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Text strong className="text-sm">
+                    包含元数据
+                  </Text>
+                  <Tooltip title="在结果中包含路径和类型等元数据信息">
+                    <InfoCircleOutlined className="text-black text-xs" />
+                  </Tooltip>
+                </div>
+                <Switch
+                  checked={nodeData.extractConfig?.includeMetadata || false}
+                  onChange={(checked) => handlePropertyChange('extractConfig', {
+                    ...nodeData.extractConfig,
+                    includeMetadata: checked
+                  })}
+                  size="default"
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Text strong className="text-sm">
+                    展平数组
+                  </Text>
+                  <Tooltip title="将嵌套数组展平为一维数组">
+                    <InfoCircleOutlined className="text-black text-xs" />
+                  </Tooltip>
+                </div>
+                <Switch
+                  checked={nodeData.extractConfig?.flattenArrays || false}
+                  onChange={(checked) => handlePropertyChange('extractConfig', {
+                    ...nodeData.extractConfig,
+                    flattenArrays: checked
+                  })}
+                  size="default"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 数据转换配置 */}
+      {nodeData.operation === 'transform' && (
+        <div className="bg-gray-50 rounded-lg border border-gray-200">
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200 bg-gray-100 rounded-t-lg">
+            <EditOutlined className="text-gray-600" />
+            <Text strong className="text-sm">
+              转换配置
+            </Text>
+          </div>
+
+          <div className="p-4 space-y-4">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Text strong className="text-sm">
+                  字段映射
+                </Text>
+                <Tooltip title="定义源字段到目标字段的映射关系">
+                  <InfoCircleOutlined className="text-black text-xs" />
+                </Tooltip>
+              </div>
+              <TextArea
+                value={JSON.stringify(nodeData.transformConfig?.mappings || [], null, 2)}
+                onChange={(e) => {
+                  try {
+                    const mappings = JSON.parse(e.target.value);
+                    handlePropertyChange('transformConfig', {
+                      ...nodeData.transformConfig,
+                      mappings
+                    });
+                  } catch (error) {
+                    // 忽略解析错误，用户输入过程中可能不完整
+                  }
+                }}
+                placeholder='[&#10;  {&#10;    "source": "user.fullName",&#10;    "target": "name",&#10;    "type": "string",&#10;    "required": true&#10;  }&#10;]'
+                rows={8}
+                className="rounded-lg font-mono text-sm"
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Text strong className="text-sm">
+                  保留原始字段
+                </Text>
+                <Tooltip title="是否在转换结果中保留原始字段">
+                  <InfoCircleOutlined className="text-black text-xs" />
+                </Tooltip>
+              </div>
+              <Switch
+                checked={nodeData.transformConfig?.preserveOriginal || false}
+                onChange={(checked) => handlePropertyChange('transformConfig', {
+                  ...nodeData.transformConfig,
+                  preserveOriginal: checked
+                })}
+                size="default"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 数据验证配置 */}
+      {nodeData.operation === 'validate' && (
+        <div className="bg-gray-50 rounded-lg border border-gray-200">
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200 bg-gray-100 rounded-t-lg">
+            <EditOutlined className="text-gray-600" />
+            <Text strong className="text-sm">
+              验证配置
+            </Text>
+          </div>
+
+          <div className="p-4 space-y-4">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Text strong className="text-sm">
+                  JSON Schema
+                </Text>
+                <Tooltip title="定义用于验证的JSON Schema">
+                  <InfoCircleOutlined className="text-black text-xs" />
+                </Tooltip>
+              </div>
+              <TextArea
+                value={nodeData.validateConfig?.schema || ''}
+                onChange={(e) => handlePropertyChange('validateConfig', {
+                  ...nodeData.validateConfig,
+                  schema: e.target.value
+                })}
+                placeholder='{"type": "object", "properties": {"name": {"type": "string"}}, "required": ["name"]}'
+                rows={6}
+                className="rounded-lg font-mono text-sm"
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Text strong className="text-sm">
+                  严格模式
+                </Text>
+                <Tooltip title="启用严格验证模式">
+                  <InfoCircleOutlined className="text-black text-xs" />
+                </Tooltip>
+              </div>
+              <Switch
+                checked={nodeData.validateConfig?.strictMode || false}
+                onChange={(checked) => handlePropertyChange('validateConfig', {
+                  ...nodeData.validateConfig,
+                  strictMode: checked
+                })}
+                size="default"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 错误处理配置 */}
+      <div className="bg-gray-50 rounded-lg border border-gray-200">
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-200 bg-gray-100 rounded-t-lg">
+          <SettingOutlined className="text-gray-600" />
+          <Text strong className="text-sm">
+            错误处理
+          </Text>
+        </div>
+
+        <div className="p-4 space-y-4">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Text strong className="text-sm">
+                错误处理方式
+              </Text>
+              <Tooltip title="选择处理错误的策略">
+                <InfoCircleOutlined className="text-black text-xs" />
+              </Tooltip>
+            </div>
+            <Select
+              value={nodeData.errorHandling?.onError || 'throw'}
+              onChange={(value) => handlePropertyChange('errorHandling', {
+                ...nodeData.errorHandling,
+                onError: value
+              })}
+              className="w-full"
+              size="large"
+            >
+              <Option value="throw">抛出异常</Option>
+              <Option value="skip">跳过错误</Option>
+              <Option value="default">使用默认值</Option>
+              <Option value="log">仅记录日志</Option>
+            </Select>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Text strong className="text-sm">
+                继续执行
+              </Text>
+              <Tooltip title="出现错误时是否继续执行后续操作">
+                <InfoCircleOutlined className="text-black text-xs" />
+              </Tooltip>
+            </div>
+            <Switch
+              checked={nodeData.errorHandling?.continueOnError || false}
+              onChange={(checked) => handlePropertyChange('errorHandling', {
+                ...nodeData.errorHandling,
+                continueOnError: checked
+              })}
+              size="default"
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -1652,6 +1955,8 @@ const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
         return renderConditionProperties();
       case "responseNode":
         return renderResponseProperties();
+      case "jsonProcessNode":
+        return renderJsonProcessProperties();
       default:
         return (
           <div className="text-center py-8 text-gray-500">

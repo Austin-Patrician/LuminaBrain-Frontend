@@ -1,10 +1,11 @@
 import { Node } from '@xyflow/react';
 import { NodeExecutor } from './NodeExecutor';
-import { 
-  AIDialogNodeExecutor,
-  AISummaryNodeExecutor,
+import {
   StartNodeExecutor,
   EndNodeExecutor,
+  AIDialogNodeExecutor,
+  JsonProcessNodeExecutor,
+  AISummaryNodeExecutor,
   DatabaseNodeExecutor,
   KnowledgeBaseNodeExecutor,
   ResponseNodeExecutor,
@@ -43,6 +44,7 @@ export class NodeExecutorFactory {
     this.nodeExecutors.set('conditionNode', new ConditionExecutor());
     this.nodeExecutors.set('decisionNode', new ConditionExecutor());
     this.nodeExecutors.set('jsonExtractor', new DataProcessExecutor());
+    this.nodeExecutors.set('jsonProcessNode', new JsonProcessNodeExecutor());
     this.nodeExecutors.set('basicNode', new DataProcessExecutor());
     this.nodeExecutors.set('processNode', new DataProcessExecutor());
     this.nodeExecutors.set('customNode', new DataProcessExecutor());

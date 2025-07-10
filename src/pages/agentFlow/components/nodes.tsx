@@ -89,6 +89,11 @@ export const JsonExtractorNode: React.FC<NodeProps> = (props) => {
   return <UniversalNode {...props} nodeType="jsonExtractor" />;
 };
 
+// JSON处理节点
+export const JsonProcessNode: React.FC<NodeProps> = (props) => {
+  return <UniversalNode {...props} nodeType="jsonProcessNode" />;
+};
+
 // 兼容旧的组件名称
 export const DefaultNode = BasicNode;
 export const TextNode = BasicNode;
@@ -125,6 +130,7 @@ export const nodeTypes = {
   processNode: ProcessNode,
   customNode: CustomNode,
   jsonExtractor: JsonExtractorNode,
+  jsonProcessNode: JsonProcessNode,
 
   // 兼容旧的节点类型名称
   knowledgeNode: KnowledgeBaseNode,

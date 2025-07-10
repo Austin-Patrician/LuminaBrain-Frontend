@@ -132,6 +132,28 @@ const getDefaultNodeData = (nodeType: string, label: string) => {
         defaultValue: "",
       };
 
+    case "jsonProcessNode":
+      return {
+        ...baseData,
+        operation: "extract",
+        inputFormat: "auto",
+        outputFormat: {
+          format: "json",
+          pretty: true
+        },
+        extractConfig: {
+          pathType: "jsonpath",
+          paths: ["$.*"],
+          includeMetadata: false,
+          flattenArrays: false
+        },
+        errorHandling: {
+          onError: "throw",
+          continueOnError: false,
+          logLevel: "error"
+        }
+      };
+
     case "responseNode":
       return {
         ...baseData,
@@ -182,6 +204,7 @@ const getNodeIcon = (type: string) => {
     conditionNode: <BranchesOutlined />,
     customNode: <SettingOutlined />,
     jsonExtractor: <SettingOutlined />,
+    jsonProcessNode: <SettingOutlined />,
   };
   return iconMap[type] || <ThunderboltOutlined />;
 };
@@ -205,6 +228,7 @@ const getNodeColor = (type: string) => {
     conditionNode: "orange",
     customNode: "indigo",
     jsonExtractor: "pink",
+    jsonProcessNode: "violet",
   };
   return colorMap[type] || "gray";
 };
@@ -269,6 +293,13 @@ const nodeCategories = [
         icon: getNodeIcon("bingNode"),
         color: getNodeColor("bingNode"),
         description: "使用必应进行网络搜索",
+      },
+      {
+        type: "jsonProcessNode",
+        label: "JSON处理器",
+        icon: getNodeIcon("jsonProcessNode"),
+        color: getNodeColor("jsonProcessNode"),
+        description: "强大的JSON数据处理工具",
       },
     ],
   },
@@ -563,7 +594,7 @@ const AgentFlowPage: React.FC = () => {
         message.success("流程创建成功");
 
         // 更新URL，添加流程ID
-        navigate(`/agentFlow/editor?id=${result.id}`, { replace: true });
+        navigate(`/agentFlow/editor/${result.id}`, { replace: true });
       }
 
       setCurrentFlow(result);
@@ -587,9 +618,104 @@ const AgentFlowPage: React.FC = () => {
       return;
     }
 
+    if (!reactFlowInstance) {
+      message.error("流程编辑器未就绪");
+      return;
+    }
+
+    // 获取当前流程对象进行验证
+    const flowObject = reactFlowInstance.toObject();
+
+    // 验证流程配置
+    const validation = validateFlowConfiguration(flowObject.nodes);
+    if (!validation.isValid) {
+      Modal.error({
+        title: "流程配置验证失败",
+        content: (
+          <div>
+            <p>请修复以下问题后再发布：</p>
+            <ul className="mt-2">
+              {validation.errors.map((error, index) => (
+                <li key={index} className="text-red-600">
+                  • {error}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ),
+        okText: "知道了",
+      });
+      setPublishModalVisible(false);
+      return;
+    }
+
+    // 检查流程是否有基本的开始和结束节点
+    const hasStartNode = flowObject.nodes.some(node => node.type === 'startNode');
+    const hasEndNode = flowObject.nodes.some(node => node.type === 'endNode');
+    
+    if (!hasStartNode || !hasEndNode) {
+      Modal.error({
+        title: "流程结构不完整",
+        content: (
+          <div>
+            <p>发布前请确保流程包含：</p>
+            <ul className="mt-2">
+              {!hasStartNode && <li className="text-red-600">• 开始节点</li>}
+              {!hasEndNode && <li className="text-red-600">• 结束节点</li>}
+            </ul>
+          </div>
+        ),
+        okText: "知道了",
+      });
+      setPublishModalVisible(false);
+      return;
+    }
+
+    // 检查节点连接情况
+    const isolatedNodes = flowObject.nodes.filter(node => {
+      if (node.type === 'startNode' || node.type === 'endNode') return false;
+      const hasIncoming = flowObject.edges.some(edge => edge.target === node.id);
+      const hasOutgoing = flowObject.edges.some(edge => edge.source === node.id);
+      return !hasIncoming || !hasOutgoing;
+    });
+
+    if (isolatedNodes.length > 0) {
+      Modal.confirm({
+        title: "检测到未连接的节点",
+        content: (
+          <div>
+            <p>以下节点没有正确连接，可能影响流程执行：</p>
+            <ul className="mt-2 max-h-32 overflow-y-auto">
+              {isolatedNodes.map((node, index) => (
+                <li key={index} className="text-orange-600">
+                  • {node.data?.label || node.type}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-2">是否继续发布？</p>
+          </div>
+        ),
+        onOk: async () => {
+          await executePublish();
+        },
+        onCancel: () => {
+          setPublishModalVisible(false);
+        },
+        okText: "继续发布",
+        cancelText: "取消",
+      });
+      return;
+    }
+
+    // 如果所有验证都通过，直接发布
+    await executePublish();
+  };
+
+  // 执行发布操作
+  const executePublish = async () => {
     try {
-      await flowService.publishFlow(currentFlow.id);
-      setCurrentFlow({ ...currentFlow, status: "published" });
+      await flowService.publishFlow(currentFlow!.id);
+      setCurrentFlow({ ...currentFlow!, status: "published" });
       message.success("流程发布成功");
       setPublishModalVisible(false);
     } catch (error) {
@@ -1143,7 +1269,7 @@ const AgentFlowPage: React.FC = () => {
           <div className="text-sm text-gray-600 space-y-2">
             <div>
               <strong>流程名称：</strong>
-              {currentFlow?.name}
+              {currentFlow?.name || "未命名流程"}
             </div>
             <div>
               <strong>节点数量：</strong>

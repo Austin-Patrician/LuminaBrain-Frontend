@@ -20,7 +20,8 @@ export type NodeConfig =
   | StartNodeConfig
   | EndNodeConfig
   | UserInputNodeConfig
-  | ResponseNodeConfig;
+  | ResponseNodeConfig
+  | JsonProcessNodeConfig;
 
 // AI对话节点配置
 export interface AIDialogNodeConfig {
@@ -133,6 +134,29 @@ export interface ResponseNodeConfig {
   responseTemplate: string;
   responseFormat?: 'text' | 'json' | 'html' | 'markdown';
   statusCode?: number;
+}
+
+// JSON处理节点配置
+export interface JsonProcessNodeConfig {
+  nodeType: 'jsonProcessNode';
+  operation: 'extract' | 'transform' | 'validate' | 'merge' | 'filter' | 'sort' | 'aggregate' | 'format' | 'schema' | 'compress';
+  inputFormat?: 'json' | 'string' | 'auto';
+  outputFormat?: {
+    format: 'json' | 'csv' | 'xml' | 'yaml' | 'table';
+    pretty?: boolean;
+    encoding?: 'utf8' | 'base64';
+    compression?: 'none' | 'gzip' | 'deflate';
+  };
+  extractConfig?: any;
+  transformConfig?: any;
+  validateConfig?: any;
+  mergeConfig?: any;
+  filterConfig?: any;
+  sortConfig?: any;
+  aggregateConfig?: any;
+  errorHandling?: any;
+  performanceConfig?: any;
+  debugConfig?: any;
 }
 
 // ======= 扁平化的节点执行请求接口 =======
@@ -697,6 +721,27 @@ export const flowService = {
           responseFormat: config.responseFormat,
           statusCode: config.statusCode
         } as ResponseNodeConfig;
+
+      case 'jsonProcessNode':
+        return {
+          nodeType: 'jsonProcessNode',
+          operation: config.operation || 'extract',
+          inputFormat: config.inputFormat || 'auto',
+          outputFormat: config.outputFormat || {
+            format: 'json',
+            pretty: true
+          },
+          extractConfig: config.extractConfig,
+          transformConfig: config.transformConfig,
+          validateConfig: config.validateConfig,
+          mergeConfig: config.mergeConfig,
+          filterConfig: config.filterConfig,
+          sortConfig: config.sortConfig,
+          aggregateConfig: config.aggregateConfig,
+          errorHandling: config.errorHandling,
+          performanceConfig: config.performanceConfig,
+          debugConfig: config.debugConfig
+        } as JsonProcessNodeConfig;
 
       default:
         // 兜底处理：如果是未知节点类型，返回基础配置
