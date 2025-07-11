@@ -1,0 +1,238 @@
+/* AI助手消息气泡样式 */
+.assistant-message-bubble-container {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 24px;
+  opacity: 1;
+  animation: fadeInLeft 0.4s ease forwards;
+}
+
+.assistant-message-bubble-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  max-width: 85%;
+  min-width: 0;
+  gap: 8px;
+}
+
+.assistant-message-bubble {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+}
+
+/* 移除头像相关样式，消息内容直接占据全宽 */
+.assistant-message-content-wrapper {
+  background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
+  border: 1px solid #e1e5e9;
+  border-radius: 16px;
+  padding: 20px 24px;
+  min-width: 0;
+  flex-grow: 1;
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.04),
+    0 1px 3px rgba(0, 0, 0, 0.06),
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+  position: relative;
+  transition: all 0.2s ease;
+  /* 使用Source Sans Pro作为聊天内容字体 */
+  font-family: 'Source Sans Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+}
+
+.assistant-message-content-wrapper:hover {
+  border-color: #d1d9e0;
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.08),
+    0 2px 6px rgba(0, 0, 0, 0.06),
+    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+  transform: translateY(-1px);
+}
+
+/* 移除左侧箭头，因为没有头像了 */
+.assistant-message-content {
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  line-height: 1.6;
+  color: #2c3e50;
+  /* 使用Source Sans Pro作为聊天内容字体 */
+  font-family: 'Source Sans Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  font-weight: 400;
+  font-size: 15px;
+}
+
+.assistant-thinking-indicator {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #f3f4f6;
+}
+
+/* 工具栏样式 - 移除左边距，因为没有头像对齐了 */
+.assistant-message-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  padding: 4px 8px;
+  margin-left: 0; /* 移除头像对齐的左边距 */
+  min-height: 32px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 8px;
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(229, 231, 235, 0.6);
+}
+
+.assistant-message-bubble-container:hover .assistant-message-toolbar {
+  opacity: 1;
+}
+
+/* 工具栏按钮特殊效果 */
+.assistant-toolbar-btn:focus {
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  outline: none;
+}
+
+/* 重新生成按钮特殊样式 */
+.assistant-toolbar-btn:first-child:hover {
+  color: #3b82f6;
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+/* 点赞状态 */
+.assistant-toolbar-btn.liked {
+  color: #10b981;
+  background-color: rgba(16, 185, 129, 0.1);
+}
+
+.assistant-toolbar-btn.liked:hover {
+  color: #059669;
+  background-color: rgba(16, 185, 129, 0.15);
+}
+
+/* 点踩状态 */
+.assistant-toolbar-btn.disliked {
+  color: #ef4444;
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+.assistant-toolbar-btn.disliked:hover {
+  color: #dc2626;
+  background-color: rgba(239, 68, 68, 0.15);
+}
+
+/* 时间信息区域 */
+.assistant-time-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.assistant-message-time {
+  font-size: 12px;
+  color: #9ca3af;
+  /* 使用Inter作为UI元素字体 */
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+}
+
+/* 响应时间显示 */
+.assistant-response-time {
+  font-size: 12px;
+  color: #9ca3af;
+  /* 使用Inter作为UI元素字体 */
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  font-weight: 500;
+  margin-left: 5px;
+}
+
+/* 自定义 Tooltip 样式 */
+.assistant-message-tooltip .ant-tooltip-inner {
+  background-color: #1f2937;
+  color: #ffffff;
+  border: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  font-size: 12px;
+  /* 使用Inter作为UI元素字体 */
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  font-weight: 500;
+}
+
+.assistant-message-tooltip .ant-tooltip-arrow {
+  border-top-color: #1f2937;
+}
+
+.assistant-message-tooltip .ant-tooltip-arrow::before {
+  border-top-color: #1f2937;
+}
+
+/* 动画效果 */
+@keyframes fadeInLeft {
+  from {
+    opacity: 0.7;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* 响应式适配 */
+@media (max-width: 768px) {
+  .assistant-message-bubble-wrapper {
+    max-width: 90%;
+  }
+  
+  .assistant-message-toolbar {
+    margin-left: 0; /* 移动端也移除左边距 */
+  }
+  
+  .assistant-toolbar-btn {
+    height: 24px;
+    width: 24px;
+    font-size: 12px;
+  }
+  
+  .assistant-response-time {
+    font-size: 11px;
+  }
+}
+
+.assistant-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.assistant-toolbar-right {
+  display: flex;
+  align-items: center;
+}
+
+.assistant-toolbar-btn {
+  font-size: 14px;
+  height: 28px;
+  width: 28px;
+  padding: 0;
+  color: #6b7280;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  /* 使用Inter作为UI元素字体 */
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+}
+
+.assistant-toolbar-btn:hover {
+  color: #374151;
+  background-color: rgba(107, 114, 128, 0.1);
+  transform: translateY(-1px);
+}
+
+.assistant-toolbar-btn:active {
+  transform: translateY(0);
+}

@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { Select, message as antdMessage } from 'antd';
-import { aimodelService } from '@/api/services/aimodelService';
-import type { AiModelAndKnowledgeItem } from '#/entity';
+import React, { useEffect, useState } from "react";
+import { Select, message as antdMessage } from "antd";
+import { aimodelService } from "@/api/services/aimodelService";
+import type { AiModelAndKnowledgeItem } from "#/entity";
 
 const { OptGroup } = Select;
 
@@ -10,10 +10,7 @@ interface ModelSelectorProps {
   onChange: (value: string, type?: string, isStream?: boolean) => void;
 }
 
-const ModelSelector: React.FC<ModelSelectorProps> = ({
-  value,
-  onChange
-}) => {
+const ModelSelector: React.FC<ModelSelectorProps> = ({ value, onChange }) => {
   const [apiOptions, setApiOptions] = useState<AiModelAndKnowledgeItem[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -27,11 +24,10 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
     try {
       const response = await aimodelService.getAiModelsAndKnowledges();
 
-      setApiOptions(response);
-
+      setApiOptions(response.data || response);
     } catch (error) {
-      console.error('Failed to fetch AI models and knowledges:', error);
-      antdMessage.error('获取模型和知识库列表失败');
+      console.error("Failed to fetch AI models and knowledges:", error);
+      antdMessage.error("获取模型和知识库列表失败");
     } finally {
       setLoading(false);
     }
@@ -39,7 +35,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
 
   // 处理选择变化，找到对应的类型信息
   const handleChange = (selectedValue: string) => {
-    const selectedItem = apiOptions.find(item => item.id === selectedValue);
+    const selectedItem = apiOptions.find((item) => item.id === selectedValue);
     onChange(selectedValue, selectedItem?.type, selectedItem?.isStream);
   };
 
@@ -65,26 +61,26 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
         <OptGroup
           key={type}
           label={
-            <div style={{
-              padding: '4px 0',
-              fontWeight: 600,
-              fontSize: '14px',
-              color: '#374151'
-            }}>
-              {type === 'AI Model' ? 'AI 模型' : '知识库'}
+            <div
+              style={{
+                padding: "4px 0",
+                fontWeight: 600,
+                fontSize: "14px",
+                color: "#374151",
+              }}
+            >
+              {type === "AI Model" ? "AI 模型" : "知识库"}
             </div>
           }
         >
           {items.map((item) => (
-            <Select.Option
-              key={item.id}
-              value={item.id}
-              label={item.label}
-            >
-              <div style={{
-                padding: '2px 0',
-                fontSize: '13px'
-              }}>
+            <Select.Option key={item.id} value={item.id} label={item.label}>
+              <div
+                style={{
+                  padding: "2px 0",
+                  fontSize: "13px",
+                }}
+              >
                 <span>{item.label}</span>
               </div>
             </Select.Option>
