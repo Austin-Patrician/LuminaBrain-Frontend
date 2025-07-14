@@ -1,5 +1,4 @@
-import { Layout, Typography } from "antd";
-import { useTranslation } from "react-i18next";
+import { Layout } from "antd";
 import { Navigate } from "react-router";
 
 import DashboardImg from "@/assets/images/background/dashboard.png";
@@ -20,7 +19,6 @@ import { LoginStateProvider } from "./providers/LoginStateProvider";
 const { VITE_APP_HOMEPAGE: HOMEPAGE } = import.meta.env;
 
 function Login() {
-  const { t } = useTranslation();
   const token = useUserToken();
 
   // 判断用户是否有权限

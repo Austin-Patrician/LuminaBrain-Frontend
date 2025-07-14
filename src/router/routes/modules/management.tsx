@@ -9,15 +9,10 @@ import type { AppRouteObject } from "#/router";
 const ProfilePage = lazy(() => import("@/pages/management/user/profile"));
 const AccountPage = lazy(() => import("@/pages/management/user/account"));
 
-const OrganizationPage = lazy(
-  () => import("@/pages/management/system/organization")
-);
 const PermissioPage = lazy(
   () => import("@/pages/management/system/permission")
 );
 const RolePage = lazy(() => import("@/pages/management/system/role"));
-
-const Blog = lazy(() => import("@/pages/management/blog"));
 
 const management: AppRouteObject = {
   order: 2,
