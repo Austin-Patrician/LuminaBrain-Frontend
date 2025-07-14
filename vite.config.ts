@@ -64,6 +64,7 @@ export default defineConfig(({ mode }) => {
 			chunkSizeWarningLimit: 1500,
 			rollupOptions: {
 				output: {
+					outDir: "build",
 					manualChunks: {
 						"vendor-core": ["react", "react-dom", "react-router"],
 						"vendor-ui": ["antd", "@ant-design/icons", "@ant-design/cssinjs", "framer-motion", "styled-components"],

@@ -1478,12 +1478,6 @@ const ChatPage: React.FC = () => {
                           onSubmit={handleSendMessage}
                           onFocus={() => {}}
                           onBlur={() => {}}
-                          onKeyPress={(e: React.KeyboardEvent) => {
-                            if (e.key === "Enter" && !e.shiftKey) {
-                              e.preventDefault();
-                              handleSendMessage();
-                            }
-                          }}
                           placeholder="输入消息... (Shift + Enter 换行)"
                           loading={isLoading}
                           disabled={isLoading}

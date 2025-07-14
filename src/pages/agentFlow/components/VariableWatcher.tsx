@@ -24,7 +24,6 @@ import {
   FileTextOutlined,
   FunctionOutlined,
   NumberOutlined,
-  BooleanOutlined,
   UnorderedListOutlined
 } from '@ant-design/icons';
 
@@ -124,7 +123,6 @@ const VariableWatcher: React.FC<VariableWatcherProps> = ({
     switch (type) {
       case 'string': return <FileTextOutlined className="text-green-500" />;
       case 'number': return <NumberOutlined className="text-blue-500" />;
-      case 'boolean': return <BooleanOutlined className="text-purple-500" />;
       case 'object': return <UnorderedListOutlined className="text-orange-500" />;
       case 'function': return <FunctionOutlined className="text-red-500" />;
       default: return <FileTextOutlined className="text-gray-500" />;

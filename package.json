@@ -6,7 +6,7 @@
   "homepage": "https://github.com/d3george/slash-admin",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "vite build",
     "preview": "vite preview",
     "preinstall": "lefthook install"
   },

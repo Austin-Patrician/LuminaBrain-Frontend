@@ -1,6 +1,6 @@
 import { Suspense, lazy } from "react";
 
-import { Iconify, SvgIcon } from "@/components/icon";
+import { Iconify } from "@/components/icon";
 import { CircleLoading } from "@/components/loading";
 
 import type { AppRouteObject } from "#/router";
