@@ -125,7 +125,7 @@ export default function DictionaryItemTab({
   });
 
   const dictionaryItems = data?.data || [];
-  const totalCount = data?.data?.total || 0;
+  const totalCount = data?.total || 0;
   const dictionaries = dictionaryOptions || [];
 
   // 当选中的字典ID变化时，更新搜索参数
@@ -176,15 +176,15 @@ export default function DictionaryItemTab({
       },
     },
     {
-      title: "值",
-      dataIndex: "value",
-      key: "value",
-      width: 150,
-    },
-    {
       title: "标签",
       dataIndex: "label",
       key: "label",
+      width: 150,
+    },
+    {
+      title: "值",
+      dataIndex: "value",
+      key: "value",
       width: 150,
     },
     {
@@ -491,20 +491,24 @@ export default function DictionaryItemTab({
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
-                label="值"
-                name="value"
-                rules={[{ required: true, message: "请输入字典项值" }]}
+                label="标签"
+                name="label"
+                rules={[
+                  { required: true, message: "请输入字典项标签", max: 100 },
+                ]}
               >
-                <Input placeholder="请输入字典项值" />
+                <Input placeholder="请输入字典项标签" />
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item
-                label="标签"
-                name="label"
-                rules={[{ required: true, message: "请输入字典项标签" }]}
+                label="值"
+                name="value"
+                rules={[
+                  { required: true, message: "请输入字典项值", max: 2000 },
+                ]}
               >
-                <Input placeholder="请输入字典项标签" />
+                <Input placeholder="请输入字典项值" />
               </Form.Item>
             </Col>
           </Row>

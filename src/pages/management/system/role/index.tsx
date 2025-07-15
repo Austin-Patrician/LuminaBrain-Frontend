@@ -120,14 +120,14 @@ export default function RolePage() {
     {
       title: "Creation Time",
       dataIndex: "creationTime",
-      width: 160,
+      width: 200,
       render: (time) => (time ? new Date(time).toLocaleString() : "-"),
     },
     {
       title: "Action",
       key: "operation",
       align: "center",
-      width: 150,
+      width: 220,
       render: (_, record) => (
         <div className="flex w-full justify-center text-gray gap-1">
           <IconButton onClick={() => onEdit(record)} title="编辑角色">

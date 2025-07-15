@@ -246,46 +246,6 @@ export default function AgentPage() {
                   </div>
                 </div>
 
-                {/* 服务信息，使用API获取的服务名称 */}
-                <div className="mb-3">
-                  <Tag color="blue" className="mr-1">
-                    {getServiceNameById(agent.serviceId)}
-                  </Tag>
-                  {agent.functionChoiceBehavior && (
-                    <Tag color="green" className="mr-1">
-                      函数选择:{" "}
-                      {FUNCTION_CHOICE_BEHAVIORS.find(
-                        (f) => f.id === agent.functionChoiceBehavior
-                      )?.name || agent.functionChoiceBehavior}
-                    </Tag>
-                  )}
-                </div>
-
-                {/* 模型参数 */}
-                <div className="grid grid-cols-2 gap-2 mb-3">
-                  {agent.temperature && (
-                    <div className="flex items-center text-gray-600 text-sm">
-                      <Iconify icon="ph:thermometer" className="mr-1" />
-                      温度: {agent.temperature}
-                    </div>
-                  )}
-                  {agent.topP && (
-                    <div className="flex items-center text-gray-600 text-sm">
-                      <Iconify
-                        icon="mdi:chart-bell-curve-cumulative"
-                        className="mr-1"
-                      />
-                      Top P: {agent.topP}
-                    </div>
-                  )}
-                  {agent.maxTokens && (
-                    <div className="flex items-center text-gray-600 text-sm">
-                      <Iconify icon="mdi:counter" className="mr-1" />
-                      令牌: {agent.maxTokens}
-                    </div>
-                  )}
-                </div>
-
                 {/* 创建时间 */}
                 {agent.createdAt && (
                   <div className="text-xs text-gray-400 mb-3">

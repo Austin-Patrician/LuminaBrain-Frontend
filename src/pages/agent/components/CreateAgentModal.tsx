@@ -17,9 +17,9 @@ import agentService from "@/api/services/agentService";
 
 // 函数选择行为选项
 const FUNCTION_CHOICE_BEHAVIORS = [
-  { id: "auto", name: "自动" },
-  { id: "required", name: "必需" },
-  { id: "none", name: "无" },
+  { id: "7DB033D5-C0C4-4139-9522-24AC58A202AB", name: "自动" },
+  { id: "A665F2CB-4A80-4E79-8A42-D7E612F2A1EC", name: "必需" },
+  { id: "4FFBB956-E037-4D42-8F19-626627911983", name: "无" },
 ];
 
 // 状态选项
@@ -129,7 +129,7 @@ const CreateAgentModal: React.FC<CreateAgentModalProps> = ({
           functionChoiceBehavior: "auto",
           temperature: 0.7,
           topP: 1,
-          maxTokens: 1000,
+          maxTokens: 1024,
         }}
       >
         <Form.Item
@@ -180,7 +180,7 @@ const CreateAgentModal: React.FC<CreateAgentModalProps> = ({
           </Select>
         </Form.Item>
 
-        <Form.Item name="functionChoiceBehavior" label="函数选择行为">
+        <Form.Item name="functionChoiceBehavior" label="函数选择行为" required>
           <Select placeholder="请选择函数选择行为">
             {FUNCTION_CHOICE_BEHAVIORS.map((behavior) => (
               <Select.Option key={behavior.id} value={behavior.id}>
@@ -209,6 +209,7 @@ const CreateAgentModal: React.FC<CreateAgentModalProps> = ({
                 min={0}
                 max={1}
                 step={0.1}
+                defaultValue={0.5}
                 style={{ width: "100%" }}
               />
             </Form.Item>
@@ -219,21 +220,29 @@ const CreateAgentModal: React.FC<CreateAgentModalProps> = ({
             >
               <InputNumber
                 min={0}
-                max={2}
+                max={1}
                 step={0.1}
+                defaultValue={0.6}
                 style={{ width: "100%" }}
               />
             </Form.Item>
             <Form.Item name="presencePenalty" label="存在惩罚" className="mb-0">
               <InputNumber
                 min={0}
-                max={2}
+                max={1}
                 step={0.1}
+                defaultValue={0.7}
                 style={{ width: "100%" }}
               />
             </Form.Item>
             <Form.Item name="maxTokens" label="最大令牌数" className="mb-0">
-              <InputNumber min={1} step={10} style={{ width: "100%" }} />
+              <InputNumber
+                min={1024}
+                max={10800}
+                step={10}
+                defaultValue={1024}
+                style={{ width: "100%" }}
+              />
             </Form.Item>
           </div>
         </Form.Item>

@@ -21,7 +21,7 @@ import { useTranslation } from "react-i18next";
 
 import applicationService from "@/api/services/applicationService";
 import { IconButton, Iconify } from "@/components/icon";
-import CreateApplicationModal from "./components/CreateApplicationModal";
+import CreateApplicationModalNew from "./components/CreateApplicationModalNew";
 import EditApplicationModal from "./components/EditApplicationModal";
 
 import type { Application } from "#/entity";
@@ -33,6 +33,7 @@ const APPLICATION_TYPES = [
   { id: "BD5A8BA5-CCB0-4E77-91E6-2D4637F7F26D", name: "Chat" },
   { id: "A8E78CD3-4FBA-4B33-B996-FE5B04571C00", name: "Knowledge" },
   { id: "A8E78CD3-4FBA-4B33-B996-FE5B04571C01", name: "Text2SQL" },
+  { id: "830ADB85-9B0E-413F-BB86-6E099059EDA7", name: "Agent" },
 ];
 
 // 状态ID常量
@@ -334,53 +335,54 @@ export default function ApplicationPage() {
                     {app.description || "No description available"}
                   </Paragraph>
 
-                  {/* 模型信息 - 次要信息，小尺寸标签 */}
-                  {(app.ChatModelName ||
-                    app.embeddingModelName ||
-                    app.rerankModelName ||
-                    app.imageModelName) && (
-                    <div>
-                      <div className="text-xs text-gray-400 mb-1 font-medium">
-                        Models
+                  {/* 应用类型相关的特殊信息 */}
+                  {app.applicationTypeId ===
+                    "A8E78CD3-4FBA-4B33-B996-FE5B04571C00" && (
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      <div className="text-xs text-gray-400">
+                        <span className="font-medium">聊天模型:</span>{" "}
+                        {(app as any).chatModelName || "未配置"}
                       </div>
-                      <div className="flex flex-wrap gap-1">
-                        {app.ChatModelName && (
-                          <Tag
-                            size="small"
-                            color={MODEL_TAG_COLORS.Chat}
-                            className="text-xs"
-                          >
-                            {app.ChatModelName}
-                          </Tag>
-                        )}
-                        {app.embeddingModelName && (
-                          <Tag
-                            size="small"
-                            color={MODEL_TAG_COLORS.Embedding}
-                            className="text-xs"
-                          >
-                            {app.embeddingModelName}
-                          </Tag>
-                        )}
-                        {app.rerankModelName && (
-                          <Tag
-                            size="small"
-                            color={MODEL_TAG_COLORS.Rerank}
-                            className="text-xs"
-                          >
-                            {app.rerankModelName}
-                          </Tag>
-                        )}
-                        {app.imageModelName && (
-                          <Tag
-                            size="small"
-                            color={MODEL_TAG_COLORS.Image}
-                            className="text-xs"
-                          >
-                            {app.imageModelName}
-                          </Tag>
+                      <div className="text-xs text-gray-400">
+                        <span className="font-medium">嵌入模型:</span>{" "}
+                        {(app as any).embeddingModelName || "未配置"}
+                      </div>
+                      {(app as any).rerankModelName && (
+                        <div className="text-xs text-gray-400">
+                          <span className="font-medium">重排模型:</span>{" "}
+                          {(app as any).rerankModelName}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {app.applicationTypeId ===
+                    "830ADB85-9B0E-413F-BB86-6E099059EDA7" &&
+                    (app as any).agentConfigs && (
+                      <div className="flex flex-wrap gap-1 mb-2">
+                        <span className="text-xs text-gray-400 mr-1">
+                          Agents:
+                        </span>
+                        {(app as any).agentConfigs
+                          .slice(0, 3)
+                          .map((agent: any, idx: number) => (
+                            <Tag key={agent.agentId} color="cyan">
+                              {agent.agentName}
+                            </Tag>
+                          ))}
+                        {(app as any).agentConfigs.length > 3 && (
+                          <span className="text-xs text-gray-400">
+                            +{(app as any).agentConfigs.length - 3} more
+                          </span>
                         )}
                       </div>
+                    )}
+
+                  {app.applicationTypeId ===
+                    "BD5A8BA5-CCB0-4E77-91E6-2D4637F7F26D" && (
+                    <div className="text-xs text-gray-400">
+                      <span className="font-medium">聊天模型:</span>{" "}
+                      {(app as any).chatModelName || "未配置"}
                     </div>
                   )}
                 </div>
@@ -435,7 +437,7 @@ export default function ApplicationPage() {
           </div>
         )}
       </Card>
-      <CreateApplicationModal
+      <CreateApplicationModalNew
         visible={createModalVisible}
         onCancel={() => setCreateModalVisible(false)}
         onSuccess={() => {
