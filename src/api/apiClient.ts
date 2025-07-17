@@ -5,7 +5,6 @@ import userStore from "@/store/userStore";
 
 import { toast } from "sonner";
 import type { Result } from "#/api";
-import { ResultEnum } from "#/enum";
 
 // 创建 axios 实例
 const axiosInstance = axios.create({

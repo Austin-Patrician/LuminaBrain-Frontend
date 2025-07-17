@@ -8,7 +8,8 @@ enum AgentApi {
   GetAgentById = "/agent",
   AddAgent = "/agent/add",
   UpdateAgent = "/agent/update",
-  DeleteAgent = "/agent/delete",
+  DeleteAgent = "/agent",
+  CheckAgent = "/agent/check",
   GetAiModelsByTypeId = "/aiModel/getByTypeId/{id}" , // 根据类型ID获取AI模型列表
 }
 
@@ -64,6 +65,11 @@ const agentService = {
   deleteAgent: (id: string) => {
     return apiClient.delete<void>({
       url: `${AgentApi.DeleteAgent}/${id}`,
+    });
+  },
+  checkAgent: (id: string) => {
+    return apiClient.get<boolean>({
+      url: `${AgentApi.CheckAgent}/${id}`,
     });
   },
 };

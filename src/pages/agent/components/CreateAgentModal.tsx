@@ -125,8 +125,8 @@ const CreateAgentModal: React.FC<CreateAgentModalProps> = ({
         form={form}
         layout="vertical"
         initialValues={{
-          statusId: "active",
-          functionChoiceBehavior: "auto",
+          statusId: "DE546396-5B62-41E5-8814-4C072C74F26A",
+          functionChoiceBehavior: "7DB033D5-C0C4-4139-9522-24AC58A202AB",
           temperature: 0.7,
           topP: 1,
           maxTokens: 1024,

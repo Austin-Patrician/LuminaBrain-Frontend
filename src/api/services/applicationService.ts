@@ -97,7 +97,7 @@ const applicationService = {
 	 */
 	updateApplication: (data: Application) => {
 		return apiClient.put<Application>({
-			url: `${ApplicationApi.UpdateApplication}/${data.id}`,
+			url: `${ApplicationApi.UpdateApplication}`,
 			data,
 		});
 	},

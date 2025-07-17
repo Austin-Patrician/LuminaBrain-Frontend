@@ -1,132 +1,307 @@
-<div align="center"> 
-<br> 
-<br>
-<img src="./src/assets/images/logo.png" height="140" />
-<h3> Slash Admin </h3>
-  <p>
-    <p style="font-size: 14px">
-      Slash Admin is a modern admin dashboard template built with React 18, Vite, Ant Design, and TypeScript. It is designed to help developers quickly create powerful admin management systems.
-    </p>
-    <br />
-    <br />
-    <a href="https://admin.slashspaces.com/">Preview</a>
-    ·
-    <a href="https://discord.gg/fXemAXVNDa">Discord</a>
-    ·
-    <a href="https://docs-admin.slashspaces.com/">Document</a>
-    <br />
-    <br />
-    <a href="https://trendshift.io/repositories/6387" target="_blank"><img src="https://trendshift.io/api/badge/repositories/6387" alt="d3george%2Fslash-admin | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
-</div>
+# LuminaBrain 🧠
 
-**English** | [中文](./README.zh-CN.md)
+An intelligent AI platform built with modern web technologies, providing comprehensive AI model management, knowledge base operations, and conversational AI capabilities.
 
-##  Sponsor
-<div style="display: flex; gap: 50px"> 
-  <img style="width:300px" src="https://d3george.github.io/github-static/pay/weixin.jpg" >
-  <img style="width:280px" src="https://d3george.github.io/github-static/pay/buymeacoffee.png" />
-</div>
+![LuminaBrain](https://img.shields.io/badge/LuminaBrain-AI%20Platform-blue)
+![React](https://img.shields.io/badge/React-18.2.0-blue)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.6.3-blue)
+![Ant Design](https://img.shields.io/badge/Ant%20Design-5.22.1-blue)
+![Vite](https://img.shields.io/badge/Vite-5.4.11-green)
 
-## Preview
-+ https://admin.slashspaces.com/
+## ✨ Features
 
-|![login.png](https://d3george.github.io/github-static/slash-admin/login.jpeg)|![login_dark.png](https://d3george.github.io/github-static/slash-admin/login_dark.jpeg)
-| ----------------------------------------------------------------- | ------------------------------------------------------------------- |
-|![analysis.png](https://d3george.github.io/github-static/slash-admin/analysis.png)|![workbench.png](https://d3george.github.io/github-static/slash-admin/workbench.png)
+### 🤖 AI Chat & Conversation
+- **Multi-Model Support**: Support for various AI models (ChatGPT, Claude, etc.)
+- **Real-time Streaming**: Support for both streaming and non-streaming responses
+- **Context Management**: Intelligent conversation history and context preservation
+- **File Attachments**: Upload and process various file formats
+- **Thinking Mode**: Visual representation of AI thinking process
 
-## Features
+### 📚 Knowledge Management
+- **Knowledge Base Creation**: Create and manage knowledge repositories
+- **Multi-format Import**: Support for PDF, Word, Excel, text, and web links
+- **QA Processing**: Specialized Q&A format support with templates
+- **OCR Support**: Optical Character Recognition for image-based content
+- **Rerank Models**: Advanced search ranking with rerank model integration
 
-- Built using React 18 hooks.
-- Powered by Vite for rapid development and hot module replacement.
-- Integrates Ant Design, providing a rich set of UI components and design patterns.
-- Written in TypeScript, offering type safety and an improved development experience.
-- Responsive design, adapting to various screen sizes and devices.
-- Flexible routing configuration, supporting nested routes.
-- Integrated access control based on user roles.
-- Supports internationalization for easy language switching.
-- Includes common admin features like user management, role management, and permission management.
-- Customizable themes and styles to meet your branding needs.
-- Mocking solution based on MSW and Faker.js.
-- State management using Zustand.
-- Data fetching using React-Query.
+### 🔧 AI Model Management
+- **Model Configuration**: Manage chat, embedding, and rerank models
+- **Provider Integration**: Support for multiple AI providers
+- **Model Type Classification**: Organized model management by type
+- **Dynamic Loading**: Real-time model availability and configuration
 
-## Quick Start
+### 🛠 Agent & Application Management
+- **AI Agents**: Create and manage specialized AI agents
+- **Application Types**: Support for chat, Text2SQL, and custom applications
+- **Flow Management**: Visual workflow design and execution
+- **Integration Ready**: API-first design for easy integration
 
-### Get the Project Code
+### 👥 User & Permission System
+- **Role-based Access**: Comprehensive RBAC system
+- **Organization Management**: Multi-tenant organization support
+- **Permission Control**: Granular permission management
+- **User Profiles**: Complete user management system
+
+### 📊 Analytics & Monitoring
+- **Dashboard**: Real-time analytics and metrics
+- **Usage Statistics**: Detailed usage tracking and reporting
+- **Performance Monitoring**: System performance insights
+- **Audit Logs**: Comprehensive activity logging
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- **Node.js**: >= 20.x
+- **pnpm**: >= 9.1.0 (recommended package manager)
+
+### Installation
 
 ```bash
+# Clone the repository
 git clone https://github.com/d3george/slash-admin.git
-```
+cd slash-admin
 
-### Install Dependencies
-
-In the project's root directory, run the following command to install project dependencies:
-
-```bash
+# Install dependencies
 pnpm install
-```
 
-### Start the Development Server
-
-Run the following command to start the development server:
-
-```bash
+# Start development server
 pnpm dev
 ```
 
-Visit [http://localhost:3001](http://localhost:3001) to view your application.
+### Environment Configuration
+
+Create environment files based on your deployment:
+
+```bash
+# Development
+cp .env.development .env.local
+
+# Production
+cp .env.production .env.local
+```
+
+Configure the following environment variables:
+
+```env
+# API Configuration
+VITE_APP_BASE_API=http://localhost:8080/api
+VITE_APP_HOMEPAGE=/dashboard/workbench
+VITE_APP_BASE_PATH=/
+
+# Router Mode
+VITE_APP_ROUTER_MODE=permission
+
+# Environment
+VITE_APP_ENV=development
+```
+
+## 🏗 Project Structure
+
+```
+src/
+├── api/                    # API services and client configuration
+│   ├── apiClient.ts       # Axios configuration and interceptors
+│   └── services/          # Domain-specific API services
+├── components/            # Reusable UI components
+│   ├── animate/          # Animation components
+│   ├── chart/            # Chart components
+│   ├── editor/           # Rich text editor
+│   ├── icon/             # Icon components
+│   └── ...
+├── layouts/              # Layout components
+│   ├── dashboard/        # Dashboard layout
+│   └── simple/           # Simple layout
+├── pages/                # Feature pages
+│   ├── Chat/            # AI conversation interface
+│   ├── knowledge/       # Knowledge base management
+│   ├── agent/           # AI agent management
+│   ├── application/     # Application management
+│   ├── management/      # System management
+│   └── ...
+├── router/               # Routing configuration
+│   ├── routes/          # Route definitions
+│   └── hooks/           # Router hooks
+├── store/                # State management (Zustand)
+├── theme/                # Theme system and styling
+├── types/                # TypeScript type definitions
+└── utils/                # Utility functions
+```
+
+## 🎨 Tech Stack
+
+### Frontend Framework
+- **React 18.2.0**: Modern React with hooks and concurrent features
+- **TypeScript**: Full type safety and enhanced development experience
+- **Vite**: Lightning-fast build tool and development server
+
+### UI & Styling
+- **Ant Design 5.22.1**: Enterprise-class UI design language
+- **Tailwind CSS**: Utility-first CSS framework
+- **Framer Motion**: Production-ready motion library
+- **Vanilla Extract**: Zero-runtime CSS-in-JS
+
+### State Management & Data
+- **Zustand**: Lightweight state management
+- **TanStack React Query**: Powerful data synchronization
+- **React Router**: Declarative routing
+
+### Development Tools
+- **Biome**: Fast formatter and linter
+- **Lefthook**: Git hooks management
+- **Commitlint**: Conventional commit enforcement
+
+## 📖 Usage Guide
+
+### Creating a Knowledge Base
+
+1. Navigate to **Knowledge Management**
+2. Click **"New"** button
+3. Configure basic information:
+   - Name and description
+   - Select chat and embedding models
+   - Optionally configure rerank model
+   - Enable OCR if needed
+4. Set advanced token configurations
+5. Click **"Create Knowledge Base"**
+
+### Importing Knowledge Content
+
+1. Open your knowledge base
+2. Click **"Import"** dropdown
+3. Choose import type:
+   - **File Import**: PDF, Word, Excel, PPT, etc.
+   - **Link Import**: Web pages and articles
+   - **Text Import**: Direct text input
+   - **QA Import**: Structured Q&A data
+4. Configure processing options
+5. Upload and process content
+
+### Starting an AI Conversation
+
+1. Go to **Chat** interface
+2. Select an AI model from the dropdown
+3. Optionally enable **Thinking Mode**
+4. Attach files if needed
+5. Type your message and click **Send**
+
+### Managing AI Agents
+
+1. Access **Agent Management**
+2. Create new agent with specific instructions
+3. Configure model parameters
+4. Set function choices and behaviors
+5. Test and deploy agent
+
+## 🔧 Configuration
+
+### Model Configuration
+
+Configure AI models in the system:
+
+```typescript
+// Model type IDs
+const MODEL_TYPE_IDS = {
+  CHAT: "0D826A41-45CE-4870-8893-A8D4FAECD3A4",
+  EMBEDDING: "F37AF2F3-37A1-418B-8EEE-3675A5A36784", 
+  RERANK: "F8AC00C2-F4E7-4FC3-8677-CF8AE86CE23F"
+}
+```
+
+### Permission System
+
+The system uses a comprehensive RBAC (Role-Based Access Control) model:
+
+- **Roles**: Define user roles with specific permissions
+- **Permissions**: Granular access control for features
+- **Organizations**: Multi-tenant support
+
+## 🚢 Deployment
 
 ### Build for Production
 
-Run the following command to build the production version:
-
 ```bash
+# Build the application
 pnpm build
+
+# Preview production build
+pnpm preview
 ```
 
-## Docker deployment
+### Docker Deployment
 
-
-### Build image and Run container
-#### build image
-Enter the project root directory in the terminal and execute the following command to build the Docker image:
+```dockerfile
+FROM node:20-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN pnpm install
+COPY . .
+RUN pnpm build
+EXPOSE 3000
+CMD ["pnpm", "preview"]
 ```
-docker build -t your-image-name .
+
+### Environment Variables for Production
+
+```env
+VITE_APP_BASE_API=https://your-api-domain.com
+VITE_APP_ENV=production
 ```
-Make sure to replace `your-image-name` with your own image name 
 
-#### run container
-Run your application in the Docker container using the following command:
-```
-docker run -p 3001:80 your-image-name
-```
-This will run your application on port `80`(exposed in `Dockerfile`) of the container and map it to port `3001` on your host.
+## 🤝 Contributing
 
-Now you can access http://localhost:3001 to view the deployed applications.
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
-### use docker-compose.yaml
-Enter the project root directory in the terminal and execute the following command to start Docker Compose:
-```
-docker-compose up -d
-```
-Docker Compose will build an image based on the configuration defined by 'docker-compose. yaml' and run the container in the background.
+### Development Workflow
 
-After the container runs successfully, it can also be accessed through http://localhost:3001 To view the deployed applications.
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Commit your changes: `git commit -m 'feat: add amazing feature'`
+4. Push to the branch: `git push origin feature/amazing-feature`
+5. Submit a Pull Request
 
+### Commit Convention
 
-## Git Contribution submission specification
+We use [Conventional Commits](https://www.conventionalcommits.org/):
 
-reference[.commitlint.config.js](./commitlint.config.js)
+- `feat`: New features
+- `fix`: Bug fixes
+- `docs`: Documentation changes
+- `style`: Code style changes
+- `refactor`: Code refactoring
+- `test`: Test additions or modifications
+- `chore`: Build process or auxiliary tool changes
 
-- `feat` new features
-- `fix`  fix the
-- `docs` documentation or comments
-- `style` code format (changes that do not affect code execution)
-- `refactor` refactor
-- `perf` performance optimization
-- `revert` revert commit
-- `test` test related
-- `chore` changes in the construction process or auxiliary tools
-- `ci` modify CI configuration and scripts
-- `types` type definition file changes
-- `wip` in development
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙋‍♂️ Support
+
+- 📧 Email: support@luminabrain.com
+- 💬 Discord: [Join our community](https://discord.gg/luminabrain)
+- 📖 Documentation: [docs.luminabrain.com](https://docs.luminabrain.com)
+- 🐛 Issues: [GitHub Issues](https://github.com/d3george/slash-admin/issues)
+
+## 🗺 Roadmap
+
+- [ ] **Multi-language Support**: Internationalization for global users
+- [ ] **Mobile App**: React Native mobile application
+- [ ] **API Documentation**: Comprehensive API documentation
+- [ ] **Plugin System**: Extensible plugin architecture
+- [ ] **Advanced Analytics**: Enhanced analytics and reporting
+- [ ] **Cloud Integration**: Native cloud service integrations
+
+## 🌟 Acknowledgments
+
+- [Ant Design](https://ant.design/) for the excellent UI components
+- [React](https://reactjs.org/) for the powerful frontend framework
+- [Vite](https://vitejs.dev/) for the blazing fast build tool
+- All contributors who help make this project better
+
+---
+
+**Made with ❤️ by the LuminaBrain Team**
+
+[![Follow us on GitHub](https://img.shields.io/github/followers/d3george?style=social)](https://github.com/d3george)
+[![Star this repo](https://img.shields.io/github/stars/d3george/slash-admin?style=social)](https://github.com/d3george/slash-admin/stargazers)

@@ -43,16 +43,10 @@ const AgentApplicationForm: React.FC<AgentApplicationFormProps> = ({
 
   // 功能选择行为映射
   const FUNCTION_CHOICE_BEHAVIORS = [
-    { id: "A665F2CB-4A80-4E79-8A42-D7E612F2A1EC", name: "自动" },
-    { id: "B775F2CB-4A80-4E79-8A42-D7E612F2A1ED", name: "必需" },
-    { id: "C885F2CB-4A80-4E79-8A42-D7E612F2A1EE", name: "无" },
+    { id: "7DB033D5-C0C4-4139-9522-24AC58A202AB", name: "自动" },
+    { id: "A665F2CB-4A80-4E79-8A42-D7E612F2A1EC", name: "必需" },
+    { id: "4FFBB956-E037-4D42-8F19-626627911983", name: "无" },
   ];
-
-  // 获取功能选择行为名称
-  const getFunctionChoiceBehaviorName = (id: string) => {
-    const behavior = FUNCTION_CHOICE_BEHAVIORS.find((b) => b.id === id);
-    return behavior ? behavior.name : "自动";
-  };
 
   const cardStyle = {
     marginBottom: 16,

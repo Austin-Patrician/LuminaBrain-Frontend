@@ -90,31 +90,6 @@ export default function ApplicationPage() {
   const applications: Application[] = data?.data || [];
   const totalCount = data?.total || 0;
 
-  // Mutations for create, update, delete
-  const createApplication = useMutation({
-    mutationFn: applicationService.createApplication,
-    onSuccess: () => {
-      message.success("Application created successfully");
-      setCreateModalVisible(false);
-      queryClient.invalidateQueries({ queryKey: ["applications"] });
-    },
-    onError: (error) => {
-      message.error(`Failed to create application: ${error}`);
-    },
-  });
-
-  const updateApplication = useMutation({
-    mutationFn: applicationService.updateApplication,
-    onSuccess: () => {
-      message.success("Application updated successfully");
-      setEditModalVisible(false);
-      queryClient.invalidateQueries({ queryKey: ["applications"] });
-    },
-    onError: (error) => {
-      message.error(`Failed to update application: ${error}`);
-    },
-  });
-
   const deleteApplication = useMutation({
     mutationFn: applicationService.deleteApplication,
     onSuccess: () => {
@@ -164,11 +139,6 @@ export default function ApplicationPage() {
 
   const refreshList = () => {
     refetch();
-  };
-
-  const onEditModalSuccess = () => {
-    setEditModalVisible(false);
-    queryClient.invalidateQueries({ queryKey: ["applications"] });
   };
 
   return (

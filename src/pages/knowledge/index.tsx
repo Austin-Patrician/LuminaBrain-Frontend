@@ -20,6 +20,7 @@ import { usePathname, useRouter } from "@/router/hooks";
 import knowledgeService from "@/api/services/knowledgeService";
 import { IconButton, Iconify } from "@/components/icon";
 import EditKnowledgeModal from "./components/EditKnowledgeModal";
+import CreateKnowledgeModal from "./components/CreateKnowledgeModal";
 
 import type { Knowledge } from "#/entity";
 
@@ -66,6 +67,9 @@ export default function Knowledge() {
   const [currentKnowledge, setCurrentKnowledge] =
     useState<Partial<Knowledge> | null>(null);
 
+  // 创建弹窗状态
+  const [createModalVisible, setCreateModalVisible] = useState(false);
+
   // Query for fetching knowledge bases with search params and pagination
   const { data, isLoading } = useQuery({
     queryKey: ["knowledge", searchParams, pagination],
@@ -101,12 +105,11 @@ export default function Knowledge() {
 
   const onSearchFormReset = () => {
     searchForm.resetFields();
-    setSearchParams({ name: "", statusId: "", isOCR: false });
+    setSearchParams({ name: "", statusId: "" });
   };
 
   const onCreate = () => {
-    // 这里可以添加创建弹窗的逻辑
-    message.info("创建功能待实现");
+    setCreateModalVisible(true);
   };
 
   const onView = (knowledgeBase: Knowledge) => {
@@ -128,6 +131,11 @@ export default function Knowledge() {
 
   const handleEditSuccess = () => {
     setEditModalVisible(false);
+    queryClient.invalidateQueries({ queryKey: ["knowledge"] });
+  };
+
+  const handleCreateSuccess = () => {
+    setCreateModalVisible(false);
     queryClient.invalidateQueries({ queryKey: ["knowledge"] });
   };
 
@@ -333,6 +341,12 @@ export default function Knowledge() {
         knowledge={currentKnowledge}
         onCancel={() => setEditModalVisible(false)}
         onSuccess={handleEditSuccess}
+      />
+
+      <CreateKnowledgeModal
+        visible={createModalVisible}
+        onCancel={() => setCreateModalVisible(false)}
+        onSuccess={handleCreateSuccess}
       />
     </Space>
   );

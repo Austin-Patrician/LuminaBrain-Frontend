@@ -1,3 +1,6 @@
+
+import userStore from "@/store/userStore";
+
 // OpenAI兼容的消息格式
 export interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
@@ -54,19 +57,22 @@ export class ChatService {
   private baseURL: string;
   private apiKey: string;
 
-  constructor(baseURL = 'http://103.150.10.188:1433/api/v1', apiKey = '') {
+  constructor(baseURL = 'http://10.1.105.50:5154/api/v1', apiKey = '') {
     this.baseURL = baseURL;
     this.apiKey = apiKey;
   }
 
+  
+
   // 非流式聊天完成
   async createChatCompletion(request: ChatCompletionRequest): Promise<ChatCompletionResponse> {
     try {
+      const { userToken } = userStore.getState();
       const response = await fetch(`${this.baseURL}/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(this.apiKey && { 'Authorization': `Bearer ${this.apiKey}` }),
+          'Authorization': `Bearer ${userToken.accessToken}`,
         },
         body: JSON.stringify(request),
       });
@@ -114,13 +120,14 @@ export class ChatService {
     onError: (error: Error) => void
   ): Promise<void> {
     try {
+      const { userToken } = userStore.getState();
       const response = await fetch(`${this.baseURL}/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'text/event-stream',
           'Cache-Control': 'no-cache',
-          ...(this.apiKey && { 'Authorization': `Bearer ${this.apiKey}` }),
+          'Authorization': `Bearer ${userToken.accessToken}`,
         },
         body: JSON.stringify({
           ...request,

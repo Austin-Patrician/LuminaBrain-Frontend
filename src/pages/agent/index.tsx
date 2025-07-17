@@ -6,7 +6,6 @@ import {
   Form,
   Input,
   Modal,
-  Popconfirm,
   Row,
   Select,
   Space,
@@ -90,15 +89,7 @@ export default function AgentPage() {
       agentService.getAiModelsByTypeId("0D826A41-45CE-4870-8893-A8D4FAECD3A4"),
   });
 
-  const serviceOptions = aiModelData?.data || [];
-
-  // 通过serviceId查找对应的模型名称
-  const getServiceNameById = (serviceId: string) => {
-    const model = serviceOptions.find(
-      (model: AiModelItem) => model.aiModelId === serviceId
-    );
-    return model?.aiModelName || serviceId;
-  };
+  const serviceOptions = aiModelData || [];
 
   // 从查询结果中提取数据
   const agents: Agent[] = data?.data || [];
@@ -132,8 +123,40 @@ export default function AgentPage() {
     setEditModalVisible(true);
   };
 
-  const onDelete = (id: string) => {
-    deleteAgent.mutate(id);
+  const onDelete = async (id: string) => {
+    try {
+      // 先检查agent是否被引用
+      const isReferenced = await agentService.checkAgent(id);
+
+      if (isReferenced) {
+        // 如果被引用，显示警告对话框
+        Modal.confirm({
+          title: "确认删除Agent",
+          content:
+            "该Agent已被Application引用，删除可能会导致Application不可用，您确认要删除吗？",
+          okText: "确认删除",
+          cancelText: "取消",
+          okType: "danger",
+          onOk: () => {
+            deleteAgent.mutate(id);
+          },
+        });
+      } else {
+        // 如果没有被引用，显示普通确认对话框
+        Modal.confirm({
+          title: "确认删除Agent",
+          content: "确认删除此Agent吗？",
+          okText: "确认",
+          cancelText: "取消",
+          okType: "danger",
+          onOk: () => {
+            deleteAgent.mutate(id);
+          },
+        });
+      }
+    } catch (error) {
+      message.error("检查Agent引用状态失败");
+    }
   };
 
   const onPageChange = (page: number, pageSize: number) => {
@@ -188,9 +211,12 @@ export default function AgentPage() {
                 className="!mb-0"
               >
                 <Select allowClear placeholder="选择服务">
-                  {SERVICE_IDS.map((service) => (
-                    <Select.Option key={service.id} value={service.id}>
-                      {service.name}
+                  {serviceOptions.map((service) => (
+                    <Select.Option
+                      key={service.aiModelId}
+                      value={service.aiModelId}
+                    >
+                      {service.aiModelName}
                     </Select.Option>
                   ))}
                 </Select>
@@ -258,21 +284,13 @@ export default function AgentPage() {
                   <IconButton onClick={() => onEdit(agent)}>
                     <Iconify icon="solar:pen-bold-duotone" size={18} />
                   </IconButton>
-                  <Popconfirm
-                    title="确认删除此Agent?"
-                    okText="是"
-                    cancelText="否"
-                    placement="left"
-                    onConfirm={() => onDelete(agent.id)}
-                  >
-                    <IconButton>
-                      <Iconify
-                        icon="mingcute:delete-2-fill"
-                        size={18}
-                        className="text-error"
-                      />
-                    </IconButton>
-                  </Popconfirm>
+                  <IconButton onClick={() => onDelete(agent.id)}>
+                    <Iconify
+                      icon="mingcute:delete-2-fill"
+                      size={18}
+                      className="text-error"
+                    />
+                  </IconButton>
                 </div>
               </Card>
             </Col>

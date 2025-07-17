@@ -176,7 +176,8 @@ export interface Agent {
   frequencyPenalty?: number | null;
   presencePenalty?: number | null;
   maxTokens?: number | null;
-  functionChoiceBehavior?: string;
+  functionChoiceBehaviorId?: string;
+	functionChoiceBehaviorName?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -199,7 +200,7 @@ export interface AiModelListResponse {
 export interface AiModelAndKnowledgeItem {
   id: string;
   label: string;
-  type: "AI Model" | "Knowledge";
+  type: "AI Model" | "Knowledge" | "Agent";
 	isThink: boolean;
 	isStream: boolean;
 }

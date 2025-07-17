@@ -12,15 +12,16 @@ interface KnowledgeQueryParams {
 
 // 新增创建知识库的DTO
 interface CreateKnowledgeDto {
-	name: string;
-	description: string;
-	chatModelID: string | null;
-	embeddingModelID: string | null;
-	maxTokensPerParagraph: number;
-	avatar: string;
-	maxTokensPerLine: number;
-	overlappingTokens: number;
-	isOCR: boolean;
+name: string;
+description: string;
+chatModelID: string | null;
+embeddingModelID: string | null;
+rerankModelID: string | null;
+maxTokensPerParagraph: number;
+avatar: string;
+maxTokensPerLine: number;
+overlappingTokens: number;
+isOCR: boolean;
 }
 
 // 定义响应类型

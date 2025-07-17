@@ -75,15 +75,6 @@ interface ChatSession {
   isPinned?: boolean; // 新增置顶字段
 }
 
-// 模型选项（已弃用，现在使用API获取）
-// const modelOptions = [
-//   { label: 'GPT-4.1', value: 'gpt-4.1', provider: 'OpenAI' },
-//   { label: 'GPT-4o', value: 'gpt-4o', provider: 'OpenAI' },
-//   { label: 'GPT-4', value: 'gpt-4', provider: 'OpenAI' },
-//   { label: 'Claude-3.5 Sonnet', value: 'claude-3.5-sonnet', provider: 'Anthropic' },
-//   { label: 'Gemini Pro', value: 'gemini-pro', provider: 'Google' },
-// ];
-
 const ChatPage: React.FC = () => {
   const userInfo = useUserInfo();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);

@@ -33,6 +33,19 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ value, onChange }) => {
     }
   };
 
+  const changeChatType = (type: string) => {
+    if (type === "AI Model") {
+      return "AI 模型";
+    } else if (type === "Knowledge") {
+      return "知识库";
+    } else if (type === "Agent") {
+      // 处理Agent类型的逻辑
+      return "智能体";
+    }
+
+    return type;
+  };
+
   // 处理选择变化，找到对应的类型信息
   const handleChange = (selectedValue: string) => {
     const selectedItem = apiOptions.find((item) => item.id === selectedValue);
@@ -69,7 +82,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({ value, onChange }) => {
                 color: "#374151",
               }}
             >
-              {type === "AI Model" ? "AI 模型" : "知识库"}
+              {changeChatType(type)}
             </div>
           }
         >
