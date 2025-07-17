@@ -39,7 +39,7 @@ export enum ApplicationApi {
 	AddApplication = "/application/add",
 	QueryApplicationList = "/application/paged",
 	QueryApplicationById = "/application",
-	DeleteApplication = "/application/delete",
+	DeleteApplication = "/application",
 	UpdateApplication = "/application/update",
 	ShareApplication = "/application/share",
 	GetAiModelsByTypeId = "/aiModel/getByTypeId/{id}" , // 根据类型ID获取AI模型列表
