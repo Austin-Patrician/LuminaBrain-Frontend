@@ -1,0 +1,248 @@
+.promptPage {
+  min-height: 100vh;
+  padding: 16px;
+}
+
+.mainContainer {
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.headerCard {
+  background: white;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.headerCard .ant-card-body {
+  padding: 20px;
+}
+
+.headerTitle {
+  color: #262626 !important;
+  margin-bottom: 8px !important;
+}
+
+.headerDescription {
+  color: #8c8c8c !important;
+  margin-bottom: 0 !important;
+}
+
+.leftPanel {
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  height: fit-content;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.rightPanel {
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  height: calc(100vh - 120px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow-y: auto;
+}
+
+.sectionCard {
+  background: white;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  border: 1px solid #f0f0f0;
+}
+
+.sectionCard .ant-card-body {
+  padding: 16px;
+}
+
+.modelSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.modelSelector {
+  width: 100%;
+}
+
+.optimizationSection {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.optimizationButtons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.optimizationButton {
+  height: 60px;
+  border-radius: 8px;
+  border: 1px solid;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: white;
+}
+
+.functionCallingBtn {
+  border-color: #1890ff;
+  color: #1890ff;
+}
+
+.functionCallingBtn:hover,
+.functionCallingBtn:focus {
+  border-color: #40a9ff;
+  color: #40a9ff;
+}
+
+.promptOptimizationBtn {
+  border-color: #52c41a;
+  color: #52c41a;
+}
+
+.promptOptimizationBtn:hover,
+.promptOptimizationBtn:focus {
+  border-color: #73d13d;
+  color: #73d13d;
+}
+
+.runSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+.runButton {
+  width: 100%;
+  height: 40px;
+  border-radius: 6px;
+  font-weight: 500;
+  background: #1890ff;
+  border: none;
+  color: white;
+}
+
+.runButton:hover,
+.runButton:focus {
+  background: #40a9ff;
+}
+
+.runButton:disabled {
+  background: #f5f5f5;
+  color: #bfbfbf;
+}
+
+.systemPromptCollapse {
+  border-radius: 12px;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+}
+
+.systemPromptCollapse .ant-collapse-header {
+  border-radius: 12px !important;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.userInputSection {
+  background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+}
+
+.userInputTextarea {
+  border-radius: 12px;
+  resize: none;
+  border: 2px solid #e9ecef;
+  transition: all 0.3s ease;
+}
+
+.userInputTextarea:focus {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.chatHistorySection {
+  background: white;
+}
+
+.addMessageButtons {
+  display: flex;
+  gap: 12px;
+}
+
+.addUserMessageBtn {
+  background: linear-gradient(135deg, #1890ff 0%, #40a9ff 100%);
+  border: none;
+  border-radius: 8px;
+  height: 40px;
+  font-weight: 500;
+}
+
+.addAssistantMessageBtn {
+  background: linear-gradient(135deg, #722ed1 0%, #9254de 100%);
+  border: none;
+  border-radius: 8px;
+  height: 40px;
+  font-weight: 500;
+}
+
+.messageInputBox {
+  margin-top: 12px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  border: 2px dashed #d9d9d9;
+}
+
+.messageInput {
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.messageInputActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.sectionTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #262626;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sectionIcon {
+  font-size: 16px;
+}
+
+.emptyState {
+  padding: 20px;
+  text-align: center;
+  color: #8c8c8c;
+  background: #fafafa;
+  border-radius: 8px;
+  border: 1px dashed #d9d9d9;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.emptyState .ant-empty-image {
+  margin-bottom: 12px;
+}

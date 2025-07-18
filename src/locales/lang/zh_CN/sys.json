@@ -110,6 +110,8 @@
         "secondStep": "高级设置"
       },
       "chat": "AI 对话",
+      "prompt": "提示词优化",
+
       "agentFlowList": "智能流程列表",
       "dictionary": "数据字典",
       "multiflow": "智能工作流",

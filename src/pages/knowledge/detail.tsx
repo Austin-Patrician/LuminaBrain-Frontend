@@ -39,6 +39,7 @@ import { Iconify } from "@/components/icon";
 
 // 导入样式文件
 import "./index.css";
+import { C } from "node_modules/@fullcalendar/core/internal-common";
 
 const { Title, Paragraph } = Typography;
 const { Search, TextArea } = Input;
@@ -352,17 +353,13 @@ export default function KnowledgeDetail() {
       // 不同的导入类型有不同的处理逻辑
       if (importType === ImportType.LINK) {
         // 处理链接导入
-        const links = values.links
-          .split("\n")
-          .map((url: string) => url.trim())
-          .filter((url: string) => url);
 
-        if (links.length > 0) {
+        if (values.links.length > 0) {
           uploadFileMutation.mutate({
             knowledgeId: id as string,
             splitType,
             importType: ImportType.LINK,
-            data: JSON.stringify(links), // 将链接数组转为JSON字符串
+            data: values.links, // 将链接数组转为JSON字符串
           });
         } else {
           message.error("请输入至少一个有效的链接");

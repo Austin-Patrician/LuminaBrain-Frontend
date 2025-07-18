@@ -57,7 +57,7 @@ export class ChatService {
   private baseURL: string;
   private apiKey: string;
 
-  constructor(baseURL = 'http://10.1.105.50:5154/api/v1', apiKey = '') {
+  constructor(baseURL = import.meta.env.VITE_APP_BASE_API, apiKey = '') {
     this.baseURL = baseURL;
     this.apiKey = apiKey;
   }
