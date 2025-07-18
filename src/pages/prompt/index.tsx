@@ -29,7 +29,7 @@ import ModelSelector from "@/pages/Chat/components/ModelSelector";
 import OptimizationModal from "./components/OptimizationModal";
 import ChatMessages from "./components/ChatMessages";
 import SimpleMessageInput from "./components/SimpleMessageInput";
-import { promptService } from "@/api/services/promptService";
+import { promptService, generatePrompt } from "@/api/services/promptService";
 import type {
   GeneratePromptInput,
   OptimizationResult,
@@ -50,6 +50,20 @@ export default function PromptPage() {
   const [userInput, setUserInput] = useState<string>("");
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
 
+
+  // 评估相关状态
+  const [evaluationContent, setEvaluationContent] = useState('');
+  const [isEvaluating, setIsEvaluating] = useState(false);
+
+
+  const [generatedPrompt, setGeneratedPrompt] = useState('');
+  const [deepReasoningContent, setDeepReasoningContent] = useState('');
+  const [isDeepReasoning, setIsDeepReasoning] = useState(false);
+
+  // 推理时间相关状态
+  const [reasoningStartTime, setReasoningStartTime] = useState<number | null>(null);
+  const [reasoningDuration, setReasoningDuration] = useState<number>(0);
+
   // 优化相关状态
   const [optimizationType, setOptimizationType] = useState<
     "function-calling" | "prompt-optimization" | null
@@ -63,6 +77,9 @@ export default function PromptPage() {
     optimizedPrompt: "",
     evaluation: "",
   });
+
+  const abortControllerRef = useRef<AbortController | null>(null);
+
 
   // UI状态
   const [isRunning, setIsRunning] = useState(false);
@@ -99,78 +116,89 @@ export default function PromptPage() {
       evaluation: "",
     });
 
+    // 创建SSE连接
+    abortControllerRef.current = new AbortController();
+
     try {
-      // 创建SSE连接
-      const response = await promptService.optimizePromptStream(config);
+      // 调用promptApi生成提示词
+      for await (const event of generatePrompt({
+        prompt: value.prompt,
+        requirements: value.requirements,
+        enableDeepReasoning: value.enableDeepReasoning,
+        chatModel: value.chatModel,
+        language: value.language
+      })) {
+        // 检查是否已被取消
+        if (abortControllerRef.current?.signal.aborted) {
+          break;
+        }
 
-      if (!response.body) {
-        throw new Error("无法获取响应流");
-      }
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
-
-        for (const line of lines) {
-          const trimmedLine = line.trim();
-          if (!trimmedLine || !trimmedLine.startsWith("data: ")) continue;
-
+        // 处理流式响应数据
+        if (event.data) {
           try {
-            const data = JSON.parse(trimmedLine.slice(6));
+            const data = JSON.parse(event.data);
 
-            switch (data.type) {
-              case "deep-reasoning":
-                setStreamingContent((prev) => ({
-                  ...prev,
-                  deepReasoning: prev.deepReasoning + (data.message || ""),
-                }));
-                break;
-              case "optimized-prompt":
-                setStreamingContent((prev) => ({
-                  ...prev,
-                  optimizedPrompt: prev.optimizedPrompt + (data.message || ""),
-                }));
-                break;
-              case "evaluation":
-                setStreamingContent((prev) => ({
-                  ...prev,
-                  evaluation: prev.evaluation + (data.message || ""),
-                }));
-                break;
-              case "complete":
-                const result = {
-                  originalPrompt: config.Prompt,
-                  optimizedPrompt: streamingContent.optimizedPrompt,
-                  deepReasoning: config.EnableDeepReasoning
-                    ? streamingContent.deepReasoning
-                    : undefined,
-                  evaluation: streamingContent.evaluation,
-                  optimizationType: optimizationType!,
-                  timestamp: new Date(),
-                };
-                setOptimizationResult(result);
-                setIsOptimizing(false);
-                break;
+            if (data.type === "deep-reasoning-start") {
+              setIsDeepReasoning(true);
+              setReasoningStartTime(Date.now());
+            } else if (data.type === "deep-reasoning-end") {
+              setIsDeepReasoning(false);
+              const endTime = Date.now();
+              // 使用当前时间和开始时间计算持续时间
+              if (reasoningStartTime !== null) {
+                setReasoningDuration(endTime - reasoningStartTime);
+              }
+            } else if (data.type === "deep-reasoning") {
+              if (data.message) {
+                setDeepReasoningContent(prev => prev + data.message);
+              }
+            } else if (data.type === "evaluate-start") {
+              setIsEvaluating(true);
+            } else if (data.type === "evaluate-end") {
+              setIsEvaluating(false);
+            } else if (data.type === "evaluate") {
+              if (data.message) {
+                setEvaluationContent(prev => prev + data.message);
+              }
+            } else if (data.type === "error") {
+              // 处理错误类型
+              console.error('生成过程中发生错误:', data.message || data.error);
+              message.error(data.message || data.error || t('generatePrompt.generateFailed'));
+              break;
+            } else if (data.type === "message") {
+              if (data.message) {
+                setGeneratedPrompt(prev => prev + data.message);
+              }
             }
-          } catch (error) {
-            console.warn("解析SSE数据失败:", error);
+
+            // 检查是否完成
+            if (data.done || event.event === 'done') {
+              break;
+            }
+          } catch (e) {
+            // 如果不是JSON格式，直接添加到结果中
+            if (event.data !== '[DONE]') {
+              if (isDeepReasoning) {
+                setDeepReasoningContent(prev => prev + event.data);
+              } else {
+                setGeneratedPrompt(prev => prev + event.data);
+              }
+            } else {
+              break;
+            }
           }
         }
       }
     } catch (error) {
-      console.error("优化过程中出错:", error);
-      message.error("优化失败，请重试");
-      setIsOptimizing(false);
+      if (error instanceof Error && error.name === 'AbortError') {
+        // 请求被取消，不显示错误
+        return;
+      }
+      console.error('生成提示词失败:', error);
+    } finally {
+      abortControllerRef.current = null;
     }
+
   };
 
   // 添加消息输入框
