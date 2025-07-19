@@ -24,12 +24,14 @@ import {
   PlayCircleOutlined,
   SendOutlined,
 } from "@ant-design/icons";
+import { useTranslation } from 'react-i18next';
 
 import ModelSelector from "@/pages/Chat/components/ModelSelector";
 import OptimizationModal from "./components/OptimizationModal";
 import ChatMessages from "./components/ChatMessages";
 import SimpleMessageInput from "./components/SimpleMessageInput";
-import { promptService, generatePrompt } from "@/api/services/promptService";
+import StatusIndicator from "./components/StatusIndicator";
+import { promptService, generatePrompt, generateFunctionCallingPrompt } from "@/api/services/promptService";
 import type {
   GeneratePromptInput,
   OptimizationResult,
@@ -44,6 +46,8 @@ const { TextArea } = Input;
 const { Panel } = Collapse;
 
 export default function PromptPage() {
+  const { t, i18n } = useTranslation();
+
   // 基础状态
   const [selectedModel, setSelectedModel] = useState<string>("");
   const [systemPrompt, setSystemPrompt] = useState<string>("");
@@ -106,8 +110,27 @@ export default function PromptPage() {
 
   // 处理优化请求
   const handleOptimize = async (config: GeneratePromptInput) => {
+
+    if (config.Prompt === '') {
+      message.error(('generatePrompt.promptRequired'));
+      return
+    }
+
+
     setIsOptimizing(true);
     setOptimizationResult(null);
+
+
+
+
+    // 重置所有相关状态
+    setGeneratedPrompt('');
+    setDeepReasoningContent('');
+    setEvaluationContent('');
+    setIsDeepReasoning(false);
+    setIsEvaluating(false);
+    setReasoningStartTime(null);
+    setReasoningDuration(0);
 
     // 重置流式内容
     setStreamingContent({
@@ -120,14 +143,22 @@ export default function PromptPage() {
     abortControllerRef.current = new AbortController();
 
     try {
-      // 调用promptApi生成提示词
-      for await (const event of generatePrompt({
-        prompt: value.prompt,
-        requirements: value.requirements,
-        enableDeepReasoning: value.enableDeepReasoning,
-        chatModel: value.chatModel,
-        language: value.language
-      })) {
+      // 根据优化类型选择合适的API
+      const apiCall = optimizationType === "function-calling"
+        ? generateFunctionCallingPrompt
+        : generatePrompt;
+
+      // 映射参数到API需要的格式
+      const apiParams = {
+        prompt: config.Prompt,
+        requirements: config.Requirements || "",
+        enableDeepReasoning: config.EnableDeepReasoning,
+        chatModel: config.ModelId,
+        language: i18n.language || "zh_CN" // 默认语言
+      };
+
+      // 调用相应的API
+      for await (const event of apiCall(apiParams)) {
         // 检查是否已被取消
         if (abortControllerRef.current?.signal.aborted) {
           break;
@@ -151,6 +182,11 @@ export default function PromptPage() {
             } else if (data.type === "deep-reasoning") {
               if (data.message) {
                 setDeepReasoningContent(prev => prev + data.message);
+                // 同时更新 streamingContent 以保持兼容性
+                setStreamingContent(prev => ({
+                  ...prev,
+                  deepReasoning: prev.deepReasoning + data.message
+                }));
               }
             } else if (data.type === "evaluate-start") {
               setIsEvaluating(true);
@@ -159,20 +195,40 @@ export default function PromptPage() {
             } else if (data.type === "evaluate") {
               if (data.message) {
                 setEvaluationContent(prev => prev + data.message);
+                // 同时更新 streamingContent 以保持兼容性
+                setStreamingContent(prev => ({
+                  ...prev,
+                  evaluation: prev.evaluation + data.message
+                }));
               }
             } else if (data.type === "error") {
               // 处理错误类型
               console.error('生成过程中发生错误:', data.message || data.error);
-              message.error(data.message || data.error || t('generatePrompt.generateFailed'));
+              message.error(data.message || data.error || '优化失败，请重试');
               break;
             } else if (data.type === "message") {
               if (data.message) {
                 setGeneratedPrompt(prev => prev + data.message);
+                // 同时更新 streamingContent 以保持兼容性
+                setStreamingContent(prev => ({
+                  ...prev,
+                  optimizedPrompt: prev.optimizedPrompt + data.message
+                }));
               }
             }
 
             // 检查是否完成
             if (data.done || event.event === 'done') {
+              // 创建最终的优化结果
+              const result: OptimizationResult = {
+                originalPrompt: config.Prompt,
+                optimizedPrompt: generatedPrompt,
+                deepReasoning: config.EnableDeepReasoning ? deepReasoningContent : undefined,
+                evaluation: evaluationContent,
+                optimizationType: optimizationType!,
+                timestamp: new Date(),
+              };
+              setOptimizationResult(result);
               break;
             }
           } catch (e) {
@@ -180,10 +236,28 @@ export default function PromptPage() {
             if (event.data !== '[DONE]') {
               if (isDeepReasoning) {
                 setDeepReasoningContent(prev => prev + event.data);
+                setStreamingContent(prev => ({
+                  ...prev,
+                  deepReasoning: prev.deepReasoning + event.data
+                }));
               } else {
                 setGeneratedPrompt(prev => prev + event.data);
+                setStreamingContent(prev => ({
+                  ...prev,
+                  optimizedPrompt: prev.optimizedPrompt + event.data
+                }));
               }
             } else {
+              // 完成时创建结果
+              const result: OptimizationResult = {
+                originalPrompt: config.Prompt,
+                optimizedPrompt: generatedPrompt,
+                deepReasoning: config.EnableDeepReasoning ? deepReasoningContent : undefined,
+                evaluation: evaluationContent,
+                optimizationType: optimizationType!,
+                timestamp: new Date(),
+              };
+              setOptimizationResult(result);
               break;
             }
           }
@@ -195,10 +269,11 @@ export default function PromptPage() {
         return;
       }
       console.error('生成提示词失败:', error);
+      message.error('优化失败，请重试');
     } finally {
+      setIsOptimizing(false);
       abortControllerRef.current = null;
     }
-
   };
 
   // 添加消息输入框
@@ -290,6 +365,22 @@ export default function PromptPage() {
       evaluation: "",
     });
     setMessageInputs([]);
+
+    // 重置新增的状态
+    setGeneratedPrompt('');
+    setDeepReasoningContent('');
+    setEvaluationContent('');
+    setIsDeepReasoning(false);
+    setIsEvaluating(false);
+    setReasoningStartTime(null);
+    setReasoningDuration(0);
+    setIsOptimizing(false);
+
+    // 取消正在进行的请求
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
   };
 
   // 清理SSE连接
@@ -543,23 +634,66 @@ export default function PromptPage() {
             </div>
           </Col>
 
-          {/* 右侧：结果展示面板 */}
+          {/* 右侧：状态展示面板 */}
           <Col xs={24} lg={8}>
             <div className={styles.rightPanel}>
-              <div className={styles.emptyState}>
-                <Empty
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  description={
-                    <div className="text-center">
-                      <Text type="secondary">点击左侧优化按钮开始优化</Text>
+              {/* 状态指示器 */}
+              <StatusIndicator
+                isOptimizing={isOptimizing}
+                isDeepReasoning={isDeepReasoning}
+                isEvaluating={isEvaluating}
+                reasoningDuration={reasoningDuration}
+                reasoningStartTime={reasoningStartTime}
+                hasDeepReasoningContent={deepReasoningContent.length > 0}
+                hasOptimizedContent={generatedPrompt.length > 0}
+                hasEvaluationContent={evaluationContent.length > 0}
+              />
+
+              {/* 空状态或结果提示 */}
+              {!isOptimizing && !optimizationResult && (
+                <div className={styles.emptyState}>
+                  <Empty
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    description={
+                      <div className="text-center">
+                        <Text type="secondary">点击左侧优化按钮开始优化</Text>
+                        <br />
+                        <Text type="secondary" className="text-sm">
+                          优化结果将在模态框中实时展示
+                        </Text>
+                      </div>
+                    }
+                  />
+                </div>
+              )}
+
+              {/* 优化完成后的结果摘要 */}
+              {optimizationResult && !isOptimizing && (
+                <Card size="small" className="mt-4">
+                  <div className="text-center">
+                    <Text strong className="text-green-600">
+                      ✅ 优化已完成
+                    </Text>
+                    <div className="mt-2">
+                      <Text type="secondary" className="text-sm">
+                        优化类型: {optimizationResult.optimizationType === "function-calling" ? "Function Calling" : "通用优化"}
+                      </Text>
                       <br />
                       <Text type="secondary" className="text-sm">
-                        优化结果将在模态框中实时展示
+                        完成时间: {optimizationResult.timestamp.toLocaleTimeString()}
                       </Text>
+                      {reasoningDuration > 0 && (
+                        <>
+                          <br />
+                          <Text type="secondary" className="text-sm">
+                            推理耗时: {reasoningDuration < 1000 ? `${reasoningDuration}ms` : `${(reasoningDuration / 1000).toFixed(1)}s`}
+                          </Text>
+                        </>
+                      )}
                     </div>
-                  }
-                />
-              </div>
+                  </div>
+                </Card>
+              )}
             </div>
           </Col>
         </Row>
@@ -579,6 +713,10 @@ export default function PromptPage() {
           optimizationResult={optimizationResult}
           streamingContent={streamingContent}
           isOptimizing={isOptimizing}
+          isDeepReasoning={isDeepReasoning}
+          isEvaluating={isEvaluating}
+          reasoningDuration={reasoningDuration}
+          reasoningStartTime={reasoningStartTime}
         />
       </div>
     </div>

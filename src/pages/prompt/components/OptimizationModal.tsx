@@ -42,6 +42,11 @@ interface OptimizationModalProps {
   optimizationResult?: OptimizationResult | null;
   streamingContent?: StreamingContent;
   isOptimizing?: boolean;
+  // 新增状态展示相关属性
+  isDeepReasoning?: boolean;
+  isEvaluating?: boolean;
+  reasoningDuration?: number;
+  reasoningStartTime?: number | null;
 }
 
 const OptimizationModal: React.FC<OptimizationModalProps> = ({

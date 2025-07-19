@@ -32,6 +32,11 @@ interface ResultPanelProps {
   result: OptimizationResult | null;
   streamingContent: StreamingContent;
   isOptimizing: boolean;
+  // 新增状态展示相关属性
+  isDeepReasoning?: boolean;
+  isEvaluating?: boolean;
+  reasoningDuration?: number;
+  reasoningStartTime?: number | null;
 }
 
 const ResultPanel: React.FC<ResultPanelProps> = ({
@@ -189,8 +194,8 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
             icon={<FileTextOutlined className="text-blue-500" />}
             loading={Boolean(
               isOptimizing &&
-                streamingContent.deepReasoning &&
-                !streamingContent.optimizedPrompt
+              streamingContent.deepReasoning &&
+              !streamingContent.optimizedPrompt
             )}
             color="blue"
           />
@@ -202,8 +207,8 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
             icon={<BarChartOutlined className="text-green-500" />}
             loading={Boolean(
               isOptimizing &&
-                streamingContent.optimizedPrompt &&
-                !streamingContent.evaluation
+              streamingContent.optimizedPrompt &&
+              !streamingContent.evaluation
             )}
             color="green"
           />
