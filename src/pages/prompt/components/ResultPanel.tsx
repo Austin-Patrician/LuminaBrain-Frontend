@@ -23,7 +23,7 @@ import {
   EyeOutlined,
   EditOutlined,
 } from "@ant-design/icons";
-import Markdown from "@/components/markdown";
+import ModalMarkdown from "@/components/markdown/modal-markdown";
 import type { OptimizationResult, StreamingContent } from "../types";
 
 const { Text, Paragraph, Title } = Typography;
@@ -105,7 +105,7 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
 
         {isPreview ? (
           <div className="border border-gray-200 rounded-lg p-4 bg-white">
-            <Markdown>{content}</Markdown>
+            <ModalMarkdown>{content}</ModalMarkdown>
           </div>
         ) : (
           <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
@@ -141,7 +141,7 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
       {content ? (
         <Card size="small" className={`bg-${color}-50 border-${color}-200`}>
           <div className="prose prose-sm max-w-none">
-            <Markdown>{content}</Markdown>
+            <ModalMarkdown>{content}</ModalMarkdown>
             {loading && <span className="animate-pulse">▋</span>}
           </div>
         </Card>

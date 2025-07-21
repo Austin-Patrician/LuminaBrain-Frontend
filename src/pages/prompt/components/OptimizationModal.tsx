@@ -10,6 +10,11 @@ import {
   Divider,
   Alert,
   Tooltip,
+  Card,
+  Spin,
+  Badge,
+  Empty,
+  message as antdMessage,
 } from "antd";
 import {
   FunctionOutlined,
@@ -19,10 +24,15 @@ import {
   EyeOutlined,
   EditOutlined,
   InfoCircleOutlined,
+  FileTextOutlined,
+  BarChartOutlined,
+  CopyOutlined,
+  LoadingOutlined,
+  CheckCircleOutlined,
 } from "@ant-design/icons";
 import ModelSelector from "@/pages/Chat/components/ModelSelector";
-import Markdown from "@/components/markdown";
-import ResultPanel from "./ResultPanel";
+import ModalMarkdown from "@/components/markdown/modal-markdown";
+import { Row, Col } from "antd";
 import type {
   GeneratePromptInput,
   OptimizationResult,
@@ -117,8 +127,6 @@ const OptimizationModal: React.FC<OptimizationModalProps> = ({
       };
 
       onConfirm(optimizationConfig);
-      // 开始优化后显示结果模态框
-      setShowResultModal(true);
     } catch (error) {
       console.error("表单验证失败:", error);
     } finally {
@@ -255,25 +263,25 @@ const OptimizationModal: React.FC<OptimizationModalProps> = ({
             </Text>
 
             {/* 深度推理开关 */}
-            <Form.Item
-              name="EnableDeepReasoning"
-              valuePropName="checked"
-              className="mb-0"
-            >
-              <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                <div className="flex items-start space-x-3">
-                  <BulbOutlined className="text-orange-500 mt-1" />
-                  <div>
-                    <Text strong>启用深度推理</Text>
-                    <br />
-                    <Text type="secondary" className="text-sm">
-                      AI将展示详细的思考过程和推理逻辑，帮助您理解优化决策
-                    </Text>
-                  </div>
+            <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+              <div className="flex items-start space-x-3">
+                <BulbOutlined className="text-orange-500 mt-1" />
+                <div>
+                  <Text strong>启用深度推理</Text>
+                  <br />
+                  <Text type="secondary" className="text-sm">
+                    AI将展示详细的思考过程和推理逻辑，帮助您理解优化决策
+                  </Text>
                 </div>
-                <Switch />
               </div>
-            </Form.Item>
+              <Form.Item
+                name="EnableDeepReasoning"
+                valuePropName="checked"
+                className="mb-0"
+              >
+                <Switch />
+              </Form.Item>
+            </div>
           </div>
         </Form>
 
@@ -286,54 +294,6 @@ const OptimizationModal: React.FC<OptimizationModalProps> = ({
         />
       </div>
 
-      {/* 嵌套的结果模态框 */}
-      <Modal
-        title={
-          <div className="flex items-center space-x-2">
-            <ExperimentOutlined className="text-blue-500" />
-            <Title level={4} className="mb-0">
-              优化结果
-            </Title>
-          </div>
-        }
-        open={showResultModal}
-        onCancel={() => setShowResultModal(false)}
-        width={1000}
-        footer={
-          <div className="flex justify-end space-x-2">
-            <Button size="large" onClick={() => setShowResultModal(false)}>
-              关闭
-            </Button>
-            {optimizationResult && (
-              <Button
-                type="primary"
-                size="large"
-                onClick={() => {
-                  // 应用优化结果到主界面
-                  setShowResultModal(false);
-                  handleCancel(); // 关闭配置模态框
-                }}
-              >
-                应用结果
-              </Button>
-            )}
-          </div>
-        }
-        destroyOnClose={false}
-        maskClosable={false}
-      >
-        <ResultPanel
-          result={optimizationResult || null}
-          streamingContent={
-            streamingContent || {
-              deepReasoning: "",
-              optimizedPrompt: "",
-              evaluation: "",
-            }
-          }
-          isOptimizing={isOptimizing || false}
-        />
-      </Modal>
     </Modal>
   );
 };

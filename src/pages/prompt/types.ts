@@ -52,3 +52,31 @@ export interface RunPromptInput {
   modelId: string;
   additionalMessage?: string; // 来自优化按钮的额外输入
 }
+
+// 提示词历史记录类型
+export interface PromptHistory {
+  id: string;
+  prompt: string;
+  requirement: string;
+  deepReasoning: string;
+  result: string;
+  optimizedType: "Common" | "FunctionCalling";
+  optimizedId: string;
+  createdAt?: string;
+}
+
+// 提示词历史查询参数
+export interface PromptHistoryQuery {
+  pageNumber: number;
+  pageSize: number;
+  keyword?: string;
+  optimizedType?: string;
+}
+
+// 提示词历史分页响应
+export interface PromptHistoryResponse {
+  data: PromptHistory[];
+  total: number;
+  page: number;
+  pageSize: number;
+}

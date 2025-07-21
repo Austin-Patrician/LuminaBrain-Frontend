@@ -11,10 +11,12 @@ import {
   Collapse,
   Badge,
   Empty,
+  Modal,
+  Spin,
+  Alert,
 } from "antd";
 import {
   ExperimentOutlined,
-  FunctionOutlined,
   BulbOutlined,
   RobotOutlined,
   ReloadOutlined,
@@ -23,6 +25,9 @@ import {
   MessageOutlined,
   PlayCircleOutlined,
   SendOutlined,
+  FileTextOutlined,
+  BarChartOutlined,
+  CopyOutlined,
 } from "@ant-design/icons";
 import { useTranslation } from 'react-i18next';
 
@@ -31,7 +36,8 @@ import OptimizationModal from "./components/OptimizationModal";
 import ChatMessages from "./components/ChatMessages";
 import SimpleMessageInput from "./components/SimpleMessageInput";
 import StatusIndicator from "./components/StatusIndicator";
-import { promptService, generatePrompt, generateFunctionCallingPrompt } from "@/api/services/promptService";
+import ModalMarkdown from "@/components/markdown/modal-markdown";
+import { generatePrompt, generateFunctionCallingPrompt } from "@/api/services/promptService";
 import type {
   GeneratePromptInput,
   OptimizationResult,
@@ -73,6 +79,7 @@ export default function PromptPage() {
     "function-calling" | "prompt-optimization" | null
   >(null);
   const [showOptimizationModal, setShowOptimizationModal] = useState(false);
+  const [showResultModal, setShowResultModal] = useState(false);
   const [optimizationResult, setOptimizationResult] =
     useState<OptimizationResult | null>(null);
   const [isOptimizing, setIsOptimizing] = useState(false);
@@ -116,13 +123,12 @@ export default function PromptPage() {
       return
     }
 
+    // 关闭配置模态框，显示结果模态框
+    setShowOptimizationModal(false);
+    setShowResultModal(true);
 
     setIsOptimizing(true);
     setOptimizationResult(null);
-
-
-
-
     // 重置所有相关状态
     setGeneratedPrompt('');
     setDeepReasoningContent('');
@@ -153,7 +159,7 @@ export default function PromptPage() {
         prompt: config.Prompt,
         requirements: config.Requirements || "",
         enableDeepReasoning: config.EnableDeepReasoning,
-        chatModel: config.ModelId,
+        modelId: config.ModelId,
         language: i18n.language || "zh_CN" // 默认语言
       };
 
@@ -718,6 +724,229 @@ export default function PromptPage() {
           reasoningDuration={reasoningDuration}
           reasoningStartTime={reasoningStartTime}
         />
+
+        {/* 独立的优化结果模态框 */}
+        <Modal
+          title={
+            <div className="flex items-center space-x-2">
+              <ExperimentOutlined className="text-blue-500" />
+              <Title level={4} className="mb-0">
+                优化结果
+              </Title>
+            </div>
+          }
+          open={showResultModal}
+          onCancel={() => setShowResultModal(false)}
+          width={1400}
+          footer={
+            <div className="flex justify-end space-x-2">
+              <Button size="large" onClick={() => setShowResultModal(false)}>
+                关闭
+              </Button>
+              {optimizationResult && (
+                <Button
+                  type="primary"
+                  size="large"
+                  onClick={() => {
+                    // 应用优化结果到主界面
+                    setShowResultModal(false);
+                  }}
+                >
+                  应用结果
+                </Button>
+              )}
+            </div>
+          }
+          destroyOnClose={false}
+          maskClosable={false}
+        >
+          {/* 左右布局优化结果展示 */}
+          {isOptimizing || optimizationResult ? (
+            <div className="space-y-4">
+              {/* 进度提示 */}
+              {isOptimizing && (
+                <Alert
+                  message={
+                    <div className="flex items-center space-x-2">
+                      <Spin size="small" />
+                      <span>正在优化您的提示词，请耐心等待...</span>
+                    </div>
+                  }
+                  type="info"
+                  showIcon={false}
+                  className="mb-4"
+                />
+              )}
+
+              {/* 深度推理单独显示区域 */}
+              {(streamingContent?.deepReasoning || optimizationResult?.deepReasoning) && (
+                <Card
+                  size="small"
+                  title={
+                    <div className="flex items-center space-x-2">
+                      <BulbOutlined className="text-orange-500" />
+                      <span>深度推理过程</span>
+                      {isOptimizing && !streamingContent?.optimizedPrompt && (
+                        <Badge status="processing" text="思考中..." />
+                      )}
+                    </div>
+                  }
+                  className="mb-4"
+                >
+                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                    <ModalMarkdown>
+                      {streamingContent?.deepReasoning || optimizationResult?.deepReasoning || ""}
+                    </ModalMarkdown>
+                    {isOptimizing && !streamingContent?.optimizedPrompt && (
+                      <span className="animate-pulse">▋</span>
+                    )}
+                  </div>
+                </Card>
+              )}
+
+              {/* 左右分栏布局：优化后提示词 + 评估结果 */}
+              <Row gutter={[16, 16]}>
+                {/* 左侧：优化后的提示词 */}
+                <Col xs={24} md={12}>
+                  <Card
+                    size="small"
+                    title={
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <FileTextOutlined className="text-blue-500" />
+                          <span>优化后的提示词</span>
+                          {isOptimizing && streamingContent?.deepReasoning && !streamingContent?.optimizedPrompt && (
+                            <Badge status="processing" text="生成中..." />
+                          )}
+                        </div>
+                        {(streamingContent?.optimizedPrompt || optimizationResult?.optimizedPrompt) && (
+                          <Button
+                            type="text"
+                            size="small"
+                            icon={<CopyOutlined />}
+                            onClick={() => {
+                              const content = streamingContent?.optimizedPrompt || optimizationResult?.optimizedPrompt || "";
+                              navigator.clipboard.writeText(content);
+                              message.success("优化后的提示词已复制到剪贴板");
+                            }}
+                          >
+                            复制
+                          </Button>
+                        )}
+                      </div>
+                    }
+                    className="h-96"
+                    bodyStyle={{ height: 'calc(100% - 57px)', overflow: 'auto' }}
+                  >
+                    {streamingContent?.optimizedPrompt || optimizationResult?.optimizedPrompt ? (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 h-full overflow-auto">
+                        <ModalMarkdown>
+                          {streamingContent?.optimizedPrompt || optimizationResult?.optimizedPrompt || ""}
+                        </ModalMarkdown>
+                        {isOptimizing && streamingContent?.deepReasoning && !streamingContent?.optimizedPrompt && (
+                          <span className="animate-pulse">▋</span>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="h-full flex items-center justify-center border border-dashed border-gray-300 rounded-lg">
+                        <div className="text-center">
+                          <FileTextOutlined className="text-4xl text-gray-400 mb-2" />
+                          <Text type="secondary">等待生成优化后的提示词...</Text>
+                        </div>
+                      </div>
+                    )}
+                  </Card>
+                </Col>
+
+                {/* 右侧：评估结果 */}
+                <Col xs={24} md={12}>
+                  <Card
+                    size="small"
+                    title={
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <BarChartOutlined className="text-green-500" />
+                          <span>优化评估报告</span>
+                          {isOptimizing && streamingContent?.optimizedPrompt && !streamingContent?.evaluation && (
+                            <Badge status="processing" text="评估中..." />
+                          )}
+                        </div>
+                        {(streamingContent?.evaluation || optimizationResult?.evaluation) && (
+                          <Button
+                            type="text"
+                            size="small"
+                            icon={<CopyOutlined />}
+                            onClick={() => {
+                              const content = streamingContent?.evaluation || optimizationResult?.evaluation || "";
+                              navigator.clipboard.writeText(content);
+                              message.success("评估报告已复制到剪贴板");
+                            }}
+                          >
+                            复制
+                          </Button>
+                        )}
+                      </div>
+                    }
+                    className="h-96"
+                    bodyStyle={{ height: 'calc(100% - 57px)', overflow: 'auto' }}
+                  >
+                    {streamingContent?.evaluation || optimizationResult?.evaluation ? (
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-4 h-full overflow-auto">
+                        <ModalMarkdown>
+                          {streamingContent?.evaluation || optimizationResult?.evaluation || ""}
+                        </ModalMarkdown>
+                        {isOptimizing && streamingContent?.optimizedPrompt && !streamingContent?.evaluation && (
+                          <span className="animate-pulse">▋</span>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="h-full flex items-center justify-center border border-dashed border-gray-300 rounded-lg">
+                        <div className="text-center">
+                          <BarChartOutlined className="text-4xl text-gray-400 mb-2" />
+                          <Text type="secondary">等待生成评估报告...</Text>
+                        </div>
+                      </div>
+                    )}
+                  </Card>
+                </Col>
+              </Row>
+
+              {/* 完成状态提示 */}
+              {optimizationResult && !isOptimizing && (
+                <Alert
+                  message="提示词优化完成"
+                  description={
+                    <div>
+                      <Text>
+                        优化类型: {optimizationResult.optimizationType === "function-calling" ? "Function Calling" : "通用优化"}
+                      </Text>
+                      <br />
+                      <Text type="secondary" className="text-sm">
+                        完成时间: {optimizationResult.timestamp.toLocaleString()}
+                      </Text>
+                    </div>
+                  }
+                  type="success"
+                  showIcon
+                  className="mt-4"
+                />
+              )}
+            </div>
+          ) : (
+            <Empty
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description={
+                <div className="text-center">
+                  <Text type="secondary">开始优化后，结果将在此处实时显示</Text>
+                  <br />
+                  <Text type="secondary" className="text-sm">
+                    支持查看推理过程、优化结果和评估报告
+                  </Text>
+                </div>
+              }
+            />
+          )}
+        </Modal>
       </div>
     </div>
   );

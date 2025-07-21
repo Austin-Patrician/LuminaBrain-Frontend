@@ -1,6 +1,11 @@
 import userStore from "@/store/userStore";
-import type { GeneratePromptInput } from "@/pages/prompt/types";
+import type { 
+  GeneratePromptInput, 
+  PromptHistoryQuery,  
+  PromptHistory 
+} from "@/pages/prompt/types";
 
+import apiClient from "@/api/apiClient";
 
 // SSE请求配置接口
 interface SSEConfig {
@@ -109,6 +114,9 @@ export async function* SSE<T = any>(
         ...config,
         url
     };
+
+    const baseURL = import.meta.env.VITE_APP_BASE_API || '';
+    url = baseURL + finalConfig.url;
 
     // 创建AbortController用于超时控制
     const controller = new AbortController();
@@ -255,7 +263,7 @@ export async function* generatePrompt(
   data: Record<string, any>,
   config: Partial<SSEConfig> = {}
 ): AsyncGenerator<SSEEvent, void, unknown> {
-  const url = '/v1/prompt/generate';
+  const url = '/prompt/generate-prompt';
   // 默认配置，专门为这个接口优化
   const defaultConfig: Partial<SSEConfig> = {
     headers: {
@@ -327,6 +335,23 @@ export async function* generateImagePrompt(
       yield event;
     }
   }
+
+// 提示词历史相关API
+export const getPromptHistory = (params: PromptHistoryQuery) => {
+  return apiClient.post({ url: '/prompt/history', data: params });
+};
+
+export const deletePromptHistory = (id: string): Promise<void> => {
+  return apiClient.delete({ url: `/prompt/history/${id}` });
+};
+
+export const deletePromptHistoryBatch = (ids: string[]): Promise<void> => {
+  return apiClient.delete({ url: '/prompt/history/batch', data: { ids } });
+};
+
+export const getPromptHistoryDetail = (id: string): Promise<PromptHistory> => {
+  return apiClient.get({ url: `/prompt/history/${id}` });
+};
 
 // 创建默认实例
 export const promptService = new PromptService();

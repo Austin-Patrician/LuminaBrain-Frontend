@@ -111,7 +111,8 @@
       },
       "chat": "AI 对话",
       "prompt": "提示词优化",
-
+      "promptHistory": "优化历史",
+      "promptManagement": "提示词",
       "agentFlowList": "智能流程列表",
       "dictionary": "数据字典",
       "multiflow": "智能工作流",
@@ -121,6 +122,7 @@
       "agent": "智能体",
       "agentFlow": "智能流程",
       "aimodel": "AI模型",
+      "marketplace": "AI 广场",
       "animate": "动画",
       "scroll": "滚动",
       "markdown": "Markdown",
