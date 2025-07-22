@@ -13,6 +13,8 @@ interface FilterNavigationProps {
   onSearch: () => void;
 }
 
+
+//dictionaryid: 4471af43de824eb68966fe1306292dd0
 const FilterNavigation: React.FC<FilterNavigationProps> = ({
   selectedFilter,
   onFilterChange,

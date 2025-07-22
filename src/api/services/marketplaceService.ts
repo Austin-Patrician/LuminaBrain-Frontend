@@ -29,6 +29,7 @@ enum MarketplaceApi {
   DeleteSharedItem = "/marketplace/delete",
   ToggleItemStatus = "/marketplace/toggle-status",
   ViewItem = "/marketplace/view", // 记录查看次数
+  GetFilterCategory = "/dictionaryItem/dropdown/{id}", // 获取分类过滤
 }
 
 // 分类响应类型
@@ -72,6 +73,14 @@ interface InteractionResponse {
 }
 
 const marketplaceService = {
+
+  // 获取广场内容列表
+  getFilterCategory: (params: string) => {
+    return apiClient.post<MarketplaceListResponse>({
+      url: MarketplaceApi.GetMarketplaceItems.replace("{id}", params),
+    });
+  },
+
   // 获取广场内容列表
   getMarketplaceItems: (params: SearchParams) => {
     return apiClient.post<MarketplaceListResponse>({
