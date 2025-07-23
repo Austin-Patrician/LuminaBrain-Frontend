@@ -1,5 +1,5 @@
-import React from "react";
-import { Button } from "antd";
+import React, { useState } from "react";
+import { Input } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
 
 interface FilterOption {
@@ -10,7 +10,7 @@ interface FilterOption {
 interface FilterNavigationProps {
   selectedFilter: string;
   onFilterChange: (filter: string) => void;
-  onSearch: () => void;
+  onSearch: (keyword: string) => void;
 }
 
 
@@ -20,6 +20,7 @@ const FilterNavigation: React.FC<FilterNavigationProps> = ({
   onFilterChange,
   onSearch
 }) => {
+  const [searchValue, setSearchValue] = useState<string>("");
   const filterOptions: FilterOption[] = [
     { key: "all", label: "全部" },
     { key: "ai-assistant", label: "AI 助手" },
@@ -30,6 +31,17 @@ const FilterNavigation: React.FC<FilterNavigationProps> = ({
     { key: "marketing-content", label: "营销内容创意" },
     { key: "research-assistant", label: "研究助手" },
   ];
+
+  const handleSearch = (value: string) => {
+    setSearchValue(value);
+    onSearch(value);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchValue(value);
+    onSearch(value);
+  };
 
   return (
     <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-100">
@@ -51,12 +63,17 @@ const FilterNavigation: React.FC<FilterNavigationProps> = ({
         ))}
       </div>
 
-      <Button
-        type="text"
-        icon={<SearchOutlined className="text-gray-400" />}
-        onClick={onSearch}
-        className="flex items-center text-gray-400 hover:text-gray-600"
-      />
+      <div className="w-80">
+        <Input
+          placeholder="搜索应用..."
+          value={searchValue}
+          onChange={handleInputChange}
+          onPressEnter={(e) => handleSearch((e.target as HTMLInputElement).value)}
+          prefix={<SearchOutlined className="text-gray-400" />}
+          allowClear
+          className="rounded-lg"
+        />
+      </div>
     </div>
   );
 };

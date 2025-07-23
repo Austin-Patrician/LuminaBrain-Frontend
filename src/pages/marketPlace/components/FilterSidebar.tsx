@@ -1,4 +1,3 @@
-import React from "react";
 import {
   Card,
   Checkbox,
@@ -24,7 +23,7 @@ import {
 
 import type { MarketplaceItemType, FilterState, Category, Tag as TagType } from "../types/marketplace";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 const { RangePicker } = DatePicker;
 const { Panel } = Collapse;
 

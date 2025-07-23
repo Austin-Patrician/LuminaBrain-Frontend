@@ -1,11 +1,9 @@
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Row, Col, Typography, message, Spin } from "antd";
 
-import CategorySidebar from "./components/CategorySidebar";
 import FilterNavigation from "./components/FilterNavigation";
 import DifyStyleCard from "./components/DifyStyleCard";
-import PreviewModal from "./components/PreviewModal";
 import AddToWorkspaceModal from "./components/AddToWorkspaceModal";
 import { mockMarketplaceService } from "./mockData";
 import type {
@@ -18,9 +16,8 @@ const { Title, Text } = Typography;
 
 export default function MarketplacePage() {
   // 状态管理
-  const [selectedCategory, setSelectedCategory] = useState<string>("document-organize");
   const [selectedFilter, setSelectedFilter] = useState<string>("all");
-  const [previewItem, setPreviewItem] = useState<MarketplaceItem | null>(null);
+  const [searchKeyword, setSearchKeyword] = useState<string>("");
   const [addToWorkspaceItem, setAddToWorkspaceItem] = useState<MarketplaceItem | null>(null);
 
   // 搜索参数
@@ -50,16 +47,13 @@ export default function MarketplacePage() {
 
   const items = marketplaceData?.data?.data || [];
 
-  // 处理分类选择
-  const handleCategorySelect = (categoryId: string) => {
-    setSelectedCategory(categoryId);
-    // 这里可以根据分类筛选数据
-  };
-
-  // 处理新建分类
-  const handleCreateNew = () => {
-    message.info("新建分类功能即将开放");
-  };
+  // 根据搜索关键词和筛选条件过滤数据
+  const filteredItems = items.filter(item => {
+    const matchesKeyword = !searchKeyword ||
+      item.title.toLowerCase().includes(searchKeyword.toLowerCase());
+    const matchesFilter = selectedFilter === "all" || item.type === selectedFilter;
+    return matchesKeyword && matchesFilter;
+  });
 
   // 处理筛选变更
   const handleFilterChange = (filter: string) => {
@@ -68,27 +62,32 @@ export default function MarketplacePage() {
   };
 
   // 处理搜索
-  const handleSearch = () => {
-    message.info("搜索功能即将开放");
-  };
-
-  // 处理卡片点击预览
-  const handleCardClick = (item: MarketplaceItem) => {
-    setPreviewItem(item);
+  const handleSearch = (keyword: string) => {
+    setSearchKeyword(keyword);
   };
 
   // 处理添加到工作区
   const handleAddToWorkspace = (item: MarketplaceItem) => {
-    setPreviewItem(null);
     setAddToWorkspaceItem(item);
   };
 
   // 处理确认添加到工作区
   const handleConfirmAddToWorkspace = async (item: MarketplaceItem, options: any) => {
     try {
-      const result = await mockMarketplaceService.importToWorkspace(item.id, options);
+      // 调用接口传递参数：应用名称，图标，描述，应用id, 应用类型id
+      const params = {
+        applicationName: options.customName || item.title,
+        icon: options.selectedIcon || '🤖',
+        description: options.description || item.description,
+        applicationId: item.id,
+        applicationTypeId: item.type,
+        ...options
+      };
+
+      const result = await mockMarketplaceService.importToWorkspace(item.id, params);
       if (result.data.success) {
         message.success(`成功将 "${item.title}" 添加到工作区`);
+        setAddToWorkspaceItem(null);
       } else {
         message.error(result.data.message || "添加失败");
       }
@@ -97,23 +96,9 @@ export default function MarketplacePage() {
     }
   };
 
-  // 处理分享
-  const handleShare = (item: MarketplaceItem) => {
-    const shareUrl = `${window.location.origin}/marketplace?item=${item.id}`;
-    navigator.clipboard.writeText(shareUrl);
-    message.success("分享链接已复制到剪贴板");
-  };
-
   return (
-    <div className="h-full flex bg-gray-50">
-      {/* 左侧边栏 */}
-      <CategorySidebar
-        selectedCategory={selectedCategory}
-        onCategorySelect={handleCategorySelect}
-        onCreateNew={handleCreateNew}
-      />
-
-      {/* 右侧主内容区 */}
+    <div className="h-full flex flex-col bg-gray-100">
+      {/* 主内容区 */}
       <div className="flex-1 flex flex-col bg-white">
         {/* 页面标题区域 */}
         <div className="px-6 py-6 border-b border-gray-100">
@@ -133,15 +118,15 @@ export default function MarketplacePage() {
         />
 
         {/* 内容区域 */}
-        <div className="flex-1 p-6 overflow-auto">
+        <div className="flex-1 p-6 overflow-auto bg-gray-50">
           <Spin spinning={isLoading}>
-            {items.length > 0 ? (
+            {filteredItems.length > 0 ? (
               <Row gutter={[24, 24]}>
-                {items.map((item) => (
+                {filteredItems.map((item) => (
                   <Col xs={24} sm={12} lg={8} xl={6} key={item.id}>
                     <DifyStyleCard
                       item={item}
-                      onClick={() => handleCardClick(item)}
+                      onAddToWorkspace={handleAddToWorkspace}
                     />
                   </Col>
                 ))}
@@ -150,25 +135,16 @@ export default function MarketplacePage() {
               <div className="flex flex-col items-center justify-center py-16">
                 <div className="text-gray-400 text-6xl mb-4">📦</div>
                 <Title level={4} className="text-gray-500 mb-2">
-                  暂无应用
+                  {searchKeyword ? '未找到相关应用' : '暂无应用'}
                 </Title>
                 <Text className="text-gray-400">
-                  当前分类下暂无应用，试试其他分类或创建新的应用
+                  {searchKeyword ? `没有找到包含 "${searchKeyword}" 的应用` : '当前分类下暂无应用，试试其他分类或创建新的应用'}
                 </Text>
               </div>
             )}
           </Spin>
         </div>
       </div>
-
-      {/* 预览模态框 */}
-      <PreviewModal
-        item={previewItem}
-        visible={!!previewItem}
-        onClose={() => setPreviewItem(null)}
-        onAddToWorkspace={handleAddToWorkspace}
-        onShare={handleShare}
-      />
 
       {/* 添加到工作区模态框 */}
       <AddToWorkspaceModal

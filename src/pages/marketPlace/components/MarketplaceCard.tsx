@@ -136,7 +136,6 @@ export default function MarketplaceCard({ item, onPreview, onImport, onShare }: 
     <Card
       hoverable
       className="h-full flex flex-col relative"
-      onClick={handlePreview}
       styles={{
         body: { padding: "16px", height: "100%", display: "flex", flexDirection: "column" },
       }}

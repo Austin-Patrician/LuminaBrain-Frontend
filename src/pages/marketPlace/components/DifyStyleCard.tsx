@@ -16,7 +16,7 @@ const { Text } = Typography;
 
 interface DifyStyleCardProps {
   item: MarketplaceItem;
-  onClick: () => void;
+  onAddToWorkspace: (item: MarketplaceItem) => void;
 }
 
 // 根据类型和分类获取图标和颜色
@@ -71,66 +71,62 @@ const getIconAndColor = (item: MarketplaceItem) => {
   return iconMap[item.category] || iconMap[item.type] || iconMap.application;
 };
 
-const DifyStyleCard: React.FC<DifyStyleCardProps> = ({ item, onClick }) => {
+const DifyStyleCard: React.FC<DifyStyleCardProps> = ({ item, onAddToWorkspace }) => {
   const { icon, color, bgColor } = getIconAndColor(item);
 
   return (
     <Card
       hoverable
-      className="h-full border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer"
+      className="h-full border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 relative overflow-hidden group"
       bodyStyle={{ padding: '20px' }}
-      onClick={onClick}
     >
       <div className="flex flex-col h-full">
-        {/* 图标区域 */}
+        {/* 图标和类型标签 */}
         <div className="flex items-start justify-between mb-4">
-          <div className={`
-            w-10 h-10 rounded-full flex items-center justify-center
-            ${bgColor}
-          `}>
-            <span className={`text-lg ${color}`}>
+          <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${bgColor}`}>
+            <span className={`text-xl ${color}`}>
               {icon}
             </span>
           </div>
 
           {/* 类型标签 */}
-          <div className="flex items-center space-x-1">
-            <span className={`
-              px-2 py-1 text-xs font-medium rounded-full
-              ${item.type === 'agent' ? 'bg-blue-50 text-blue-600' : ''}
-              ${item.type === 'prompt' ? 'bg-green-50 text-green-600' : ''}
-              ${item.type === 'application' ? 'bg-purple-50 text-purple-600' : ''}
-            `}>
-              {item.type === 'agent' ? 'AGENT' : ''}
-              {item.type === 'prompt' ? '工作流' : ''}
-              {item.type === 'application' ? '工作流' : ''}
-            </span>
-          </div>
+          <span className={`
+            px-3 py-1 text-xs font-medium rounded-full
+            ${item.type === 'agent' ? 'bg-blue-50 text-blue-600' : ''}
+            ${item.type === 'prompt' ? 'bg-green-50 text-green-600' : ''}
+            ${item.type === 'application' ? 'bg-purple-50 text-purple-600' : ''}
+          `}>
+            {item.type === 'agent' ? 'AGENT' : ''}
+            {item.type === 'prompt' ? 'CHATFLOW' : ''}
+            {item.type === 'application' ? 'CHATFLOW' : ''}
+          </span>
         </div>
 
-        {/* 标题 */}
+        {/* 应用名称 */}
         <div className="mb-3">
-          <Text className="text-base font-semibold text-gray-900 leading-tight">
+          <Text className="text-lg font-semibold text-gray-900 leading-tight">
             {item.title}
           </Text>
         </div>
 
         {/* 描述 */}
-        <div className="flex-1 mb-4">
+        <div className="flex-1 mb-12">
           <Text className="text-sm text-gray-600 leading-relaxed line-clamp-3">
             {item.description}
           </Text>
         </div>
 
-        {/* 底部信息 */}
-        <div className="flex items-center justify-between text-xs text-gray-500">
-          <span>{item.authorName}</span>
-          <div className="flex items-center space-x-3">
-            <span>v{item.version}</span>
-            {item.downloads > 0 && (
-              <span>{item.downloads} 次使用</span>
-            )}
-          </div>
+        {/* 添加到工作区按钮 - 悬停时显示 */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 bg-white bg-opacity-90 backdrop-blur-sm border-t border-gray-200 opacity-0 group-hover:opacity-100 transform translate-y-full group-hover:translate-y-0 transition-all duration-200 ease-in-out">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onAddToWorkspace(item);
+            }}
+            className="w-full px-4 py-2 border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 text-sm font-medium rounded-md transition-colors duration-200 flex items-center justify-center"
+          >
+            添加到工作区
+          </button>
         </div>
       </div>
     </Card>
