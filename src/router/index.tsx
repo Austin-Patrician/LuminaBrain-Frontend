@@ -1,6 +1,7 @@
 import DashboardLayout from "@/layouts/dashboard";
 import PageError from "@/pages/sys/error/PageError";
 import Login from "@/pages/sys/login/Login";
+import DocsPage from "@/pages/docs";
 import ProtectedRoute from "@/router/components/protected-route";
 import { usePermissionRoutes } from "@/router/hooks";
 import { ERROR_ROUTE } from "@/router/routes/error-routes";
@@ -16,6 +17,15 @@ const PUBLIC_ROUTE: AppRouteObject = {
 	element: (
 		<ErrorBoundary FallbackComponent={PageError}>
 			<Login />
+		</ErrorBoundary>
+	),
+};
+
+const DOCS_ROUTE: AppRouteObject = {
+	path: "/docs",
+	element: (
+		<ErrorBoundary FallbackComponent={PageError}>
+			<DocsPage />
 		</ErrorBoundary>
 	),
 };
@@ -38,7 +48,7 @@ export default function Router() {
 		children: [{ index: true, element: <Navigate to={HOMEPAGE} replace /> }, ...permissionRoutes],
 	};
 
-	const routes = [PUBLIC_ROUTE, PROTECTED_ROUTE, ERROR_ROUTE, NO_MATCHED_ROUTE] as RouteObject[];
+	const routes = [PUBLIC_ROUTE, DOCS_ROUTE, PROTECTED_ROUTE, ERROR_ROUTE, NO_MATCHED_ROUTE] as RouteObject[];
 
 	const router = createHashRouter(routes);
 

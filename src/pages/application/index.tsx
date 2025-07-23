@@ -23,6 +23,7 @@ import applicationService from "@/api/services/applicationService";
 import { IconButton, Iconify } from "@/components/icon";
 import CreateApplicationModalNew from "./components/CreateApplicationModalNew";
 import EditApplicationModal from "./components/EditApplicationModal";
+import PublishApplicationModal from "./components/PublishApplicationModal";
 
 import type { Application } from "#/entity";
 
@@ -69,6 +70,7 @@ export default function ApplicationPage() {
   const { t } = useTranslation();
   const [createModalVisible, setCreateModalVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
+  const [publishModalVisible, setPublishModalVisible] = useState(false);
   const [currentApplication, setCurrentApplication] =
     useState<Application | null>(null);
 
@@ -131,6 +133,16 @@ export default function ApplicationPage() {
       content: `Share link for "${app.name}" has been copied to clipboard.`,
     });
     // Implement actual share logic here
+  };
+
+  const onPublish = (app: Application) => {
+    setCurrentApplication(app);
+    setPublishModalVisible(true);
+  };
+
+  const handlePublishSuccess = () => {
+    setPublishModalVisible(false);
+    queryClient.invalidateQueries({ queryKey: ["applications"] });
   };
 
   const onPageChange = (page: number, pageSize: number) => {
@@ -366,6 +378,9 @@ export default function ApplicationPage() {
                     <IconButton onClick={() => onShare(app)} title="分享应用">
                       <Iconify icon="solar:share-bold-duotone" size={18} />
                     </IconButton>
+                    <IconButton onClick={() => onPublish(app)} title="发布应用">
+                      <Iconify icon="solar:rocket-bold-duotone" size={18} />
+                    </IconButton>
                     <Popconfirm
                       title="Delete the Application"
                       description="Are you sure you want to delete this application?"
@@ -420,6 +435,12 @@ export default function ApplicationPage() {
         application={currentApplication}
         onCancel={() => setEditModalVisible(false)}
         onSuccess={handleEditSuccess}
+      />
+      <PublishApplicationModal
+        visible={publishModalVisible}
+        application={currentApplication}
+        onCancel={() => setPublishModalVisible(false)}
+        onSuccess={handlePublishSuccess}
       />
     </Space>
   );

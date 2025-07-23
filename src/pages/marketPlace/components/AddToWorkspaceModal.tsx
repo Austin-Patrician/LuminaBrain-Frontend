@@ -1,18 +1,6 @@
 import React, { useState } from "react";
 import { Modal, Button, Form, Input } from "antd";
-import {
-  SearchOutlined,
-  RobotOutlined,
-  FileTextOutlined,
-  AppstoreOutlined,
-  BulbOutlined,
-  BarChartOutlined,
-  CustomerServiceOutlined,
-  CodeOutlined,
-  TranslationOutlined,
-  ToolOutlined,
-  BookOutlined
-} from "@ant-design/icons";
+import { SHARED_ICON_OPTIONS } from "@/constant/icons";
 import type { MarketplaceItem } from "../types/marketplace";
 
 interface AddToWorkspaceModalProps {
@@ -28,21 +16,7 @@ interface ImportOptions {
   selectedIcon?: string;
 }
 
-// 可选择的图标列表
-const ICON_OPTIONS = [
-  { key: '🤖', label: '机器人', icon: <RobotOutlined /> },
-  { key: '📝', label: '文档', icon: <FileTextOutlined /> },
-  { key: '💡', label: '创意', icon: <BulbOutlined /> },
-  { key: '📊', label: '分析', icon: <BarChartOutlined /> },
-  { key: '🎯', label: '目标', icon: <SearchOutlined /> },
-  { key: '🔧', label: '工具', icon: <ToolOutlined /> },
-  { key: '📚', label: '学习', icon: <BookOutlined /> },
-  { key: '💬', label: '对话', icon: <CustomerServiceOutlined /> },
-  { key: '⚡', label: '效率', icon: <AppstoreOutlined /> },
-  { key: '🎨', label: '设计', icon: <CodeOutlined /> },
-  { key: '🌐', label: '翻译', icon: <TranslationOutlined /> },
-  { key: '🚀', label: '启动', icon: <RobotOutlined /> },
-];
+
 
 const AddToWorkspaceModal: React.FC<AddToWorkspaceModalProps> = ({
   item,
@@ -141,7 +115,7 @@ const AddToWorkspaceModal: React.FC<AddToWorkspaceModalProps> = ({
               <div className="">
                 <div className="text-sm text-gray-600 mb-2">选择图标：</div>
                 <div className="grid grid-cols-6 gap-2">
-                  {ICON_OPTIONS.map((option) => (
+                  {SHARED_ICON_OPTIONS.map((option) => (
                     <button
                       key={option.key}
                       type="button"

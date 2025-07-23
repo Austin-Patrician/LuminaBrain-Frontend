@@ -42,6 +42,7 @@ export enum ApplicationApi {
 	DeleteApplication = "/application",
 	UpdateApplication = "/application/update",
 	ShareApplication = "/application/share",
+	PublishApplication = "/application/publish", // 发布应用到探索社区
 	GetAiModelsByTypeId = "/aiModel/getByTypeId/{id}" , // 根据类型ID获取AI模型列表
 	GetKnowledgeList = "/knowledge/dropdown",
 }
@@ -108,6 +109,16 @@ const applicationService = {
 	deleteApplication: (id: string) => {
 		return apiClient.delete<void>({
 			url: `${ApplicationApi.DeleteApplication}/${id}`,
+		});
+	},
+
+	/**
+	 * Publish an application to the community
+	 */
+	publishApplication: (data: any) => {
+		return apiClient.post<any>({
+			url: ApplicationApi.PublishApplication,
+			data,
 		});
 	},
 };

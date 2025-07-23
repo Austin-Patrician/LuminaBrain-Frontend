@@ -80,6 +80,12 @@ export default function Header() {
             >
               <Iconify icon="mdi:github" size={24} />
             </IconButton>
+            <IconButton
+              onClick={() => window.open("#/docs", "_blank")}
+              title="官方文档"
+            >
+              <Iconify icon="mdi:file-document-outline" size={24} />
+            </IconButton>
             {/* <IconButton
               onClick={() => window.open("https://discord.gg/fXemAXVNDa")}
             >
