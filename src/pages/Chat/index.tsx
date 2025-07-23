@@ -33,7 +33,7 @@ import ModelSelector from "./components/ModelSelector";
 import AttachmentUpload from "./components/AttachmentUpload";
 import ChatHistory from "./components/ChatHistory";
 import ThinkingBubble from "./components/ThinkingBubble";
-import StreamingBubbleSelector from "./components/StreamingBubbleSelector";
+// import StreamingBubbleSelector from "./components/StreamingBubbleSelector"; // 已替换为 AssistantMessageBubble
 import {
   chatService,
   type ChatMessage as APIChatMessage,
@@ -42,6 +42,13 @@ import UserMessageBubble from "./components/UserMessageBubble";
 import AssistantMessageBubble from "./components/AssistantMessageBubble";
 import FileAttachment from "./components/FileAttachment";
 import "./index.css";
+import type {
+  GeneratePromptInput,
+  OptimizationResult,
+  RunPromptInput,
+  StreamingContent,
+} from "../prompt/types";
+
 
 const { Sider, Content } = Layout;
 const { Title, Text } = Typography;
@@ -95,6 +102,7 @@ const ChatPage: React.FC = () => {
 
   // 新增：文件管理状态
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // 添加滚动容器的引用
   const messagesScrollRef = useRef<HTMLDivElement>(null);
@@ -194,7 +202,7 @@ const ChatPage: React.FC = () => {
               title:
                 session.title === "新对话" && newMessages.length > 0
                   ? newMessages[0].content.slice(0, 20) +
-                    (newMessages[0].content.length > 20 ? "..." : "")
+                  (newMessages[0].content.length > 20 ? "..." : "")
                   : session.title,
             };
           }
@@ -328,136 +336,119 @@ const ChatPage: React.FC = () => {
 
       // 记录开始时间
       const startTime = Date.now();
-
+      // 创建SSE连接
+      abortControllerRef.current = new AbortController();
       // 根据模型的流式支持情况选择不同的API调用方式
-      if (selectedModelIsStream) {
-        // 使用流式API
-        await chatService.createStreamingChatCompletion(
-          {
-            model: selectedModel,
-            messages: apiMessages,
-            temperature: 0.7,
-            max_tokens: 8000,
-            ...(selectedModelType && { chatType: selectedModelType }), // 添加chatType参数
-          },
-          (chunk) => {
-            const content = chunk.choices[0]?.delta?.content;
-            if (content) {
-              fullResponse += content;
-              // 直接设置累积的内容
-              setStreamingMessage(fullResponse);
-            }
-          },
-          () => {
-            // 计算响应时间
-            const endTime = Date.now();
-            const responseTime = Number(
-              ((endTime - startTime) / 1000).toFixed(1)
-            );
 
-            // 流式输出完成
-            const assistantMessage: ChatMessage = {
-              id: `msg_${Date.now()}_assistant`,
-              role: "assistant",
-              content: fullResponse,
-              timestamp: new Date(),
-              thinking: thinkingMode,
-              streaming: true,
-              responseTime: responseTime, // 添加响应时间
-            };
+      // 使用新的 SSE 流式API
+      try {
 
-            const finalMessages = [...newMessages, assistantMessage];
-            setMessages(finalMessages);
-            updateSessionMessages(activeSessionId, finalMessages);
-            setIsStreaming(false);
-            setStreamingMessage("");
-          },
-          (error) => {
-            console.error("Chat error:", error);
-            antdMessage.error(`消息发送失败：${error.message}`);
-
-            // 添加一条友好的系统错误消息到对话中
-            const errorMessage: ChatMessage = {
-              id: `msg_${Date.now()}_error`,
-              role: "assistant",
-              content:
-                "抱歉，当前程序发生故障，我们正在马不停蹄修复中...请稍后再试或重新发送消息 🔧",
-              timestamp: new Date(),
-              thinking: false,
-              streaming: false,
-            };
-
-            const finalMessages = [...newMessages, errorMessage];
-            setMessages(finalMessages);
-            updateSessionMessages(activeSessionId, finalMessages);
-
-            setIsLoading(false);
-            setIsStreaming(false);
-            setStreamingMessage("");
+        for await (const event of chatService.createStreamingChatCompletionSSE({
+          model: selectedModel,
+          messages: apiMessages,
+          temperature: 0.7,
+          max_tokens: 8000,
+          ...(selectedModelType && { chatType: selectedModelType }), // 添加chatType参数
+        })) {
+          // 检查是否已被取消
+          if (abortControllerRef.current?.signal.aborted) {
+            break;
           }
-        );
-      } else {
-        // 使用非流式API
-        try {
-          const response = await chatService.createChatCompletion({
-            model: selectedModel,
-            messages: apiMessages,
-            temperature: 0.7,
-            max_tokens: 8000,
-            ...(selectedModelType && { chatType: selectedModelType }), // 添加chatType参数
-          });
 
-          // 计算响应时间
-          const endTime = Date.now();
-          const responseTime = Number(
-            ((endTime - startTime) / 1000).toFixed(1)
-          );
+          // 处理流式响应数据
+          if (event.data) {
+            try {
+              const data = JSON.parse(event.data);
+              if (data.type === "error") {
+                // 处理错误类型
+                antdMessage.error(data.message || data.error || '聊天失败，请重试');
+                break;
+              } else if (data.type === "message") {
+                if (data.message) {
+                  fullResponse += data.message;
+                  setStreamingMessage(fullResponse);
+                }
+              }
 
-          // 非流式输出完成
-          const assistantMessage: ChatMessage = {
-            id: `msg_${Date.now()}_assistant`,
-            role: "assistant",
-            content: response.choices[0]?.message?.content || "",
-            timestamp: new Date(),
-            thinking: thinkingMode,
-            streaming: false,
-            responseTime: responseTime,
-          };
+              // 检查是否完成
+              if (data.done || event.event === 'done') {
+                // 计算响应时间
+                const endTime = Date.now();
+                const responseTime = Number(
+                  ((endTime - startTime) / 1000).toFixed(1)
+                );
+                const assistantMessage: ChatMessage = {
+                  id: `msg_${Date.now()}_assistant`,
+                  role: "assistant",
+                  content: fullResponse,
+                  timestamp: new Date(),
+                  thinking: thinkingMode,
+                  streaming: true,
+                  responseTime: responseTime,
+                };
 
-          const finalMessages = [...newMessages, assistantMessage];
-          setMessages(finalMessages);
-          updateSessionMessages(activeSessionId, finalMessages);
-          setIsLoading(false);
-          setIsStreaming(false);
-          setStreamingMessage("");
-        } catch (error) {
-          console.error("Chat error:", error);
-          antdMessage.error(
-            `消息发送失败：${
-              error instanceof Error ? error.message : "未知错误"
-            }`
-          );
+                const finalMessages = [...newMessages, assistantMessage];
+                setMessages(finalMessages);
+                updateSessionMessages(activeSessionId, finalMessages);
+                setIsStreaming(false);
+                setStreamingMessage("");
+                break;
+              }
+            } catch (e) {
+              // 如果不是JSON格式，直接添加到结果中
+              if (event.data !== '[DONE]') {
+                fullResponse += event.data;
+                setStreamingMessage(fullResponse);
+              } else {
+                // 完成时创建最终消息
+                const endTime = Date.now();
+                const responseTime = Number(
+                  ((endTime - startTime) / 1000).toFixed(1)
+                );
+                const assistantMessage: ChatMessage = {
+                  id: `msg_${Date.now()}_assistant`,
+                  role: "assistant",
+                  content: fullResponse,
+                  timestamp: new Date(),
+                  thinking: thinkingMode,
+                  streaming: false,
+                  responseTime: responseTime,
+                };
 
-          // 添加一条友好的系统错误消息到对话中
-          const errorMessage: ChatMessage = {
-            id: `msg_${Date.now()}_error`,
-            role: "assistant",
-            content:
-              "抱歉，当前程序发生故障，我们正在马不停蹄修复中...请稍后再试或重新发送消息 🔧",
-            timestamp: new Date(),
-            thinking: false,
-            streaming: false,
-          };
-
-          const finalMessages = [...newMessages, errorMessage];
-          setMessages(finalMessages);
-          updateSessionMessages(activeSessionId, finalMessages);
-
-          setIsLoading(false);
-          setIsStreaming(false);
-          setStreamingMessage("");
+                const finalMessages = [...newMessages, assistantMessage];
+                setMessages(finalMessages);
+                updateSessionMessages(activeSessionId, finalMessages);
+                setIsStreaming(false);
+                setStreamingMessage("");
+                break;
+              }
+            }
+          }
         }
+      } catch (error) {
+        console.error("SSE Chat error:", error);
+        antdMessage.error(`消息发送失败：${error instanceof Error ? error.message : "未知错误"}`);
+
+        // 添加一条友好的系统错误消息到对话中
+        const errorMessage: ChatMessage = {
+          id: `msg_${Date.now()}_error`,
+          role: "assistant",
+          content:
+            "抱歉，当前程序发生故障，我们正在马不停蹄修复中...请稍后再试或重新发送消息 🔧",
+          timestamp: new Date(),
+          thinking: false,
+          streaming: true,
+        };
+
+        const finalMessages = [...newMessages, errorMessage];
+        setMessages(finalMessages);
+        updateSessionMessages(activeSessionId, finalMessages);
+
+        setIsLoading(false);
+        setIsStreaming(false);
+        setStreamingMessage("");
       }
+
     } catch (error) {
       console.error("Send message error:", error);
       antdMessage.error("消息发送失败，请重试");
@@ -501,7 +492,7 @@ const ChatPage: React.FC = () => {
       // 删除该消息之后的所有消息（包括AI回复）
       const messagesToKeep = updatedMessages.slice(0, messageIndex + 1);
 
-      setMessages(messagesToKeep);
+      setMessages(messagesToKeep); https://grok.com/files
 
       // 如果有当前会话，同步更新会话数据
       if (currentSession) {
@@ -521,146 +512,123 @@ const ChatPage: React.FC = () => {
         let fullResponse = "";
 
         // 根据模型的流式支持情况选择不同的API调用方式
-        if (selectedModelIsStream) {
-          // 显示思考状态
-          setTimeout(() => {
-            setIsLoading(false);
-            setIsStreaming(true);
-            setStreamingMessage("");
-          }, 800);
+        // 显示思考状态
+        setTimeout(() => {
+          setIsLoading(false);
+          setIsStreaming(true);
+          setStreamingMessage("");
+        }, 800);
 
-          // 使用流式API
-          await chatService.createStreamingChatCompletion(
-            {
-              model: selectedModel,
-              messages: apiMessages,
-              temperature: 0.7,
-              max_tokens: 2048,
-              ...(selectedModelType && { chatType: selectedModelType }),
-            },
-            (chunk) => {
-              const content = chunk.choices[0]?.delta?.content;
-              if (content) {
-                fullResponse += content;
-                setStreamingMessage(fullResponse);
-              }
-            },
-            () => {
-              // 计算响应时间
-              const endTime = Date.now();
-              const responseTime = Number(
-                ((endTime - startTime) / 1000).toFixed(1)
-              );
-
-              // 流式输出完成
-              const assistantMessage: ChatMessage = {
-                id: `msg_${Date.now()}_assistant`,
-                role: "assistant",
-                content: fullResponse,
-                timestamp: new Date(),
-                thinking: thinkingMode,
-                streaming: true,
-                responseTime: responseTime,
-              };
-
-              const finalMessages = [...messagesToKeep, assistantMessage];
-              setMessages(finalMessages);
-              if (currentSession) {
-                updateSessionMessages(currentSession, finalMessages);
-              }
-              setIsStreaming(false);
-              setStreamingMessage("");
-            },
-            (error) => {
-              console.error("Chat error:", error);
-              antdMessage.error(`重新生成回复失败：${error.message}`);
-
-              // 添加一条友好的系统错误消息到对话中
-              const errorMessage: ChatMessage = {
-                id: `msg_${Date.now()}_error`,
-                role: "assistant",
-                content:
-                  "抱歉，当前程序发生故障，我们正在马不停蹄修复中...请稍后再试或重新发送消息 🔧",
-                timestamp: new Date(),
-                thinking: false,
-                streaming: false,
-              };
-
-              const finalMessages = [...messagesToKeep, errorMessage];
-              setMessages(finalMessages);
-              if (currentSession) {
-                updateSessionMessages(currentSession, finalMessages);
-              }
-              setIsLoading(false);
-              setIsStreaming(false);
-              setStreamingMessage("");
-            }
-          );
-        } else {
-          // 使用非流式API
-          try {
-            const response = await chatService.createChatCompletion({
-              model: selectedModel,
-              messages: apiMessages,
-              temperature: 0.7,
-              max_tokens: 2048,
-              ...(selectedModelType && { chatType: selectedModelType }),
-            });
-
-            // 计算响应时间
-            const endTime = Date.now();
-            const responseTime = Number(
-              ((endTime - startTime) / 1000).toFixed(1)
-            );
-
-            // 非流式输出完成
-            const assistantMessage: ChatMessage = {
-              id: `msg_${Date.now()}_assistant`,
-              role: "assistant",
-              content: response.choices[0]?.message?.content || "",
-              timestamp: new Date(),
-              thinking: thinkingMode,
-              streaming: false,
-              responseTime: responseTime,
-            };
-
-            const finalMessages = [...messagesToKeep, assistantMessage];
-            setMessages(finalMessages);
-            if (currentSession) {
-              updateSessionMessages(currentSession, finalMessages);
-            }
-            setIsLoading(false);
-            setIsStreaming(false);
-            setStreamingMessage("");
-          } catch (error) {
-            console.error("Chat error:", error);
-            antdMessage.error(
-              `重新生成回复失败：${
-                error instanceof Error ? error.message : "未知错误"
-              }`
-            );
-
-            // 添加一条友好的系统错误消息到对话中
-            const errorMessage: ChatMessage = {
-              id: `msg_${Date.now()}_error`,
-              role: "assistant",
-              content:
-                "抱歉，当前程序发生故障，我们正在马不停蹄修复中...请稍后再试或重新发送消息 🔧",
-              timestamp: new Date(),
-              thinking: false,
-              streaming: false,
-            };
-
-            const finalMessages = [...messagesToKeep, errorMessage];
-            setMessages(finalMessages);
-            if (currentSession) {
-              updateSessionMessages(currentSession, finalMessages);
+        try {
+          for await (const event of chatService.createStreamingChatCompletionSSE({
+            model: selectedModel,
+            messages: apiMessages,
+            temperature: 0.7,
+            max_tokens: 8000,
+            ...(selectedModelType && { chatType: selectedModelType }), // 添加chatType参数
+          })) {
+            // 检查是否已被取消
+            if (abortControllerRef.current?.signal.aborted) {
+              break;
             }
 
-            setIsLoading(false);
-            setIsStreaming(false);
-            setStreamingMessage("");
+            // 处理流式响应数据
+            if (event.data) {
+              try {
+                const data = JSON.parse(event.data);
+                if (data.type === "error") {
+                  // 处理错误类型
+                  antdMessage.error(data.message || data.error || '聊天失败，请重试');
+                  break;
+                } else if (data.type === "message") {
+                  if (data.message) {
+                    fullResponse += data.message;
+                    setStreamingMessage(fullResponse);
+                  }
+                }
+
+                // 检查是否完成
+                if (data.done || event.event === 'done') {
+                  // 计算响应时间
+                  const endTime = Date.now();
+                  const responseTime = Number(
+                    ((endTime - startTime) / 1000).toFixed(1)
+                  );
+                  const assistantMessage: ChatMessage = {
+                    id: `msg_${Date.now()}_assistant`,
+                    role: "assistant",
+                    content: fullResponse,
+                    timestamp: new Date(),
+                    thinking: thinkingMode,
+                    streaming: true,
+                    responseTime: responseTime,
+                  };
+
+                  const finalMessages = [...messagesToKeep, assistantMessage];
+                  setMessages(finalMessages);
+                  if (currentSession) {
+                    updateSessionMessages(currentSession, finalMessages);
+                  }
+                  setIsStreaming(false);
+                  setStreamingMessage("");
+                  break;
+                }
+              } catch (e) {
+                // 如果不是JSON格式，直接添加到结果中
+                if (event.data !== '[DONE]') {
+                  fullResponse += event.data;
+                  setStreamingMessage(fullResponse);
+                } else {
+                  // 完成时创建最终消息
+                  const endTime = Date.now();
+                  const responseTime = Number(
+                    ((endTime - startTime) / 1000).toFixed(1)
+                  );
+                  const assistantMessage: ChatMessage = {
+                    id: `msg_${Date.now()}_assistant`,
+                    role: "assistant",
+                    content: fullResponse,
+                    timestamp: new Date(),
+                    thinking: thinkingMode,
+                    streaming: false,
+                    responseTime: responseTime,
+                  };
+
+                  const finalMessages = [...messagesToKeep, assistantMessage];
+                  setMessages(finalMessages);
+                  if (currentSession) {
+                    updateSessionMessages(currentSession, finalMessages);
+                  }
+                  setIsStreaming(false);
+                  setStreamingMessage("");
+                  break;
+                }
+              }
+            }
           }
+        } catch (error) {
+          console.error("SSE Chat error:", error);
+          antdMessage.error(`消息发送失败：${error instanceof Error ? error.message : "未知错误"}`);
+
+          // 添加一条友好的系统错误消息到对话中
+          const errorMessage: ChatMessage = {
+            id: `msg_${Date.now()}_error`,
+            role: "assistant",
+            content:
+              "抱歉，当前程序发生故障，我们正在马不停蹄修复中...请稍后再试或重新发送消息 🔧",
+            timestamp: new Date(),
+            thinking: false,
+            streaming: true,
+          };
+
+          const finalMessages = [...messagesToKeep, errorMessage];
+          setMessages(finalMessages);
+          if (currentSession) {
+            updateSessionMessages(currentSession, finalMessages);
+          }
+          setIsLoading(false);
+          setIsStreaming(false);
+          setStreamingMessage("");
         }
       } catch (error) {
         console.error("Regenerate message error:", error);
@@ -714,147 +682,126 @@ const ChatPage: React.FC = () => {
         let fullResponse = "";
 
         // 根据模型的流式支持情况选择不同的API调用方式
-        if (selectedModelIsStream) {
-          // 显示思考状态
-          setTimeout(() => {
-            setIsLoading(false);
-            setIsStreaming(true);
-            setStreamingMessage("");
-          }, 800);
 
-          // 使用流式API
-          await chatService.createStreamingChatCompletion(
-            {
-              model: selectedModel,
-              messages: apiMessages,
-              temperature: 0.7,
-              max_tokens: 2048,
-              ...(selectedModelType && { chatType: selectedModelType }),
-            },
-            (chunk) => {
-              const content = chunk.choices[0]?.delta?.content;
-              if (content) {
-                fullResponse += content;
-                setStreamingMessage(fullResponse);
-              }
-            },
-            () => {
-              // 计算响应时间
-              const endTime = Date.now();
-              const responseTime = Number(
-                ((endTime - startTime) / 1000).toFixed(1)
-              );
+        // 显示思考状态
+        setTimeout(() => {
+          setIsLoading(false);
+          setIsStreaming(true);
+          setStreamingMessage("");
+        }, 800);
 
-              // 流式输出完成
-              const assistantMessage: ChatMessage = {
-                id: `msg_${Date.now()}_assistant`,
-                role: "assistant",
-                content: fullResponse,
-                timestamp: new Date(),
-                thinking: thinkingMode,
-                streaming: true,
-                responseTime: responseTime,
-              };
-
-              const finalMessages = [...messagesToKeep, assistantMessage];
-              setMessages(finalMessages);
-              if (currentSession) {
-                updateSessionMessages(currentSession, finalMessages);
-              }
-              setIsStreaming(false);
-              setStreamingMessage("");
-            },
-            (error) => {
-              console.error("Chat error:", error);
-              antdMessage.error(`重新生成回复失败：${error.message}`);
-
-              // 添加一条友好的系统错误消息到对话中
-              const errorMessage: ChatMessage = {
-                id: `msg_${Date.now()}_error`,
-                role: "assistant",
-                content:
-                  "抱歉，当前程序发生故障，我们正在马不停蹄修复中...请稍后再试或重新发送消息 🔧",
-                timestamp: new Date(),
-                thinking: false,
-                streaming: false,
-              };
-
-              const finalMessages = [...messagesToKeep, errorMessage];
-              setMessages(finalMessages);
-              if (currentSession) {
-                updateSessionMessages(currentSession, finalMessages);
-              }
-              setIsLoading(false);
-              setIsStreaming(false);
-              setStreamingMessage("");
+        // 使用新的 SSE 流式API
+        try {
+          for await (const event of chatService.createStreamingChatCompletionSSE({
+            model: selectedModel,
+            messages: apiMessages,
+            temperature: 0.7,
+            max_tokens: 8000,
+            ...(selectedModelType && { chatType: selectedModelType }), // 添加chatType参数
+          })) {
+            // 检查是否已被取消
+            if (abortControllerRef.current?.signal.aborted) {
+              break;
             }
-          );
-        } else {
-          // 使用非流式API
-          try {
-            const response = await chatService.createChatCompletion({
-              model: selectedModel,
-              messages: apiMessages,
-              temperature: 0.7,
-              max_tokens: 2048,
-              ...(selectedModelType && { chatType: selectedModelType }),
-            });
+            // 处理流式响应数据
+            if (event.data) {
+              try {
+                const data = JSON.parse(event.data);
+                if (data.type === "error") {
+                  // 处理错误类型
+                  antdMessage.error(data.message || data.error || '聊天失败，请重试');
+                  break;
+                } else if (data.type === "message") {
+                  if (data.message) {
+                    fullResponse += data.message;
+                    setStreamingMessage(fullResponse);
+                  }
+                }
 
-            // 计算响应时间
-            const endTime = Date.now();
-            const responseTime = Number(
-              ((endTime - startTime) / 1000).toFixed(1)
-            );
+                // 检查是否完成
+                if (data.done || event.event === 'done') {
+                  // 计算响应时间
+                  const endTime = Date.now();
+                  const responseTime = Number(
+                    ((endTime - startTime) / 1000).toFixed(1)
+                  );
+                  const assistantMessage: ChatMessage = {
+                    id: `msg_${Date.now()}_assistant`,
+                    role: "assistant",
+                    content: fullResponse,
+                    timestamp: new Date(),
+                    thinking: thinkingMode,
+                    streaming: true,
+                    responseTime: responseTime,
+                  };
 
-            // 非流式输出完成
-            const assistantMessage: ChatMessage = {
-              id: `msg_${Date.now()}_assistant`,
-              role: "assistant",
-              content: response.choices[0]?.message?.content || "",
-              timestamp: new Date(),
-              thinking: thinkingMode,
-              streaming: false,
-              responseTime: responseTime,
-            };
+                  const finalMessages = [...messagesToKeep, assistantMessage];
+                  setMessages(finalMessages);
+                  if (currentSession) {
+                    updateSessionMessages(currentSession, finalMessages);
+                  }
+                  setIsStreaming(false);
+                  setStreamingMessage("");
+                  break;
+                }
+              } catch (e) {
+                // 如果不是JSON格式，直接添加到结果中
+                if (event.data !== '[DONE]') {
+                  fullResponse += event.data;
+                  setStreamingMessage(fullResponse);
+                } else {
+                  // 完成时创建最终消息
+                  const endTime = Date.now();
+                  const responseTime = Number(
+                    ((endTime - startTime) / 1000).toFixed(1)
+                  );
+                  const assistantMessage: ChatMessage = {
+                    id: `msg_${Date.now()}_assistant`,
+                    role: "assistant",
+                    content: fullResponse,
+                    timestamp: new Date(),
+                    thinking: thinkingMode,
+                    streaming: false,
+                    responseTime: responseTime,
+                  };
 
-            const finalMessages = [...messagesToKeep, assistantMessage];
-            setMessages(finalMessages);
-            if (currentSession) {
-              updateSessionMessages(currentSession, finalMessages);
+                  const finalMessages = [...messagesToKeep, assistantMessage];
+                  setMessages(finalMessages);
+                  if (currentSession) {
+                    updateSessionMessages(currentSession, finalMessages);
+                  }
+                  setIsStreaming(false);
+                  setStreamingMessage("");
+                  break;
+                }
+              }
             }
-            setIsLoading(false);
-            setIsStreaming(false);
-            setStreamingMessage("");
-          } catch (error) {
-            console.error("Chat error:", error);
-            antdMessage.error(
-              `重新生成回复失败：${
-                error instanceof Error ? error.message : "未知错误"
-              }`
-            );
-
-            // 添加一条友好的系统错误消息到对话中
-            const errorMessage: ChatMessage = {
-              id: `msg_${Date.now()}_error`,
-              role: "assistant",
-              content:
-                "抱歉，当前程序发生故障，我们正在马不停蹄修复中...请稍后再试或重新发送消息 🔧",
-              timestamp: new Date(),
-              thinking: false,
-              streaming: false,
-            };
-
-            const finalMessages = [...messagesToKeep, errorMessage];
-            setMessages(finalMessages);
-            if (currentSession) {
-              updateSessionMessages(currentSession, finalMessages);
-            }
-
-            setIsLoading(false);
-            setIsStreaming(false);
-            setStreamingMessage("");
           }
+        } catch (error) {
+          console.error("SSE Chat error:", error);
+          antdMessage.error(`消息发送失败：${error instanceof Error ? error.message : "未知错误"}`);
+
+          // 添加一条友好的系统错误消息到对话中
+          const errorMessage: ChatMessage = {
+            id: `msg_${Date.now()}_error`,
+            role: "assistant",
+            content:
+              "抱歉，当前程序发生故障，我们正在马不停蹄修复中...请稍后再试或重新发送消息 🔧",
+            timestamp: new Date(),
+            thinking: false,
+            streaming: true,
+          };
+
+          const finalMessages = [...messagesToKeep, errorMessage];
+          setMessages(finalMessages);
+          if (currentSession) {
+            updateSessionMessages(currentSession, finalMessages);
+          }
+          setIsLoading(false);
+          setIsStreaming(false);
+          setStreamingMessage("");
         }
+
       } catch (error) {
         console.error("Regenerate message error:", error);
         antdMessage.error("重新生成回复失败，请重试");
@@ -1267,9 +1214,8 @@ const ChatPage: React.FC = () => {
                   <div className="chat-input-container">
                     {/* 主要交互面板 */}
                     <div
-                      className={`chat-interaction-panel ${
-                        isLoading ? "loading" : ""
-                      }`}
+                      className={`chat-interaction-panel ${isLoading ? "loading" : ""
+                        }`}
                     >
                       {/* 输入区域 */}
                       <div className="chat-input-section">
@@ -1293,8 +1239,8 @@ const ChatPage: React.FC = () => {
                           value={inputValue}
                           onChange={setInputValue}
                           onSubmit={handleSendMessage}
-                          onFocus={() => {}}
-                          onBlur={() => {}}
+                          onFocus={() => { }}
+                          onBlur={() => { }}
                           placeholder="输入消息开始对话... (Shift + Enter 换行)"
                           loading={isLoading}
                           disabled={isLoading}
@@ -1321,9 +1267,8 @@ const ChatPage: React.FC = () => {
                             className="chat-tool-tooltip"
                           >
                             <div
-                              className={`chat-thinking-toggle ${
-                                thinkingMode ? "active" : ""
-                              }`}
+                              className={`chat-thinking-toggle ${thinkingMode ? "active" : ""
+                                }`}
                               onClick={() => setThinkingMode(!thinkingMode)}
                             >
                               <BulbOutlined className="chat-thinking-icon" />
@@ -1391,6 +1336,8 @@ const ChatPage: React.FC = () => {
                             content={message.content}
                             responseTime={message.responseTime}
                             thinking={message.thinking}
+                            streaming={false} // 历史消息不是流式状态
+                            streamingContent="" // 历史消息无流式内容
                             onRegenerate={() =>
                               handleRegenerateResponse(message.id)
                             }
@@ -1417,15 +1364,27 @@ const ChatPage: React.FC = () => {
 
                     {/* 流式输出消息 */}
                     {isStreaming && streamingMessage && (
-                      <StreamingBubbleSelector
-                        content={streamingMessage}
+                      <AssistantMessageBubble
+                        content="" // 流式时内容为空
                         thinking={thinkingMode}
-                        isStreaming={isStreaming}
-                        useSSE={selectedModelIsStream}
-                        onComplete={() => {
-                          // 流式输出完成的回调处理
-                          console.log("Streaming completed");
+                        streaming={true} // 正在流式输出
+                        streamingContent={streamingMessage} // 流式内容
+                        onRegenerate={() => {
+                          // 流式时不允许重新生成
+                          console.log("Cannot regenerate during streaming");
                         }}
+                        onCopy={handleCopyMessage}
+                        onShare={(content) => {
+                          navigator.clipboard.writeText(content);
+                          antdMessage.success("消息内容已复制到剪贴板");
+                        }}
+                        onLike={() => {
+                          console.log("用户点赞了流式消息");
+                        }}
+                        onDislike={() => {
+                          console.log("用户点踩了流式消息");
+                        }}
+                        className="fade-in streaming"
                       />
                     )}
 
@@ -1441,9 +1400,8 @@ const ChatPage: React.FC = () => {
                   <div className="chat-input-container">
                     {/* 主要交互面板 */}
                     <div
-                      className={`chat-interaction-panel ${
-                        isLoading ? "loading" : ""
-                      }`}
+                      className={`chat-interaction-panel ${isLoading ? "loading" : ""
+                        }`}
                     >
                       {/* 输入区域 */}
                       <div className="chat-input-section">
@@ -1467,8 +1425,8 @@ const ChatPage: React.FC = () => {
                           value={inputValue}
                           onChange={setInputValue}
                           onSubmit={handleSendMessage}
-                          onFocus={() => {}}
-                          onBlur={() => {}}
+                          onFocus={() => { }}
+                          onBlur={() => { }}
                           placeholder="输入消息... (Shift + Enter 换行)"
                           loading={isLoading}
                           disabled={isLoading}
@@ -1495,9 +1453,8 @@ const ChatPage: React.FC = () => {
                             className="chat-tool-tooltip"
                           >
                             <div
-                              className={`chat-thinking-toggle ${
-                                thinkingMode ? "active" : ""
-                              }`}
+                              className={`chat-thinking-toggle ${thinkingMode ? "active" : ""
+                                }`}
                               onClick={() => setThinkingMode(!thinkingMode)}
                             >
                               <BulbOutlined className="chat-thinking-icon" />

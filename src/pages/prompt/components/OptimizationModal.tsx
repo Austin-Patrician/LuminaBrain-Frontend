@@ -9,11 +9,7 @@ import {
   Space,
   Divider,
   Alert,
-  Tooltip,
-  Card,
-  Spin,
-  Badge,
-  Empty,
+  Select,
   message as antdMessage,
 } from "antd";
 import {
@@ -21,18 +17,8 @@ import {
   ExperimentOutlined,
   BulbOutlined,
   SendOutlined,
-  EyeOutlined,
-  EditOutlined,
-  InfoCircleOutlined,
-  FileTextOutlined,
-  BarChartOutlined,
-  CopyOutlined,
-  LoadingOutlined,
-  CheckCircleOutlined,
 } from "@ant-design/icons";
-import ModelSelector from "@/pages/Chat/components/ModelSelector";
-import ModalMarkdown from "@/components/markdown/modal-markdown";
-import { Row, Col } from "antd";
+import { flowService } from "@/api/services/flowService";
 import type {
   GeneratePromptInput,
   OptimizationResult,
@@ -40,7 +26,7 @@ import type {
 } from "../types";
 
 const { TextArea } = Input;
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 
 interface OptimizationModalProps {
   visible: boolean;
@@ -65,12 +51,33 @@ const OptimizationModal: React.FC<OptimizationModalProps> = ({
   onCancel,
   onConfirm,
   initialData,
-  optimizationResult,
-  streamingContent,
   isOptimizing,
 }) => {
   const [form] = Form.useForm();
+
+  // 获取模型列表
+  const fetchModels = async () => {
+    setLoadingModels(true);
+    try {
+      const response = await flowService.getAiModelsByTypeId();
+      setModelOptions(response);
+    } catch (error) {
+      console.error("Failed to fetch AI models:", error);
+      antdMessage.error("获取模型列表失败");
+    } finally {
+      setLoadingModels(false);
+    }
+  };
+
+  // 组件加载时获取模型列表
+  useEffect(() => {
+    if (visible) {
+      fetchModels();
+    }
+  }, [visible]);
   const [loading, setLoading] = useState(false);
+  const [modelOptions, setModelOptions] = useState<any[]>([]);
+  const [loadingModels, setLoadingModels] = useState(false);
   const [showResultModal, setShowResultModal] = useState(false);
 
   // 重置表单数据
@@ -248,9 +255,16 @@ const OptimizationModal: React.FC<OptimizationModalProps> = ({
             name="ModelId"
             rules={[{ required: true, message: "请选择用于优化的模型" }]}
           >
-            <ModelSelector
+            <Select
               value={form.getFieldValue("ModelId")}
               onChange={(modelId) => form.setFieldValue("ModelId", modelId)}
+              style={{ width: '100%' }}
+              placeholder="选择模型"
+              loading={loadingModels}
+              options={modelOptions.map(model => ({
+                label: model.aiModelName,
+                value: model.aiModelId
+              }))}
             />
           </Form.Item>
 

@@ -236,3 +236,19 @@
 .assistant-toolbar-btn:active {
   transform: translateY(0);
 }
+
+
+/* Streaming cursor */
+.streaming-cursor {
+  display: inline-block;
+  animation: blink 1s step-end infinite;
+  color: #666;
+  font-weight: bold;
+  margin-left: 2px;
+}
+
+@keyframes blink {
+  0% { opacity: 1; }
+  50% { opacity: 0; }
+  100% { opacity: 1; }
+}

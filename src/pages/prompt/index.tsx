@@ -31,13 +31,14 @@ import {
 } from "@ant-design/icons";
 import { useTranslation } from 'react-i18next';
 
-import ModelSelector from "@/pages/Chat/components/ModelSelector";
+import { Select, message as antdMessage } from "antd";
 import OptimizationModal from "./components/OptimizationModal";
 import ChatMessages from "./components/ChatMessages";
 import SimpleMessageInput from "./components/SimpleMessageInput";
 import StatusIndicator from "./components/StatusIndicator";
 import ModalMarkdown from "@/components/markdown/modal-markdown";
 import { generatePrompt, generateFunctionCallingPrompt } from "@/api/services/promptService";
+import { flowService } from "@/api/services/flowService";
 import type {
   GeneratePromptInput,
   OptimizationResult,
@@ -56,6 +57,8 @@ export default function PromptPage() {
 
   // 基础状态
   const [selectedModel, setSelectedModel] = useState<string>("");
+  const [modelOptions, setModelOptions] = useState<any[]>([]);
+  const [loadingModels, setLoadingModels] = useState(false);
   const [systemPrompt, setSystemPrompt] = useState<string>("");
   const [userInput, setUserInput] = useState<string>("");
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -102,10 +105,29 @@ export default function PromptPage() {
   // SSE连接管理
   const eventSourceRef = useRef<EventSource | null>(null);
 
+  // 获取模型列表
+  const fetchModels = async () => {
+    setLoadingModels(true);
+    try {
+      const response = await flowService.getAiModelsByTypeId();
+      setModelOptions(response);
+    } catch (error) {
+      console.error("Failed to fetch AI models:", error);
+      antdMessage.error("获取模型列表失败");
+    } finally {
+      setLoadingModels(false);
+    }
+  };
+
   // 处理模型选择
   const handleModelChange = (modelId: string) => {
     setSelectedModel(modelId);
   };
+
+  // 组件加载时获取模型列表
+  useEffect(() => {
+    fetchModels();
+  }, []);
 
   // 处理优化类型选择
   const handleOptimizationTypeSelect = (
@@ -441,9 +463,16 @@ export default function PromptPage() {
                         />
                         选择模型
                       </div>
-                      <ModelSelector
+                      <Select
                         value={selectedModel}
                         onChange={handleModelChange}
+                        style={{ minWidth: 180 }}
+                        placeholder="选择模型"
+                        loading={loadingModels}
+                        options={modelOptions.map(model => ({
+                          label: model.aiModelName,
+                          value: model.aiModelId
+                        }))}
                       />
                     </div>
                   </Col>
