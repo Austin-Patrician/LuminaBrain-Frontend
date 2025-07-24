@@ -69,7 +69,7 @@ const ModelManagementPage: React.FC = () => {
 
   // 使用 React Query 更新模型配置
   const updateModelMutation = useMutation({
-    mutationFn: aimodelService.updateProvider,
+    mutationFn: aimodelService.updateModel,
     onSuccess: (response) => {
       if (response.success) {
         message.success("模型配置已更新");
@@ -275,7 +275,7 @@ const ModelManagementPage: React.FC = () => {
                     <Tag
                       color={
                         MODEL_TYPE_COLORS[
-                          model.aiModelTypeName as keyof typeof MODEL_TYPE_COLORS
+                        model.aiModelTypeName as keyof typeof MODEL_TYPE_COLORS
                         ]
                       }
                       className="model-type-tag"

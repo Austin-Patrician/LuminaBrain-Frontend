@@ -37,6 +37,14 @@ export const useChat = () => {
 
   // Scroll container ref
   const messagesScrollRef = useRef<HTMLDivElement>(null);
+  
+  // Keep track of latest messages for stream completion
+  const latestMessagesRef = useRef<ChatMessage[]>(messages);
+  
+  // Update ref when messages change
+  useEffect(() => {
+    latestMessagesRef.current = messages;
+  }, [messages]);
 
   // Chat API hooks
   const chatAPI = useChatAPI({
@@ -46,15 +54,9 @@ export const useChat = () => {
       scrollToBottom(messagesScrollRef.current);
     },
     onStreamComplete: (fullContent, responseTime) => {
-      handleStreamComplete(fullContent, responseTime);
+      handleStreamComplete(fullContent, responseTime, latestMessagesRef.current);
     },
     onStreamError: (error) => {
-      handleChatError(error);
-    },
-    onNonStreamComplete: (content, responseTime) => {
-      handleNonStreamComplete(content, responseTime);
-    },
-    onNonStreamError: (error) => {
       handleChatError(error);
     },
   });
@@ -81,7 +83,7 @@ export const useChat = () => {
   }, [uiState.isLoading]);
 
   // Handle stream completion
-  const handleStreamComplete = useCallback((fullContent: string, responseTime: number) => {
+  const handleStreamComplete = useCallback((fullContent: string, responseTime: number, currentMessages?: ChatMessage[]) => {
     const assistantMessage: ChatMessage = {
       id: generateMessageId(MESSAGE_ROLES.ASSISTANT),
       role: MESSAGE_ROLES.ASSISTANT,
@@ -92,7 +94,9 @@ export const useChat = () => {
       responseTime,
     };
 
-    const finalMessages = [...messages, assistantMessage];
+    // 使用传入的消息列表或当前状态中的消息列表
+    const baseMessages = currentMessages || messages;
+    const finalMessages = [...baseMessages, assistantMessage];
     setMessages(finalMessages);
     
     if (currentSession) {
@@ -106,31 +110,7 @@ export const useChat = () => {
     });
   }, [messages, currentSession, config.thinkingMode, setMessages, updateSessionMessages, updateUIState]);
 
-  // Handle non-stream completion
-  const handleNonStreamComplete = useCallback((content: string, responseTime: number) => {
-    const assistantMessage: ChatMessage = {
-      id: generateMessageId(MESSAGE_ROLES.ASSISTANT),
-      role: MESSAGE_ROLES.ASSISTANT,
-      content,
-      timestamp: new Date(),
-      thinking: config.thinkingMode,
-      streaming: false,
-      responseTime,
-    };
 
-    const finalMessages = [...messages, assistantMessage];
-    setMessages(finalMessages);
-    
-    if (currentSession) {
-      updateSessionMessages(currentSession, finalMessages);
-    }
-    
-    updateUIState({
-      isStreaming: false,
-      streamingMessage: '',
-      isLoading: false,
-    });
-  }, [messages, currentSession, config.thinkingMode, setMessages, updateSessionMessages, updateUIState]);
 
   // Handle chat errors
   const handleChatError = useCallback((error: Error) => {
@@ -147,7 +127,9 @@ export const useChat = () => {
       streaming: false,
     };
 
-    const finalMessages = [...messages, errorMessage];
+    // 使用最新的消息状态来构建错误消息列表
+    const currentMessages = latestMessagesRef.current;
+    const finalMessages = [...currentMessages, errorMessage];
     setMessages(finalMessages);
     
     if (currentSession) {
@@ -159,7 +141,7 @@ export const useChat = () => {
       isStreaming: false,
       streamingMessage: '',
     });
-  }, [messages, currentSession, setMessages, updateSessionMessages, updateUIState]);
+  }, [currentSession, setMessages, updateSessionMessages, updateUIState]);
 
   // Handle model selection change
   const handleModelChange = useCallback((modelId: string, modelType?: string, isStream?: boolean) => {
@@ -221,6 +203,9 @@ export const useChat = () => {
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
     updateSessionMessages(activeSessionId, newMessages);
+    
+    // 立即更新ref以确保流式完成时能获取到最新消息
+    latestMessagesRef.current = newMessages;
 
     // Clear input and files
     setInputValue('');
@@ -239,7 +224,11 @@ export const useChat = () => {
     }, 800);
 
     // Send API request
-    await chatAPI.sendMessage(newMessages);
+    try {
+      await chatAPI.sendMessage(newMessages);
+    } catch (error) {
+      handleChatError(error as Error);
+    }
   }, [
     inputValue,
     attachedFiles,
@@ -273,6 +262,9 @@ export const useChat = () => {
     // Keep only messages up to the edited one
     const messagesToKeep = updatedMessages.slice(0, messageIndex + 1);
     setMessages(messagesToKeep);
+    
+    // 立即更新ref以确保流式完成时能获取到最新消息
+    latestMessagesRef.current = messagesToKeep;
 
     if (currentSession) {
       updateSessionMessages(currentSession, messagesToKeep);
@@ -289,7 +281,11 @@ export const useChat = () => {
       });
     }, 800);
 
-    await chatAPI.sendMessage(messagesToKeep);
+    try {
+      await chatAPI.sendMessage(messagesToKeep);
+    } catch (error) {
+      handleChatError(error as Error);
+    }
   }, [messages, currentSession, setMessages, updateSessionMessages, updateUIState, chatAPI]);
 
   // Handle regenerate response
@@ -300,6 +296,9 @@ export const useChat = () => {
     // Get messages before the AI response
     const messagesToKeep = messages.slice(0, messageIndex);
     setMessages(messagesToKeep);
+    
+    // 立即更新ref以确保流式完成时能获取到最新消息
+    latestMessagesRef.current = messagesToKeep;
 
     if (currentSession) {
       updateSessionMessages(currentSession, messagesToKeep);
@@ -316,7 +315,11 @@ export const useChat = () => {
       });
     }, 800);
 
-    await chatAPI.sendMessage(messagesToKeep);
+    try {
+      await chatAPI.sendMessage(messagesToKeep);
+    } catch (error) {
+      handleChatError(error as Error);
+    }
   }, [messages, currentSession, setMessages, updateSessionMessages, updateUIState, chatAPI]);
 
   // Handle copy message

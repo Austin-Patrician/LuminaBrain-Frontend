@@ -5,13 +5,25 @@ import type { AIModel, AIProvider, UpdateProviderModel, AiModelsAndKnowledgesRes
 // 定义API端点
 enum AIModelApi {
 	GetModels = "/provider/all",
-	UpdateModel = "/provider/update",
+	UpdateProvider = "/provider/update",
+	UpdateModel = "/aimodel/update",
 	ShareModel = "/aimodel/share",
+
 	GetAiModelsAndKnowledges = "aiModel/aiModelsAndKnowledges",
 }
 
 // 服务定义
 export const aimodelService = {
+	updateModel: (model: UpdateProviderModel) => {
+		return apiClient.post<{
+			success: boolean;
+			data: AIModel;
+		}>({
+			url: AIModelApi.UpdateModel,
+			data: model,
+		});
+	},
+
 	// 获取所有模型
 	getModels: () => {
 		return apiClient.get<{
@@ -30,7 +42,7 @@ export const aimodelService = {
 			success: boolean;
 			data: AIModel;
 		}>({
-			url: AIModelApi.UpdateModel,
+			url: AIModelApi.UpdateProvider,
 			data: model,
 		});
 	},

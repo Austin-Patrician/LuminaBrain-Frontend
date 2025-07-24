@@ -342,7 +342,7 @@ const ChatPage: React.FC = () => {
 
       // 使用新的 SSE 流式API
       try {
-
+        console.log("开始流式聊天请求")
         for await (const event of chatService.createStreamingChatCompletionSSE({
           model: selectedModel,
           messages: apiMessages,

@@ -14,19 +14,7 @@ import {
   Tabs,
 } from "antd";
 import {
-  UploadOutlined,
-  SmileOutlined,
-  RobotOutlined,
-  FileTextOutlined,
-  AppstoreOutlined,
-  BulbOutlined,
-  BarChartOutlined,
-  CustomerServiceOutlined,
-  CodeOutlined,
-  TranslationOutlined,
-  ToolOutlined,
-  BookOutlined,
-  SearchOutlined,
+  UploadOutlined
 } from "@ant-design/icons";
 import { useMutation } from "@tanstack/react-query";
 import applicationService from "@/api/services/applicationService";
@@ -108,7 +96,7 @@ export default function PublishApplicationModal({
       description: formValues.description,
       icon: selectedEmoji || iconUrl,
     };
-    
+
     publishMutation.mutate(publishData);
   };
 
@@ -176,14 +164,13 @@ export default function PublishApplicationModal({
                 <div className="mb-4">
                   <div className="text-sm text-gray-600 mb-3">常用图标</div>
                   <div className="grid grid-cols-6 gap-2">
-                     {SHARED_ICON_OPTIONS.map((option) => (
+                    {SHARED_ICON_OPTIONS.map((option) => (
                       <button
                         key={option.key}
-                        className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg transition-all ${
-                          selectedEmoji === option.key
+                        className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg transition-all ${selectedEmoji === option.key
                             ? 'bg-blue-100 border-2 border-blue-500'
                             : 'bg-gray-100 hover:bg-gray-200 border-2 border-transparent'
-                        }`}
+                          }`}
                         onClick={() => handleEmojiSelect(option.key)}
                         title={option.label}
                       >
@@ -198,11 +185,10 @@ export default function PublishApplicationModal({
                     {EMOJI_ICONS.map((emoji, index) => (
                       <button
                         key={index}
-                        className={`w-8 h-8 flex items-center justify-center text-lg transition-colors ${
-                          selectedEmoji === emoji
+                        className={`w-8 h-8 flex items-center justify-center text-lg transition-colors ${selectedEmoji === emoji
                             ? 'bg-blue-100 border-2 border-blue-500 rounded'
                             : 'hover:bg-gray-100 rounded'
-                        }`}
+                          }`}
                         onClick={() => handleEmojiSelect(emoji)}
                       >
                         {emoji}
@@ -295,8 +281,8 @@ export default function PublishApplicationModal({
                   </div>
                 </Popover>
                 <div className="text-xs text-gray-500 mt-2">
-                   点击头像选择图标
-                 </div>
+                  点击头像选择图标
+                </div>
               </div>
             </Form.Item>
 

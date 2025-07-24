@@ -14,6 +14,7 @@ const PermissioPage = lazy(
   () => import("@/pages/management/system/permission")
 );
 const RolePage = lazy(() => import("@/pages/management/system/role"));
+const ActivityPage = lazy(() => import("@/pages/management/system/activity"));
 
 
 const management: AppRouteObject = {
@@ -88,6 +89,14 @@ const management: AppRouteObject = {
           meta: {
             label: "sys.menu.system.role",
             key: "/management/system/role",
+          },
+        },
+        {
+          path: "activity",
+          element: <ActivityPage />,
+          meta: {
+            label: "sys.menu.system.activity",
+            key: "/management/system/activity",
           },
         },
       ],
