@@ -100,7 +100,8 @@
         "permission": "Permission",
         "role": "Role",
         "user": "User",
-        "user_detail": "User Detail"
+        "user_detail": "User Detail",
+        "activity": "Activity"
       },
       "blog": "Blog",
       "components": "Components",

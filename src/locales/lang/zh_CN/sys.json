@@ -99,7 +99,8 @@
         "permission": "权限",
         "role": "角色",
         "user": "用户",
-        "user_detail": "用户详情"
+        "user_detail": "用户详情",
+        "activity": "活动"
       },
       "blog": "博客",
       "components": "组件",

@@ -6,16 +6,10 @@ import {
   Switch,
   Modal,
   Tag,
-  Space,
-  Typography,
-  Card,
-  Row,
-  Col,
   Avatar,
   Pagination,
   Spin,
   Badge,
-  Tooltip,
   Divider,
 } from 'antd';
 import {
@@ -228,23 +222,23 @@ const ApplicationReviewPage: React.FC = () => {
   );
 
   return (
-    <div className="modern-application-review">
-      {/* Modern Header */}
-      <div className="modern-header">
-        <div className="header-content">
-          <div className="header-left">
+    <div className="application-review-page">
+      {/* Simplified Header */}
+      <div className="page-header">
+        <div className="header-container">
+          <div className="header-main">
             <div className="header-icon">
               <AppstoreOutlined />
             </div>
-            <div className="header-text">
-              <h1>应用审核中心</h1>
-              <p>管理和审核应用程序的发布流程</p>
+            <div className="header-info">
+              <h1 className="page-title">应用审核中心</h1>
+              <p className="page-description">管理和审核应用程序的发布流程</p>
             </div>
           </div>
           {isAdmin && (
-            <div className="header-right">
-              <div className="view-toggle">
-                <span className="toggle-label">视图模式</span>
+            <div className="header-actions">
+              <div className="view-mode-switch">
+                <span className="switch-label">视图模式</span>
                 <Switch
                   checked={viewMode === 'all'}
                   onChange={(checked) => setViewMode(checked ? 'all' : 'my')}
@@ -258,144 +252,149 @@ const ApplicationReviewPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Modern Filter Bar */}
-      <div className="modern-filter-bar">
+      {/* Content Area */}
+      <div className="page-content">
+        {/* Filter Section */}
         <div className="filter-section">
-          <div className="filter-item">
-            <label className="filter-label">
-              <FilterOutlined />
-              状态筛选
-            </label>
-            <Select
-              value={statusFilter}
-              onChange={setStatusFilter}
-              className="modern-select"
-              placeholder="选择状态"
-            >
-              <Option value="all">全部状态</Option>
-              <Option value="waiting">等待审核</Option>
-              <Option value="checking">审核中</Option>
-              <Option value="approved">已通过</Option>
-              <Option value="rejected">已拒绝</Option>
-            </Select>
-          </div>
-          <div className="filter-item">
-            <label className="filter-label">
-              <SortAscendingOutlined />
-              时间排序
-            </label>
-            <Select
-              value={sortOrder}
-              onChange={setSortOrder}
-              className="modern-select"
-              placeholder="排序方式"
-            >
-              <Option value="desc">最新优先</Option>
-              <Option value="asc">最早优先</Option>
-            </Select>
-          </div>
-          <div className="filter-item search-item">
-            <label className="filter-label">
-              <SearchOutlined />
-              搜索应用
-            </label>
-            <Input
-              placeholder="输入应用名称搜索..."
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              className="modern-search"
-              prefix={<SearchOutlined />}
-              allowClear
-            />
+          <div className="filter-container">
+            <div className="filter-group">
+              <div className="filter-item">
+                <label className="filter-label">
+                  <FilterOutlined />
+                  状态筛选
+                </label>
+                <Select
+                  value={statusFilter}
+                  onChange={setStatusFilter}
+                  className="filter-select"
+                  placeholder="选择状态"
+                >
+                  <Option value="all">全部状态</Option>
+                  <Option value="waiting">等待审核</Option>
+                  <Option value="checking">审核中</Option>
+                  <Option value="approved">已通过</Option>
+                  <Option value="rejected">已拒绝</Option>
+                </Select>
+              </div>
+              <div className="filter-item">
+                <label className="filter-label">
+                  <SortAscendingOutlined />
+                  时间排序
+                </label>
+                <Select
+                  value={sortOrder}
+                  onChange={setSortOrder}
+                  className="filter-select"
+                  placeholder="排序方式"
+                >
+                  <Option value="desc">最新优先</Option>
+                  <Option value="asc">最早优先</Option>
+                </Select>
+              </div>
+              <div className="filter-item search-item">
+                <label className="filter-label">
+                  <SearchOutlined />
+                  搜索应用
+                </label>
+                <Input
+                  placeholder="输入应用名称搜索..."
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  className="search-input"
+                  prefix={<SearchOutlined />}
+                  allowClear
+                />
+              </div>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Modern Content Grid */}
-      <div className="modern-content">
-        <Spin spinning={loading}>
-          <div className="applications-grid">
-            {paginatedData.map((app) => (
-              <div key={app.id} className="app-card">
-                <div className="app-card-header">
-                  <div className="app-icon-wrapper">
-                    <Avatar
-                      src={app.icon}
-                      size={56}
-                      shape="square"
-                      className="app-icon"
-                    />
-                    <div className="status-indicator">
-                      {app.status === 'approved' && <CheckCircleOutlined className="status-approved" />}
-                      {app.status === 'waiting' && <ClockCircleOutlined className="status-waiting" />}
-                      {app.status === 'checking' && <ExclamationCircleOutlined className="status-checking" />}
-                      {app.status === 'rejected' && <StopOutlined className="status-rejected" />}
+        {/* Applications Grid */}
+        <div className="content-main">
+          <Spin spinning={loading}>
+            <div className="applications-grid">
+              {paginatedData.map((app) => (
+                <div key={app.id} className="app-card">
+                  <div className="app-card-header">
+                    <div className="app-icon-wrapper">
+                      <Avatar
+                        src={app.icon}
+                        size={56}
+                        shape="square"
+                        className="app-icon"
+                      />
+                      <div className="status-indicator">
+                        {app.status === 'approved' && <CheckCircleOutlined className="status-approved" />}
+                        {app.status === 'waiting' && <ClockCircleOutlined className="status-waiting" />}
+                        {app.status === 'checking' && <ExclamationCircleOutlined className="status-checking" />}
+                        {app.status === 'rejected' && <StopOutlined className="status-rejected" />}
+                      </div>
+                    </div>
+                    <div className="app-info">
+                      <h3 className="app-name">{app.name}</h3>
+                      <div className="app-meta">
+                        <span className="app-author">
+                          <UserOutlined /> {app.author}
+                        </span>
+                        <span className="app-version">v{app.version}</span>
+                      </div>
                     </div>
                   </div>
-                  <div className="app-info">
-                    <h3 className="app-name">{app.name}</h3>
-                    <div className="app-meta">
-                      <span className="app-author">
-                        <UserOutlined /> {app.author}
-                      </span>
-                      <span className="app-version">v{app.version}</span>
-                    </div>
-                  </div>
-                </div>
 
-                <div className="app-card-body">
-                  <div className="app-categories">
-                    {app.categories.slice(0, 2).map(category => (
-                      <Tag
-                        key={category}
-                        className="category-tag"
-                        style={{ backgroundColor: getCategoryColor(category) }}
+                  <div className="app-card-body">
+                    <div className="app-categories">
+                      {app.categories.slice(0, 2).map(category => (
+                        <Tag
+                          key={category}
+                          className="category-tag"
+                          style={{ backgroundColor: getCategoryColor(category) }}
+                        >
+                          {category}
+                        </Tag>
+                      ))}
+                      {app.categories.length > 2 && (
+                        <Tag className="more-tag">+{app.categories.length - 2}</Tag>
+                      )}
+                    </div>
+
+                    <p className="app-description">{app.description}</p>
+
+                    <div className="app-footer">
+                      <div className="app-time">
+                        <CalendarOutlined />
+                        <span>{new Date(app.submissionTime).toLocaleDateString('zh-CN')}</span>
+                      </div>
+                      <Button
+                        type="primary"
+                        icon={<EyeOutlined />}
+                        onClick={() => handlePreview(app)}
+                        className="preview-btn"
+                        size="small"
                       >
-                        {category}
-                      </Tag>
-                    ))}
-                    {app.categories.length > 2 && (
-                      <Tag className="more-tag">+{app.categories.length - 2}</Tag>
-                    )}
-                  </div>
-
-                  <p className="app-description">{app.description}</p>
-
-                  <div className="app-footer">
-                    <div className="app-time">
-                      <CalendarOutlined />
-                      <span>{new Date(app.submissionTime).toLocaleDateString('zh-CN')}</span>
+                        预览
+                      </Button>
                     </div>
-                    <Button
-                      type="primary"
-                      icon={<EyeOutlined />}
-                      onClick={() => handlePreview(app)}
-                      className="preview-btn"
-                      size="small"
-                    >
-                      预览
-                    </Button>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
 
-          {/* Modern Pagination */}
-          <div className="modern-pagination">
-            <Pagination
-              current={currentPage}
-              pageSize={pageSize}
-              total={filteredApplications.length}
-              onChange={setCurrentPage}
-              showSizeChanger={false}
-              showQuickJumper
-              showTotal={(total, range) =>
-                `显示 ${range[0]}-${range[1]} 条，共 ${total} 个应用`
-              }
-            />
-          </div>
-        </Spin>
+            {/* Pagination */}
+            <div className="pagination-section">
+              <Pagination
+                current={currentPage}
+                pageSize={pageSize}
+                total={filteredApplications.length}
+                onChange={setCurrentPage}
+                showSizeChanger={false}
+                showQuickJumper
+                showTotal={(total, range) =>
+                  `显示 ${range[0]}-${range[1]} 条，共 ${total} 个应用`
+                }
+              />
+            </div>
+          </Spin>
+        </div>
       </div>
 
       {/* Modern Preview Modal */}
