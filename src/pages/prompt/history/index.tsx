@@ -65,8 +65,6 @@ export default function PromptHistoryPage() {
 
       console.log('查询参数:');
       const response = await getPromptHistory(query);
-
-      console.log('获取历史记录:', response);
       setData(response.data);
       setTotal(response.total);
     } catch (error) {
@@ -175,6 +173,19 @@ export default function PromptHistoryPage() {
       title: '原始提示词',
       dataIndex: 'prompt',
       key: 'prompt',
+      width: 300,
+      render: (text: string) => (
+        <Tooltip title={text}>
+          <div className="max-w-xs overflow-hidden">
+            <Text>{truncateText(text, 80)}</Text>
+          </div>
+        </Tooltip>
+      ),
+    },
+    {
+      title: '优化提示词',
+      dataIndex: 'result',
+      key: 'result',
       width: 300,
       render: (text: string) => (
         <Tooltip title={text}>

@@ -11,6 +11,8 @@ import {
   Spin,
   Badge,
   Divider,
+  message,
+  Space,
 } from 'antd';
 import {
   SearchOutlined,
@@ -26,6 +28,8 @@ import {
   ClockCircleOutlined,
   ExclamationCircleOutlined,
   StopOutlined,
+  CheckOutlined,
+  CloseCircleOutlined,
 } from '@ant-design/icons';
 import './index.css';
 import { useUserPermission } from "@/store/userStore";
@@ -51,7 +55,7 @@ const mockApplications: Application[] = [
   {
     id: '1',
     name: 'Task Manager Pro',
-    icon: 'https://via.placeholder.com/40x40/4A90E2/FFFFFF?text=TM',
+    icon: '📝',
     categories: ['Utility', 'Productivity'],
     status: 'waiting',
     submissionTime: '2024-01-15 10:30:00',
@@ -62,7 +66,7 @@ const mockApplications: Application[] = [
   {
     id: '2',
     name: 'Photo Editor Plus',
-    icon: 'https://via.placeholder.com/40x40/2ECC71/FFFFFF?text=PE',
+    icon: '🎨',
     categories: ['Graphics', 'Creative', 'Media'],
     status: 'checking',
     submissionTime: '2024-01-14 15:45:00',
@@ -73,7 +77,7 @@ const mockApplications: Application[] = [
   {
     id: '3',
     name: 'Code Snippet Manager',
-    icon: 'https://via.placeholder.com/40x40/9B59B6/FFFFFF?text=CS',
+    icon: '🔧',
     categories: ['Developer Tools'],
     status: 'approved',
     submissionTime: '2024-01-13 09:15:00',
@@ -84,7 +88,7 @@ const mockApplications: Application[] = [
   {
     id: '4',
     name: 'Fitness Tracker',
-    icon: 'https://via.placeholder.com/40x40/E74C3C/FFFFFF?text=FT',
+    icon: '🎯',
     categories: ['Health', 'Lifestyle'],
     status: 'waiting',
     submissionTime: '2024-01-12 14:20:00',
@@ -95,7 +99,7 @@ const mockApplications: Application[] = [
   {
     id: '5',
     name: 'Music Player X',
-    icon: 'https://via.placeholder.com/40x40/F39C12/FFFFFF?text=MP',
+    icon: '🎵',
     categories: ['Entertainment', 'Media'],
     status: 'approved',
     submissionTime: '2024-01-11 11:00:00',
@@ -134,6 +138,13 @@ const ApplicationReviewPage: React.FC = () => {
     visible: boolean;
     application: Application | null;
   }>({ visible: false, application: null });
+
+  // Reject reason modal state
+  const [rejectModal, setRejectModal] = useState<{
+    visible: boolean;
+    application: Application | null;
+    reason: string;
+  }>({ visible: false, application: null, reason: '' });
 
   // Category color mapping
   const getCategoryColor = (category: string): string => {
@@ -199,6 +210,49 @@ const ApplicationReviewPage: React.FC = () => {
     setPreviewModal({ visible: false, application: null });
   };
 
+  // Handle approve application
+  const handleApprove = (application: Application) => {
+    setApplications(prev =>
+      prev.map(app =>
+        app.id === application.id
+          ? { ...app, status: 'approved' as const }
+          : app
+      )
+    );
+    message.success(`应用 "${application.name}" 已批准`);
+  };
+
+  // Handle reject application - show reason modal
+  const handleReject = (application: Application) => {
+    setRejectModal({ visible: true, application, reason: '' });
+  };
+
+  // Handle reject reason submit
+  const handleRejectSubmit = () => {
+    if (!rejectModal.reason.trim()) {
+      message.error('请输入拒绝理由');
+      return;
+    }
+
+    if (rejectModal.application) {
+      setApplications(prev =>
+        prev.map(app =>
+          app.id === rejectModal.application!.id
+            ? { ...app, status: 'rejected' as const }
+            : app
+        )
+      );
+      message.success(`应用 "${rejectModal.application.name}" 已拒绝`);
+    }
+
+    setRejectModal({ visible: false, application: null, reason: '' });
+  };
+
+  // Handle reject modal close
+  const handleRejectModalClose = () => {
+    setRejectModal({ visible: false, application: null, reason: '' });
+  };
+
   // Status icon mapping
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -231,7 +285,7 @@ const ApplicationReviewPage: React.FC = () => {
               <AppstoreOutlined />
             </div>
             <div className="header-info">
-              <h1 className="page-title">应用审核中心</h1>
+              <h1 className="page-title">活动中心</h1>
               <p className="page-description">管理和审核应用程序的发布流程</p>
             </div>
           </div>
@@ -318,11 +372,17 @@ const ApplicationReviewPage: React.FC = () => {
                   <div className="app-card-header">
                     <div className="app-icon-wrapper">
                       <Avatar
-                        src={app.icon}
                         size={56}
                         shape="square"
                         className="app-icon"
-                      />
+                        style={{
+                          backgroundColor: getCategoryColor(app.categories[0]),
+                          fontSize: '24px',
+                          fontWeight: 'bold',
+                        }}
+                      >
+                        {app.icon}
+                      </Avatar>
                       <div className="status-indicator">
                         {app.status === 'approved' && <CheckCircleOutlined className="status-approved" />}
                         {app.status === 'waiting' && <ClockCircleOutlined className="status-waiting" />}
@@ -332,38 +392,38 @@ const ApplicationReviewPage: React.FC = () => {
                     </div>
                     <div className="app-info">
                       <h3 className="app-name">{app.name}</h3>
-                      <div className="app-meta">
-                        <span className="app-author">
-                          <UserOutlined /> {app.author}
-                        </span>
-                        <span className="app-version">v{app.version}</span>
+                      <p className="app-description">{app.description}</p>
+                      <div className="app-time">
+                        <CalendarOutlined />
+                        <span>{new Date(app.submissionTime).toLocaleDateString('zh-CN')}</span>
                       </div>
                     </div>
                   </div>
 
                   <div className="app-card-body">
-                    <div className="app-categories">
-                      {app.categories.slice(0, 2).map(category => (
-                        <Tag
-                          key={category}
-                          className="category-tag"
-                          style={{ backgroundColor: getCategoryColor(category) }}
-                        >
-                          {category}
-                        </Tag>
-                      ))}
-                      {app.categories.length > 2 && (
-                        <Tag className="more-tag">+{app.categories.length - 2}</Tag>
+                    <div className="app-actions">
+                      {isAdmin && (app.status === 'waiting' || app.status === 'checking') && (
+                        <Space size="small">
+                          <Button
+                            type="primary"
+                            icon={<CheckOutlined />}
+                            onClick={() => handleApprove(app)}
+                            className="approve-btn"
+                            size="small"
+                          >
+                            批准
+                          </Button>
+                          <Button
+                            danger
+                            icon={<CloseCircleOutlined />}
+                            onClick={() => handleReject(app)}
+                            className="reject-btn"
+                            size="small"
+                          >
+                            拒绝
+                          </Button>
+                        </Space>
                       )}
-                    </div>
-
-                    <p className="app-description">{app.description}</p>
-
-                    <div className="app-footer">
-                      <div className="app-time">
-                        <CalendarOutlined />
-                        <span>{new Date(app.submissionTime).toLocaleDateString('zh-CN')}</span>
-                      </div>
                       <Button
                         type="primary"
                         icon={<EyeOutlined />}
@@ -413,11 +473,17 @@ const ApplicationReviewPage: React.FC = () => {
             <div className="modal-header">
               <div className="app-preview-icon">
                 <Avatar
-                  src={previewModal.application.icon}
                   size={80}
                   shape="square"
                   className="preview-avatar"
-                />
+                  style={{
+                    backgroundColor: getCategoryColor(previewModal.application.categories[0]),
+                    fontSize: '32px',
+                    fontWeight: 'bold',
+                  }}
+                >
+                  {previewModal.application.icon}
+                </Avatar>
                 <div className="status-badge">
                   {previewModal.application.status === 'approved' && (
                     <Badge status="success" text="已通过" />
@@ -488,6 +554,31 @@ const ApplicationReviewPage: React.FC = () => {
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* Reject Reason Modal */}
+      <Modal
+        title="拒绝理由"
+        open={rejectModal.visible}
+        onOk={handleRejectSubmit}
+        onCancel={handleRejectModalClose}
+        okText="确认拒绝"
+        cancelText="取消"
+        okButtonProps={{ danger: true }}
+        width={500}
+      >
+        <div style={{ marginBottom: 16 }}>
+          <p>您即将拒绝应用：<strong>{rejectModal.application?.name}</strong></p>
+          <p>请输入拒绝理由：</p>
+        </div>
+        <Input.TextArea
+          value={rejectModal.reason}
+          onChange={(e) => setRejectModal(prev => ({ ...prev, reason: e.target.value }))}
+          placeholder="请输入拒绝理由..."
+          rows={4}
+          maxLength={500}
+          showCount
+        />
       </Modal>
     </div>
   );
