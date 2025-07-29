@@ -106,7 +106,7 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
         frequencyPenalty: values.frequencyPenalty,
         presencePenalty: values.presencePenalty,
         maxTokens: values.maxTokens,
-        functionChoiceBehavior: values.functionChoiceBehavior,
+        functionChoiceBehavior: values.functionChoiceBehaviorId,
       };
 
       // 执行更新操作
@@ -186,7 +186,7 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
           </Select>
         </Form.Item>
 
-        <Form.Item name="functionChoiceBehavior" label="函数选择行为">
+        <Form.Item name="functionChoiceBehaviorId" label="函数选择行为">
           <Select placeholder="请选择函数选择行为">
             {FUNCTION_CHOICE_BEHAVIORS.map((behavior) => (
               <Select.Option key={behavior.id} value={behavior.id}>

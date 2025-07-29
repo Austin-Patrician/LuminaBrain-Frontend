@@ -63,6 +63,8 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  height: 100%;
+  justify-content: flex-start;
 }
 
 .modelSelector {
@@ -72,27 +74,32 @@
 .optimizationSection {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
+  height: 100%;
+  justify-content: flex-start;
 }
 
 .optimizationButtons {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+  align-items: start;
 }
 
 .optimizationButton {
-  height: 60px;
+  height: 40px;
   border-radius: 8px;
   border: 1px solid;
   transition: all 0.3s ease;
   font-weight: 500;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
   gap: 4px;
   background: white;
+  font-size: 12px;
+  white-space: nowrap;
 }
 
 .functionCallingBtn {
@@ -120,8 +127,10 @@
 .runSection {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
   align-items: center;
+  height: 100%;
+  justify-content: flex-start;
 }
 
 .runButton {

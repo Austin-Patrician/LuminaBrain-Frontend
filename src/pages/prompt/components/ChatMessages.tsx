@@ -1,6 +1,6 @@
 import React from "react";
 import { Card, Typography, Space, Button, Tag, Avatar } from "antd";
-import { UserOutlined, RobotOutlined, DeleteOutlined } from "@ant-design/icons";
+import { UserOutlined, RobotOutlined, DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import type { ChatMessage } from "../types";
 
 const { Text } = Typography;
@@ -8,11 +8,13 @@ const { Text } = Typography;
 interface ChatMessagesProps {
   messages: ChatMessage[];
   onDeleteMessage?: (id: string) => void;
+  onEditMessage?: (id: string) => void;
 }
 
 const ChatMessages: React.FC<ChatMessagesProps> = ({
   messages,
   onDeleteMessage,
+  onEditMessage,
 }) => {
   if (messages.length === 0) {
     return (
@@ -27,22 +29,19 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({
       {messages.map((message) => (
         <div
           key={message.id}
-          className={`flex ${
-            message.role === "user" ? "justify-end" : "justify-start"
-          }`}
+          className={`flex ${message.role === "user" ? "justify-end" : "justify-start"
+            }`}
         >
           <div
-            className={`max-w-[80%] ${
-              message.role === "user" ? "order-2" : "order-1"
-            }`}
+            className={`max-w-[80%] ${message.role === "user" ? "order-2" : "order-1"
+              }`}
           >
             <Card
               size="small"
-              className={`${
-                message.role === "user"
+              className={`${message.role === "user"
                   ? "bg-blue-50 border-blue-200"
                   : "bg-gray-50 border-gray-200"
-              }`}
+                }`}
               bodyStyle={{ padding: "12px 16px" }}
             >
               <div className="flex items-start justify-between gap-3">
@@ -65,24 +64,32 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({
                       <Tag color={message.role === "user" ? "blue" : "default"}>
                         {message.role === "user" ? "用户" : "助手"}
                       </Tag>
-                      <Text type="secondary" className="text-xs">
-                        {message.timestamp.toLocaleTimeString()}
-                      </Text>
                     </div>
                     <div className="whitespace-pre-wrap text-sm">
                       {message.content}
                     </div>
                   </div>
                 </div>
-                {onDeleteMessage && (
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<DeleteOutlined />}
-                    onClick={() => onDeleteMessage(message.id)}
-                    className="opacity-60 hover:opacity-100"
-                  />
-                )}
+                <div className="flex gap-1">
+                  {onEditMessage && (
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<EditOutlined />}
+                      onClick={() => onEditMessage(message.id)}
+                      className="opacity-60 hover:opacity-100"
+                    />
+                  )}
+                  {onDeleteMessage && (
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<DeleteOutlined />}
+                      onClick={() => onDeleteMessage(message.id)}
+                      className="opacity-60 hover:opacity-100"
+                    />
+                  )}
+                </div>
               </div>
             </Card>
           </div>

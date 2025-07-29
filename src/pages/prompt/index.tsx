@@ -101,6 +101,7 @@ export default function PromptPage() {
   const [messageInputs, setMessageInputs] = useState<
     Array<{ id: string; role: "user" | "assistant" }>
   >([]);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
 
   // SSE连接管理
   const eventSourceRef = useRef<EventSource | null>(null);
@@ -328,14 +329,36 @@ export default function PromptPage() {
 
   // 完成消息输入
   const handleCompleteMessage = (message: ChatMessage) => {
-    setChatMessages((prev) => [...prev, message]);
-    // 移除对应的输入框
-    setMessageInputs((prev) => prev.slice(0, -1));
+    // 检查是否是更新已存在的消息
+    const existingIndex = chatMessages.findIndex(msg => msg.id === message.id);
+    if (existingIndex !== -1) {
+      // 更新已存在的消息
+      setChatMessages((prev) => {
+        const newMessages = [...prev];
+        newMessages[existingIndex] = message;
+        return newMessages;
+      });
+    } else {
+      // 添加新消息
+      setChatMessages((prev) => [...prev, message]);
+      // 移除对应的输入框
+      setMessageInputs((prev) => prev.slice(0, -1));
+    }
   };
 
   // 移除消息输入框
   const handleRemoveMessageInput = (inputId: string) => {
     setMessageInputs((prev) => prev.filter((input) => input.id !== inputId));
+  };
+
+  // 编辑消息
+  const handleEditMessage = (messageId: string) => {
+    setEditingMessageId(messageId);
+  };
+
+  // 取消编辑
+  const handleCancelEdit = () => {
+    setEditingMessageId(null);
   };
 
   // 删除消息
@@ -650,10 +673,32 @@ export default function PromptPage() {
                 </div>
 
                 {/* 聊天消息展示 */}
-                <ChatMessages
-                  messages={chatMessages}
-                  onDeleteMessage={handleDeleteMessage}
-                />
+                <div className="space-y-3">
+                  {chatMessages.map((message) => {
+                    if (editingMessageId === message.id) {
+                      // 编辑模式：显示SimpleMessageInput
+                      return (
+                        <SimpleMessageInput
+                          key={`edit-${message.id}`}
+                          role={message.role}
+                          message={message}
+                          isEditing={true}
+                          onComplete={handleCompleteMessage}
+                          onRemove={handleCancelEdit}
+                          autoFocus={true}
+                        />
+                      );
+                    }
+                    return null; // 正常消息由ChatMessages组件处理
+                  })}
+                  
+                  {/* 只显示非编辑状态的消息 */}
+                  <ChatMessages
+                    messages={chatMessages.filter(msg => editingMessageId !== msg.id)}
+                    onDeleteMessage={handleDeleteMessage}
+                    onEditMessage={handleEditMessage}
+                  />
+                </div>
 
                 {/* 叠加的消息输入框 */}
                 {messageInputs.map((input, index) => (

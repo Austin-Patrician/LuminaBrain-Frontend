@@ -21,6 +21,7 @@ import knowledgeService from "@/api/services/knowledgeService";
 import { IconButton, Iconify } from "@/components/icon";
 import EditKnowledgeModal from "./components/EditKnowledgeModal";
 import CreateKnowledgeModal from "./components/CreateKnowledgeModal";
+import "./index.css";
 
 import type { Knowledge } from "#/entity";
 
@@ -140,7 +141,8 @@ export default function Knowledge() {
   };
 
   return (
-    <Space direction="vertical" size="large" className="w-full">
+    <div className="knowledge-page">
+      <Space direction="vertical" size="large" className="w-full p-6">
       <Card>
         <Form form={searchForm}>
           <Row gutter={[16, 16]}>
@@ -348,6 +350,7 @@ export default function Knowledge() {
         onCancel={() => setCreateModalVisible(false)}
         onSuccess={handleCreateSuccess}
       />
-    </Space>
+      </Space>
+    </div>
   );
 }

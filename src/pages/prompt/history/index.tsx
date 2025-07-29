@@ -32,6 +32,7 @@ import type { ColumnType } from 'antd/es/table';
 import ModalMarkdown from '@/components/markdown/modal-markdown';
 import { getPromptHistory, deletePromptHistory, deletePromptHistoryBatch } from '@/api/services/promptService';
 import type { PromptHistory, PromptHistoryQuery } from '../types';
+import styles from './index.module.css';
 
 const { Search } = Input;
 const { Option } = Select;
@@ -266,7 +267,7 @@ export default function PromptHistoryPage() {
   };
 
   return (
-    <div className="p-6">
+    <div className={`${styles.historyPage} p-6`}>
       {/* 页面标题 */}
       <Card className="mb-6">
         <div className="flex items-center justify-between">

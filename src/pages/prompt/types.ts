@@ -41,7 +41,6 @@ export interface ChatMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
-  timestamp: Date;
 }
 
 // 运行请求参数

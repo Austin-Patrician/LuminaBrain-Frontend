@@ -24,3 +24,8 @@ export interface AgentSearchParams {
   pageNumber?: number;
   pageSize?: number;
 }
+
+export interface AgentListResponse {
+  data: Agent[];
+  total: number;
+}

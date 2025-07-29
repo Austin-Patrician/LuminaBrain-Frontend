@@ -169,6 +169,7 @@ export interface Agent {
   name: string;
   instructions: string;
   serviceId: string;
+	serviceName: string;
   statusId: string;
   extensionData?: string;
   temperature?: number | null;

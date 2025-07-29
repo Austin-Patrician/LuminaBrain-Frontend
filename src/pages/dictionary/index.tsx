@@ -3,6 +3,7 @@ import { Tabs, type TabsProps } from "antd";
 import { Iconify } from "@/components/icon";
 import DictionaryTab from "./components/DictionaryTab";
 import DictionaryItemTab from "./components/DictionaryItemTab";
+import styles from "./index.module.css";
 
 export default function DictionaryManagePage() {
   const [activeTab, setActiveTab] = useState("dictionary");
@@ -49,7 +50,8 @@ export default function DictionaryManagePage() {
   ];
 
   return (
-    <div className="p-6">
+    <div className={styles.dictionaryPage}>
+      <div className="p-6">
       <div className="mb-4">
         <h1 className="text-2xl font-semibold text-gray-800">数据字典管理</h1>
         <p className="text-gray-600 mt-1">管理系统中的字典和字典项数据</p>
@@ -63,6 +65,7 @@ export default function DictionaryManagePage() {
         size="large"
         className="dictionary-tabs"
       />
+      </div>
     </div>
   );
 }

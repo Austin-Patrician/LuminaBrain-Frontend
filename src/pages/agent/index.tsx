@@ -21,9 +21,11 @@ import { useTranslation } from "react-i18next";
 import { IconButton, Iconify } from "@/components/icon";
 import CreateAgentModal from "./components/CreateAgentModal";
 import EditAgentModal from "./components/EditAgentModal";
+import ViewAgentModal from "./components/ViewAgentModal";
 import agentService from "@/api/services/agentService"; // 导入真实的agentService
 import type { Agent } from "#/entity";
-import type { AgentSearchParams } from "#/dto/agent";
+import type { AiModelListResponse } from "#/entity";
+import type { AgentListResponse, AgentSearchParams } from "#/dto/agent";
 
 // 函数选择行为选项
 const FUNCTION_CHOICE_BEHAVIORS = [
@@ -32,13 +34,6 @@ const FUNCTION_CHOICE_BEHAVIORS = [
   { id: "4FFBB956-E037-4D42-8F19-626627911983", name: "无" },
 ];
 
-// 服务ID选项
-const SERVICE_IDS = [
-  { id: "openai", name: "OpenAI" },
-  { id: "azure-openai", name: "Azure OpenAI" },
-  { id: "anthropic", name: "Anthropic" },
-  { id: "google-ai", name: "Google AI" },
-];
 
 // 状态选项
 const STATUS_TYPES = [
@@ -67,10 +62,11 @@ export default function AgentPage() {
   const { t } = useTranslation();
   const [createModalVisible, setCreateModalVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
+  const [viewModalVisible, setViewModalVisible] = useState(false);
   const [currentAgent, setCurrentAgent] = useState<Agent | null>(null);
 
   // 查询Agent列表
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading, refetch } = useQuery<AgentListResponse>({
     queryKey: ["agents", searchParams, pagination],
     queryFn: async () => {
       const response = await agentService.getAgentList({
@@ -83,17 +79,17 @@ export default function AgentPage() {
   });
 
   // 获取AI模型服务列表，用于在卡片中显示服务名称
-  const { data: aiModelData } = useQuery({
+  const { data: aiModelData } = useQuery<AiModelListResponse>({
     queryKey: ["aiModels"],
     queryFn: () =>
       agentService.getAiModelsByTypeId("0D826A41-45CE-4870-8893-A8D4FAECD3A4"),
   });
 
-  const serviceOptions = aiModelData || [];
+  const serviceOptions = aiModelData?.data ?? [];
 
   // 从查询结果中提取数据
-  const agents: Agent[] = data?.data || [];
-  const totalCount = data?.total || 0;
+  const agents: Agent[] = data?.data ?? [];
+  const totalCount = data?.total ?? 0;
 
   const deleteAgent = useMutation({
     mutationFn: agentService.deleteAgent,
@@ -121,6 +117,11 @@ export default function AgentPage() {
   const onEdit = (agent: Agent) => {
     setCurrentAgent(agent);
     setEditModalVisible(true);
+  };
+
+  const onView = (agent: Agent) => {
+    setCurrentAgent(agent);
+    setViewModalVisible(true);
   };
 
   const onDelete = async (id: string) => {
@@ -168,174 +169,201 @@ export default function AgentPage() {
   };
 
   return (
-    <Space direction="vertical" size="large" className="w-full">
-      <Card>
-        <Form form={searchForm}>
-          <Row gutter={[16, 16]}>
-            <Col span={24} lg={6}>
-              <Form.Item<SearchFormFieldType>
-                label="名称"
-                name="name"
-                className="!mb-0"
-              >
-                <Input placeholder="搜索Agent名称" />
-              </Form.Item>
-            </Col>
-            <Col span={24} lg={6}>
-              <Form.Item<SearchFormFieldType>
-                label="状态"
-                name="statusId"
-                className="!mb-0"
-              >
-                <Select allowClear placeholder="选择状态">
-                  {STATUS_TYPES.map((status) => (
-                    <Select.Option key={status.id} value={status.id}>
+    <div className="min-h-screen bg-gray-100 p-6">
+      <Space direction="vertical" size="large" className="w-full">
+        <Card>
+          <Form form={searchForm}>
+            <Row gutter={[16, 16]}>
+              <Col span={24} lg={6}>
+                <Form.Item<SearchFormFieldType>
+                  label="名称"
+                  name="name"
+                  className="!mb-0"
+                >
+                  <Input placeholder="搜索Agent名称" />
+                </Form.Item>
+              </Col>
+              <Col span={24} lg={6}>
+                <Form.Item<SearchFormFieldType>
+                  label="状态"
+                  name="statusId"
+                  className="!mb-0"
+                >
+                  <Select allowClear placeholder="选择状态">
+                    {STATUS_TYPES.map((status) => (
+                      <Select.Option key={status.id} value={status.id}>
+                        <Tag
+                          color={
+                            status.id === "DE546396-5B62-41E5-8814-4C072C74F26A"
+                              ? "success"
+                              : "error"
+                          }
+                        >
+                          {status.name}
+                        </Tag>
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+              <Col span={24} lg={6}>
+                <Form.Item<SearchFormFieldType>
+                  label="服务"
+                  name="serviceId"
+                  className="!mb-0"
+                >
+                  <Select allowClear placeholder="选择服务">
+                    {Array.isArray(serviceOptions) && serviceOptions.map((service: any) => (
+                      <Select.Option
+                        key={service.aiModelId}
+                        value={service.aiModelId}
+                      >
+                        {service.aiModelName}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+              <Col span={24} lg={6}>
+                <div className="flex justify-end">
+                  <Button onClick={onSearchFormReset}>重置</Button>
+                  <Button type="primary" className="ml-4" onClick={onSearch}>
+                    搜索
+                  </Button>
+                </div>
+              </Col>
+            </Row>
+          </Form>
+        </Card>
+
+        <Card
+          title="Agent列表"
+          extra={
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setCreateModalVisible(true)}
+            >
+              {t("新增Agent")}
+            </Button>
+          }
+          loading={isLoading}
+          className="shadow-sm"
+        >
+          <Row gutter={[24, 24]}>
+            {agents.map((agent: Agent) => (
+              <Col xs={24} sm={24} md={12} xl={8} key={agent.id}>
+                <Card hoverable className="h-full flex flex-col bg-white shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center">
+                      <Title level={5} className="m-0 mr-2">
+                        {agent.name}
+                      </Title>
                       <Tag
                         color={
-                          status.id === "DE546396-5B62-41E5-8814-4C072C74F26A"
+                          agent.statusId ===
+                            "DE546396-5B62-41E5-8814-4C072C74F26A"
                             ? "success"
                             : "error"
                         }
+                        className="ml-1"
                       >
-                        {status.name}
+                        {agent.statusId === "DE546396-5B62-41E5-8814-4C072C74F26A"
+                          ? "活跃"
+                          : "非活跃"}
                       </Tag>
-                    </Select.Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={24} lg={6}>
-              <Form.Item<SearchFormFieldType>
-                label="服务"
-                name="serviceId"
-                className="!mb-0"
-              >
-                <Select allowClear placeholder="选择服务">
-                  {serviceOptions.map((service) => (
-                    <Select.Option
-                      key={service.aiModelId}
-                      value={service.aiModelId}
-                    >
-                      {service.aiModelName}
-                    </Select.Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={24} lg={6}>
-              <div className="flex justify-end">
-                <Button onClick={onSearchFormReset}>重置</Button>
-                <Button type="primary" className="ml-4" onClick={onSearch}>
-                  搜索
-                </Button>
-              </div>
-            </Col>
+                    </div>
+                  </div>
+
+                  {/* 服务 */}
+                  <div className="text-sm mb-1">
+                    <span className="font-medium">服务: </span>
+                    {agent.serviceName}
+                  </div>
+
+                  {/* 函数选择行为 */}
+                  <div className="text-sm mb-1">
+                    <span className="font-medium">函数选择行为: </span>
+                    {FUNCTION_CHOICE_BEHAVIORS.find((b: { id: string; name: string }) => b.id === agent.functionChoiceBehaviorId)?.name || "未知"}
+                  </div>
+
+                  {/* 创建时间 */}
+                  {agent.createdAt && (
+                    <div className="text-xs text-gray-400 mb-3">
+                      创建于: {new Date(agent.createdAt).toLocaleString()}
+                    </div>
+                  )}
+
+                  {/* 操作按钮 */}
+                  <div className="mt-auto flex justify-end space-x-2 pt-2 border-t">
+                    <IconButton onClick={() => onView(agent)}>
+                      <Iconify icon="solar:eye-bold-duotone" size={18} />
+                    </IconButton>
+                    <IconButton onClick={() => onEdit(agent)}>
+                      <Iconify icon="solar:pen-bold-duotone" size={18} />
+                    </IconButton>
+                    <IconButton onClick={() => onDelete(agent.id)}>
+                      <Iconify
+                        icon="mingcute:delete-2-fill"
+                        size={18}
+                        className="text-error"
+                      />
+                    </IconButton>
+                  </div>
+                </Card>
+              </Col>
+            ))}
+            {agents.length === 0 && (
+              <Col span={24}>
+                <div className="flex justify-center p-8 text-gray-500">
+                  未找到Agent
+                </div>
+              </Col>
+            )}
           </Row>
-        </Form>
-      </Card>
-
-      <Card
-        title="Agent列表"
-        extra={
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => setCreateModalVisible(true)}
-          >
-            {t("新增Agent")}
-          </Button>
-        }
-        loading={isLoading}
-      >
-        <Row gutter={[24, 24]}>
-          {agents.map((agent: Agent) => (
-            <Col xs={24} sm={24} md={12} xl={8} key={agent.id}>
-              <Card hoverable className="h-full flex flex-col">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center">
-                    <Title level={5} className="m-0 mr-2">
-                      {agent.name}
-                    </Title>
-                    <Tag
-                      color={
-                        agent.statusId ===
-                        "DE546396-5B62-41E5-8814-4C072C74F26A"
-                          ? "success"
-                          : "error"
-                      }
-                      className="ml-1"
-                    >
-                      {agent.statusId === "DE546396-5B62-41E5-8814-4C072C74F26A"
-                        ? "活跃"
-                        : "非活跃"}
-                    </Tag>
-                  </div>
-                </div>
-
-                {/* 创建时间 */}
-                {agent.createdAt && (
-                  <div className="text-xs text-gray-400 mb-3">
-                    创建于: {new Date(agent.createdAt).toLocaleString()}
-                  </div>
-                )}
-
-                {/* 操作按钮 */}
-                <div className="mt-auto flex justify-end space-x-2 pt-2 border-t">
-                  <IconButton onClick={() => onEdit(agent)}>
-                    <Iconify icon="solar:pen-bold-duotone" size={18} />
-                  </IconButton>
-                  <IconButton onClick={() => onDelete(agent.id)}>
-                    <Iconify
-                      icon="mingcute:delete-2-fill"
-                      size={18}
-                      className="text-error"
-                    />
-                  </IconButton>
-                </div>
-              </Card>
-            </Col>
-          ))}
-          {agents.length === 0 && (
-            <Col span={24}>
-              <div className="flex justify-center p-8 text-gray-500">
-                未找到Agent
-              </div>
-            </Col>
+          {totalCount > 0 && (
+            <div className="flex justify-end mt-4">
+              <Pagination
+                current={pagination.current}
+                pageSize={pagination.pageSize}
+                total={totalCount}
+                onChange={onPageChange}
+                showSizeChanger
+              />
+            </div>
           )}
-        </Row>
-        {totalCount > 0 && (
-          <div className="flex justify-end mt-4">
-            <Pagination
-              current={pagination.current}
-              pageSize={pagination.pageSize}
-              total={totalCount}
-              onChange={onPageChange}
-              showSizeChanger
-            />
-          </div>
-        )}
-      </Card>
+        </Card>
 
-      <CreateAgentModal
-        visible={createModalVisible}
-        onCancel={() => setCreateModalVisible(false)}
-        onSuccess={() => {
-          setCreateModalVisible(false);
-          refreshList();
-        }}
-      />
-
-      {currentAgent && (
-        <EditAgentModal
-          visible={editModalVisible}
-          agent={currentAgent}
-          onCancel={() => setEditModalVisible(false)}
+        <CreateAgentModal
+          visible={createModalVisible}
+          onCancel={() => setCreateModalVisible(false)}
           onSuccess={() => {
-            setEditModalVisible(false);
+            setCreateModalVisible(false);
             refreshList();
           }}
         />
-      )}
-    </Space>
+
+        {currentAgent && (
+          <EditAgentModal
+            visible={editModalVisible}
+            agent={currentAgent}
+            onCancel={() => setEditModalVisible(false)}
+            onSuccess={() => {
+              setEditModalVisible(false);
+              refreshList();
+            }}
+          />
+        )}
+
+        {currentAgent && (
+          <ViewAgentModal
+            visible={viewModalVisible}
+            agent={currentAgent}
+            onCancel={() => setViewModalVisible(false)}
+            serviceOptions={serviceOptions}
+          />
+        )}
+      </Space>
+    </div>
   );
 }

@@ -39,6 +39,7 @@ import { Iconify } from "@/components/icon";
 
 // 导入样式文件
 import "./index.css";
+import { V } from "node_modules/react-router/dist/development/fog-of-war-D2zsXvum.d.mts";
 
 
 const { Title, Paragraph } = Typography;
@@ -82,7 +83,7 @@ const QAImportGuide = () => (
           <div className="text-sm text-gray-600">选择您熟悉的格式，下载对应的QA数据模板</div>
         </div>
       </div>
-      
+
       <div className="flex items-start space-x-3">
         <div className="flex-shrink-0 w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
           <span className="text-green-600 font-semibold text-sm">2</span>
@@ -92,7 +93,7 @@ const QAImportGuide = () => (
           <div className="text-sm text-gray-600">按照模板格式填写您的问题和答案对</div>
         </div>
       </div>
-      
+
       <div className="flex items-start space-x-3">
         <div className="flex-shrink-0 w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
           <span className="text-purple-600 font-semibold text-sm">3</span>
@@ -145,6 +146,7 @@ export default function KnowledgeDetail() {
   });
 
   const onSearch = (value: string) => {
+    console.log(value);
     setSearchQuery(value);
   };
 
@@ -249,13 +251,13 @@ export default function KnowledgeDetail() {
       onProgress({ percent: 0 });
 
       // 调用上传mutation
-        const result = await uploadFileMutation.mutateAsync({
-          file,
-          knowledgeId: id as string,
-          splitType: SplitType.QA, // 固定使用QA切分
-          importType: ImportType.FILE, // 这里是文件上传，固定为FILE类型
-          data: undefined,
-        });
+      const result = await uploadFileMutation.mutateAsync({
+        file,
+        knowledgeId: id as string,
+        splitType: SplitType.QA, // 固定使用QA切分
+        importType: ImportType.FILE, // 这里是文件上传，固定为FILE类型
+        data: undefined,
+      });
 
       // 完成进度
       onProgress({ percent: 100 });
@@ -743,8 +745,8 @@ https://example.com/page1"
         return (
           <div className="qa-import-container" style={{ padding: '8px 0' }}>
             {/* 顶部说明卡片 */}
-            <Card 
-              size="small" 
+            <Card
+              size="small"
               className="mb-6"
               style={{
                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -767,8 +769,8 @@ https://example.com/page1"
             {/* 导入步骤和模板下载 */}
             <Row gutter={24} className="mb-6">
               <Col span={14}>
-                <Card 
-                  title={<span className="text-base font-medium">📋 导入步骤</span>} 
+                <Card
+                  title={<span className="text-base font-medium">📋 导入步骤</span>}
                   size="small"
                   className="h-full"
                   style={{ borderRadius: '8px' }}
@@ -777,8 +779,8 @@ https://example.com/page1"
                 </Card>
               </Col>
               <Col span={10}>
-                <Card 
-                  title={<span className="text-base font-medium">📥 模板下载</span>} 
+                <Card
+                  title={<span className="text-base font-medium">📥 模板下载</span>}
                   size="small"
                   className="h-full"
                   style={{ borderRadius: '8px' }}
@@ -825,13 +827,13 @@ https://example.com/page1"
             </Row>
 
             {/* 文件上传区域 */}
-            <Card 
-              title={<span className="text-base font-medium">📤 文件上传</span>} 
+            <Card
+              title={<span className="text-base font-medium">📤 文件上传</span>}
               size="small"
               style={{ borderRadius: '8px' }}
             >
               <Form.Item name="files" className="mb-0">
-                <Dragger 
+                <Dragger
                   {...uploadProps}
                   style={{
                     background: '#fafafa',
@@ -894,7 +896,7 @@ https://example.com/page1"
         >
           返回
         </Button>
-        
+
         {/* 知识库信息卡片 */}
         {!isLoadingKnowledge && knowledge && (
           <Card className="knowledge-header-card">
@@ -945,8 +947,8 @@ https://example.com/page1"
           </Card>
         ) : !knowledge ? (
           <Card className="knowledge-error-card">
-            <Empty 
-              description="未找到知识库数据" 
+            <Empty
+              description="未找到知识库数据"
               image={Empty.PRESENTED_IMAGE_SIMPLE}
             />
           </Card>
@@ -1027,20 +1029,20 @@ https://example.com/page1"
       {/* 主要内容区域 */}
       <div className="knowledge-content-section">
         <Card className="knowledge-content-card">
-          <Tabs 
-            activeKey={activeTab} 
+          <Tabs
+            activeKey={activeTab}
             onChange={setActiveTab}
             className="knowledge-tabs"
             size="large"
             tabBarStyle={{ marginBottom: '24px' }}
           >
-            <Tabs.TabPane 
+            <Tabs.TabPane
               tab={
                 <span className="knowledge-tab-label">
                   <Iconify icon="mdi:format-list-bulleted" className="knowledge-tab-icon" />
                   知识项列表
                 </span>
-              } 
+              }
               key="1"
             >
               <div className="knowledge-items-section">
@@ -1069,7 +1071,7 @@ https://example.com/page1"
                     </Dropdown>
                   </div>
                 </div>
-                
+
                 <div className="knowledge-items-table-container">
                   <Table
                     columns={columns}
@@ -1106,14 +1108,14 @@ https://example.com/page1"
                 </div>
               </div>
             </Tabs.TabPane>
-            
-            <Tabs.TabPane 
+
+            <Tabs.TabPane
               tab={
                 <span className="knowledge-tab-label">
                   <Iconify icon="mdi:magnify" className="knowledge-tab-icon" />
                   搜索测试
                 </span>
-              } 
+              }
               key="2"
             >
               <div className="knowledge-search-section">
@@ -1126,7 +1128,7 @@ https://example.com/page1"
                     测试知识库的搜索功能和相关性
                   </Paragraph>
                 </div>
-                
+
                 <div className="knowledge-search-input">
                   <Search
                     placeholder="输入搜索关键词，测试知识库检索效果"
@@ -1143,7 +1145,7 @@ https://example.com/page1"
                     className="knowledge-search-bar"
                   />
                 </div>
-                
+
                 {searchQuery && (
                   <div className="knowledge-search-results">
                     {isSearching ? (
@@ -1158,8 +1160,8 @@ https://example.com/page1"
                           </Tag>
                         </div>
                         {searchResults?.data?.map((item: any, index: number) => (
-                          <Card 
-                            key={`search-result-${index}`} 
+                          <Card
+                            key={`search-result-${index}`}
                             className="knowledge-search-result-card"
                             hoverable
                           >
@@ -1177,8 +1179,8 @@ https://example.com/page1"
                       </div>
                     ) : (
                       <div className="knowledge-search-empty">
-                        <Empty 
-                          description="没有找到相关结果" 
+                        <Empty
+                          description="没有找到相关结果"
                           image={Empty.PRESENTED_IMAGE_SIMPLE}
                         >
                           <Paragraph className="knowledge-search-empty-tip">

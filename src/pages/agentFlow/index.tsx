@@ -713,8 +713,12 @@ const AgentFlowPage: React.FC = () => {
 
   // 执行发布操作
   const executePublish = async () => {
+    if (!currentFlow?.id) {
+      message.error('流程ID不存在');
+      return;
+    }
     try {
-      await flowService.publishFlow(currentFlow!.id);
+      await flowService.publishFlow(currentFlow.id);
       setCurrentFlow({ ...currentFlow!, status: "published" });
       message.success("流程发布成功");
       setPublishModalVisible(false);
@@ -1359,7 +1363,7 @@ const AgentFlowPage: React.FC = () => {
   // 渲染组件
   return (
     <ReactFlowProvider>
-      <div className="flex flex-col h-screen w-full bg-gray-50 overflow-hidden">
+      <div className="flex flex-col h-screen w-full bg-gray-100 overflow-hidden">
         {/* 顶部功能栏 - 使用 Tailwind 类 */}
         <div className="h-14 bg-white border-b border-gray-200 px-6 flex items-center shadow-sm">
           <div className="flex items-center gap-6">

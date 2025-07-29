@@ -33,7 +33,6 @@ const MessageInputBox: React.FC<MessageInputBoxProps> = ({
       id: `${role}_${Date.now()}`,
       role,
       content: content.trim(),
-      timestamp: new Date(),
     };
 
     onSave(newMessage);
