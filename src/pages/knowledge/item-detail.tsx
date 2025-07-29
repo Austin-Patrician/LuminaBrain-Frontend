@@ -22,11 +22,13 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { QAItem } from "#/entity";
 import knowledgeService from "@/api/services/knowledgeService";
+import { usePathname, useRouter } from "@/router/hooks";
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
 
 export default function KnowledgeItemDetail() {
+  const { push } = useRouter();
   const { knowledgeId, itemId } = useParams();
   const navigate = useNavigate();
   const [qaData, setQaData] = useState<QAItem[]>([]);
@@ -38,14 +40,13 @@ export default function KnowledgeItemDetail() {
     data: fetchedData,
     isLoading,
     error,
+    refetch,
   } = useQuery({
     queryKey: ["knowledgeItemDetails", itemId],
     queryFn: async (): Promise<QAItem[]> => {
       if (!itemId) {
         throw new Error("缺少知识项ID");
       }
-
-      console.log(`正在获取知识项详情，itemId: ${itemId}`);
 
       const response = await knowledgeService.getKnowledgeItemPoint(
         itemId,
@@ -102,10 +103,16 @@ export default function KnowledgeItemDetail() {
   };
 
   // 删除QA对
-  const handleDeleteQA = (id: string) => {
-    const updatedData = qaData.filter((item) => item.id !== id);
-    setQaData(updatedData);
-    message.success("QA对删除成功");
+  const handleDeleteQA = async (id: string) => {
+    try {
+      await knowledgeService.deleteKnowledgeItemQa(id);
+      message.success("QA对删除成功");
+      // 删除成功后刷新页面数据
+      refetch();
+    } catch (error) {
+      console.error("删除QA对失败:", error);
+      message.error("删除失败，请重试");
+    }
   };
 
   // 取消添加QA对
@@ -129,7 +136,7 @@ export default function KnowledgeItemDetail() {
           <div className="flex items-center">
             <Button
               icon={<Iconify icon="material-symbols:arrow-back" />}
-              onClick={() => navigate(`/knowledgemanagement/${knowledgeId}`)}
+              onClick={() => push(`/knowledgemanagement/${knowledgeId}`)}
             />
             <Title level={4} className="ml-4 mb-0">
               知识项详情

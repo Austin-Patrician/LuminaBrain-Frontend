@@ -1,45 +1,45 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useParams } from "@/router/hooks";
+import { usePathname, useRouter } from "@/router/hooks";
+import { DownloadOutlined, InboxOutlined } from "@ant-design/icons";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 // 添加apiClient导入
 import {
+  Alert,
   Button,
   Card,
-  Tabs,
-  Space,
-  Typography,
-  Tag,
-  Descriptions,
-  Empty,
-  Table,
-  Input,
-  Spin,
-  Tooltip,
-  Dropdown,
-  Modal,
-  Radio,
-  Upload,
-  Form,
-  message,
-  Divider,
-  Alert,
-  Steps,
-  Row,
   Col,
+  Descriptions,
+  Divider,
+  Dropdown,
+  Empty,
+  Form,
+  Input,
+  Modal,
   Popconfirm,
+  Radio,
+  Row,
+  Space,
+  Spin,
+  Steps,
+  Table,
+  Tabs,
+  Tag,
+  Tooltip,
+  Typography,
+  Upload,
+  message,
 } from "antd";
 import type { MenuProps, UploadProps } from "antd";
-import { useParams } from "@/router/hooks";
-import { useNavigate } from "react-router";
 import { useEffect, useState } from "react";
-import { InboxOutlined, DownloadOutlined } from "@ant-design/icons";
-import { useQueryClient } from "@tanstack/react-query";
-import { usePathname, useRouter } from "@/router/hooks";
+import { useNavigate } from "react-router";
 
 import knowledgeService from "@/api/services/knowledgeService";
 import { Iconify } from "@/components/icon";
 
 // 导入样式文件
 import "./index.css";
-import { C } from "node_modules/@fullcalendar/core/internal-common";
+
 
 const { Title, Paragraph } = Typography;
 const { Search, TextArea } = Input;
@@ -67,73 +67,43 @@ const EllipsisText = ({ text }: { text: string }) => (
 );
 
 // 更新模板下载组件，使其更美观
-const TemplateDownloadSection = () => (
-  <div className="template-download-section">
-    <Divider orientation="left">QA模板下载</Divider>
-    <Alert
-      message="使用QA切分需要按照特定格式准备数据"
-      description="下载模板文件，按照模板格式填写您的问答数据。CSV和Excel模板中包含'问题'和'答案'列，JSON模板包含question和answer字段。"
-      type="info"
-      showIcon
-      className="mb-3"
-    />
-    <div className="flex flex-wrap gap-2">
-      <Button
-        icon={<DownloadOutlined />}
-        href="/templates/qa-template.csv"
-        download="qa-template.csv"
-        type="default"
-      >
-        CSV模板
-      </Button>
-      <Button
-        icon={<DownloadOutlined />}
-        href="/templates/qa-template.xlsx"
-        download="qa-template.xlsx"
-        type="default"
-      >
-        Excel模板
-      </Button>
-      <Button
-        icon={<DownloadOutlined />}
-        href="/templates/qa-template.json"
-        download="qa-template.json"
-        type="default"
-      >
-        JSON模板
-      </Button>
-    </div>
-  </div>
-);
+
 
 // 添加QA导入指引组件
 const QAImportGuide = () => (
-  <Steps
-    direction="vertical"
-    size="small"
-    current={-1}
-    className="qa-import-guide mb-4"
-    items={[
-      {
-        title: "下载模板",
-        description: "选择您熟悉的格式，下载对应的QA数据模板",
-        status: "process",
-        icon: <Iconify icon="mdi:download-outline" />,
-      },
-      {
-        title: "填写数据",
-        description: "按照模板格式填写您的问题和答案对",
-        status: "process",
-        icon: <Iconify icon="mdi:file-edit-outline" />,
-      },
-      {
-        title: "上传文件",
-        description: "将填写好的文件拖拽到上传区域或点击上传",
-        status: "process",
-        icon: <Iconify icon="mdi:cloud-upload-outline" />,
-      },
-    ]}
-  />
+  <div className="qa-import-steps">
+    <div className="space-y-4">
+      <div className="flex items-start space-x-3">
+        <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+          <span className="text-blue-600 font-semibold text-sm">1</span>
+        </div>
+        <div className="flex-1">
+          <div className="font-medium text-gray-900 mb-1">下载模板</div>
+          <div className="text-sm text-gray-600">选择您熟悉的格式，下载对应的QA数据模板</div>
+        </div>
+      </div>
+      
+      <div className="flex items-start space-x-3">
+        <div className="flex-shrink-0 w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+          <span className="text-green-600 font-semibold text-sm">2</span>
+        </div>
+        <div className="flex-1">
+          <div className="font-medium text-gray-900 mb-1">填写数据</div>
+          <div className="text-sm text-gray-600">按照模板格式填写您的问题和答案对</div>
+        </div>
+      </div>
+      
+      <div className="flex items-start space-x-3">
+        <div className="flex-shrink-0 w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+          <span className="text-purple-600 font-semibold text-sm">3</span>
+        </div>
+        <div className="flex-1">
+          <div className="font-medium text-gray-900 mb-1">上传文件</div>
+          <div className="text-sm text-gray-600">将填写好的文件拖拽到上传区域或点击上传</div>
+        </div>
+      </div>
+    </div>
+  </div>
 );
 
 // 验证URL的正则表达式
@@ -149,7 +119,7 @@ export default function KnowledgeDetail() {
   const [searchQuery, setSearchQuery] = useState("");
   const [importModalVisible, setImportModalVisible] = useState(false);
   const [importType, setImportType] = useState<ImportType>(ImportType.FILE);
-  const [splitType, setSplitType] = useState<SplitType>(SplitType.DIRECT); // 默认直接导入
+  const [splitType, setSplitType] = useState<SplitType>(SplitType.QA); // 默认QA切分
   const [form] = Form.useForm();
   const queryClient = useQueryClient();
 
@@ -184,14 +154,15 @@ export default function KnowledgeDetail() {
 
   // 重置导入表单和状态
   const resetImportState = () => {
-    setSplitType(SplitType.DIRECT); // 重置为直接导入
+    setSplitType(SplitType.QA); // 重置为QA切分
     form.resetFields();
   };
 
   // 处理导入菜单点击
   const handleImportMenuClick: MenuProps["onClick"] = (e) => {
     setImportType(e.key as ImportType);
-    resetImportState(); // 重置状态
+    setSplitType(SplitType.QA); // 固定设置为QA切分
+    form.resetFields();
     setImportModalVisible(true);
   };
 
@@ -221,8 +192,6 @@ export default function KnowledgeDetail() {
         const tokenResponse = await knowledgeService.getAntiforgerytoken();
         const csrfToken = tokenResponse;
 
-        console.log("CSRF Token:", csrfToken);
-
         // 2. 准备FormData - 确保字段名称与后端期望的完全匹配
         const formData = new FormData();
 
@@ -231,7 +200,6 @@ export default function KnowledgeDetail() {
           // 文件上传类型
           if (!file) throw new Error("File is required for file upload");
           formData.append("formFile", file);
-          console.log("准备上传文件:", file.name, file.type, file.size);
         } else if (data) {
           // 链接或文本导入类型，将数据添加到data字段
           formData.append("data", data);
@@ -265,7 +233,7 @@ export default function KnowledgeDetail() {
     },
     onSuccess: () => {
       message.success("导入成功");
-      queryClient.invalidateQueries(["knowledge", id]); // 刷新知识库详情
+      queryClient.invalidateQueries({ queryKey: ["knowledge", id] }); // 刷新知识库详情
     },
     onError: (error) => {
       message.error(`导入失败: ${error}`);
@@ -281,15 +249,13 @@ export default function KnowledgeDetail() {
       onProgress({ percent: 0 });
 
       // 调用上传mutation
-      const result = await uploadFileMutation.mutateAsync({
-        file,
-        knowledgeId: id as string,
-        splitType,
-        importType: ImportType.FILE, // 这里是文件上传，固定为FILE类型
-        data: undefined,
-      });
-
-      console.log("上传成功，服务器响应:", result);
+        const result = await uploadFileMutation.mutateAsync({
+          file,
+          knowledgeId: id as string,
+          splitType: SplitType.QA, // 固定使用QA切分
+          importType: ImportType.FILE, // 这里是文件上传，固定为FILE类型
+          data: undefined,
+        });
 
       // 完成进度
       onProgress({ percent: 100 });
@@ -332,8 +298,8 @@ export default function KnowledgeDetail() {
       importType === ImportType.FILE
         ? ".pdf,.doc,.docx,.txt,.md,.csv,.xlsx,.ppt,.pptx"
         : importType === ImportType.QA
-        ? ".csv,.xlsx,.json"
-        : undefined,
+          ? ".csv,.xlsx,.json"
+          : undefined,
     // 不再设置action属性，因为我们使用customRequest
   };
 
@@ -341,7 +307,8 @@ export default function KnowledgeDetail() {
   const renderUploadHint = () => {
     if (importType === ImportType.FILE) {
       return "支持上传单个文件。支持 PDF, Word, TXT, CSV, Excel, PPT 等格式。";
-    } else if (importType === ImportType.QA) {
+    }
+    if (importType === ImportType.QA) {
       return "支持上传单个QA文件，支持CSV、Excel或JSON格式，请确保文件结构符合模板要求。";
     }
     return "";
@@ -357,7 +324,7 @@ export default function KnowledgeDetail() {
         if (values.links.length > 0) {
           uploadFileMutation.mutate({
             knowledgeId: id as string,
-            splitType,
+            splitType: SplitType.QA, // 固定使用QA切分
             importType: ImportType.LINK,
             data: values.links, // 将链接数组转为JSON字符串
           });
@@ -370,7 +337,7 @@ export default function KnowledgeDetail() {
         if (values.content) {
           uploadFileMutation.mutate({
             knowledgeId: id as string,
-            splitType,
+            splitType: SplitType.QA, // 固定使用QA切分
             importType: ImportType.TEXT,
             data: values.content,
           });
@@ -559,6 +526,7 @@ export default function KnowledgeDetail() {
         <div className="knowledge-item-actions">
           <Tooltip title="查看详情">
             <button
+              type="button"
               className="knowledge-item-action-btn view-btn"
               onClick={() => handleView(record)}
             >
@@ -574,13 +542,14 @@ export default function KnowledgeDetail() {
             placement="topRight"
           >
             <Tooltip title="删除">
-              <button className="knowledge-item-action-btn delete-btn">
+              <button type="button" className="knowledge-item-action-btn delete-btn">
                 <Iconify icon="mingcute:delete-2-fill" size={14} />
               </button>
             </Tooltip>
           </Popconfirm>
           <Tooltip title="重新执行">
             <button
+              type="button"
               className="knowledge-item-action-btn reprocess-btn"
               onClick={() => handleReprocess(record.id)}
             >
@@ -597,7 +566,7 @@ export default function KnowledgeDetail() {
     mutationFn: knowledgeService.reprocessKnowledgeItem,
     onSuccess: () => {
       message.success("重新执行成功");
-      queryClient.invalidateQueries(["knowledge", id]); // 刷新知识库详情
+      queryClient.invalidateQueries({ queryKey: ["knowledge", id] }); // 刷新知识库详情
     },
     onError: (error) => {
       message.error(`重新执行失败: ${error}`);
@@ -622,9 +591,9 @@ export default function KnowledgeDetail() {
   const handleDelete = async (itemId: string) => {
     try {
       // 这里需要添加删除知识项的API调用
-      // await knowledgeService.deleteKnowledgeItem(itemId);
+      await knowledgeService.deleteKnowledgeItem(itemId);
       message.success("删除成功");
-      queryClient.invalidateQueries(["knowledge", id]); // 刷新知识库详情
+      queryClient.invalidateQueries({ queryKey: ["knowledge", id] }); // 刷新知识库详情
     } catch (error) {
       message.error(`删除失败: ${error}`);
     }
@@ -636,38 +605,20 @@ export default function KnowledgeDetail() {
       case ImportType.FILE:
         return (
           <div className="import-form-container">
-            <Form.Item
-              name="splitTypeOption"
-              label="切分方式"
-              initialValue={SplitType.DIRECT}
-            >
-              <Radio.Group
-                className="import-split-selector"
-                value={splitType}
-                onChange={(e) => setSplitType(e.target.value)}
-              >
-                <Radio.Button value={SplitType.DIRECT}>直接切分</Radio.Button>
-                <Radio.Button value={SplitType.QA}>QA切分</Radio.Button>
-              </Radio.Group>
-            </Form.Item>
-
             <Alert
-              message="单文件上传说明"
-              description="每次只能上传一个文件，如需批量导入，请分别上传。"
+              message="文件导入说明"
+              description="每次只能上传一个文件，如需批量导入，请分别上传。系统将使用QA切分方式处理文件内容。"
               type="info"
               showIcon
-              className="mb-6 import-tip-alert" // 将mb-4改为mb-6，增加底部边距
+              className="mb-6 import-tip-alert"
               style={{
-                backgroundColor: "#f9fafb",
-                borderColor: "#e5e7eb",
+                backgroundColor: "#f0f9ff",
+                borderColor: "#0ea5e9",
                 fontSize: "0.9rem",
-                opacity: 0.85,
               }}
             />
 
-            <Form.Item name="files" className="mt-4">
-              {" "}
-              {/* 添加上边距 */}
+            <Form.Item name="files">
               <Dragger {...uploadProps}>
                 <p className="ant-upload-drag-icon">
                   <InboxOutlined />
@@ -682,39 +633,23 @@ export default function KnowledgeDetail() {
       case ImportType.LINK:
         return (
           <div className="import-form-container">
-            <Form.Item
-              name="splitTypeOption"
-              label="切分方式"
-              initialValue={SplitType.DIRECT}
-            >
-              <Radio.Group
-                className="import-split-selector"
-                value={splitType}
-                onChange={(e) => setSplitType(e.target.value)}
-              >
-                <Radio.Button value={SplitType.DIRECT}>直接切分</Radio.Button>
-                <Radio.Button value={SplitType.QA}>QA切分</Radio.Button>
-              </Radio.Group>
-            </Form.Item>
-
             <Alert
               message="链接导入说明"
-              description="只支持导入静态网页内容，不支持需要登录或动态生成内容的页面。"
+              description="请输入有效的网页链接，系统将自动抓取网页内容并使用QA切分方式进行处理。"
               type="info"
               showIcon
-              className="mb-6 import-tip-alert" // 增加边距
+              className="mb-4"
               style={{
-                backgroundColor: "#f9fafb",
-                borderColor: "#e5e7eb",
+                backgroundColor: "#f0f9ff",
+                borderColor: "#0ea5e9",
                 fontSize: "0.9rem",
-                opacity: 0.85,
               }}
             />
 
             <Form.Item
               name="links"
               label="链接地址"
-              className="mt-4" // 增加上边距
+              className="mt-4"
               rules={[
                 { required: true, message: "请输入至少一个链接地址" },
                 {
@@ -778,20 +713,18 @@ https://example.com/page1"
       case ImportType.TEXT:
         return (
           <div className="import-form-container">
-            <Form.Item
-              name="splitTypeOption"
-              label="切分方式"
-              initialValue={SplitType.DIRECT}
-            >
-              <Radio.Group
-                className="import-split-selector"
-                value={splitType}
-                onChange={(e) => setSplitType(e.target.value)}
-              >
-                <Radio.Button value={SplitType.DIRECT}>直接切分</Radio.Button>
-                <Radio.Button value={SplitType.QA}>QA切分</Radio.Button>
-              </Radio.Group>
-            </Form.Item>
+            <Alert
+              message="文本导入说明"
+              description="直接输入或粘贴文本内容，系统将使用QA切分方式自动进行分段处理。"
+              type="info"
+              showIcon
+              className="mb-4"
+              style={{
+                backgroundColor: "#f0f9ff",
+                borderColor: "#0ea5e9",
+                fontSize: "0.9rem",
+              }}
+            />
 
             <Form.Item
               name="content"
@@ -808,57 +741,115 @@ https://example.com/page1"
 
       case ImportType.QA:
         return (
-          <div className="import-form-container">
-            <Row gutter={[24, 16]}>
-              <Col xs={24} md={10}>
-                <div className="qa-import-info-panel">
-                  <Title level={5}>QA导入说明</Title>
-                  <Paragraph>
-                    QA导入允许您批量上传问答对，系统将根据您提供的数据构建知识库。
-                  </Paragraph>
-                  <QAImportGuide />
-                  <Divider dashed />
-                  <div className="mt-4">
-                    <Title level={5}>支持的格式</Title>
-                    <ul className="mt-2 ml-4 list-disc">
-                      <li>CSV文件 (.csv)</li>
-                      <li>Excel表格 (.xlsx)</li>
-                      <li>JSON文件 (.json)</li>
-                    </ul>
-                  </div>
+          <div className="qa-import-container" style={{ padding: '8px 0' }}>
+            {/* 顶部说明卡片 */}
+            <Card 
+              size="small" 
+              className="mb-6"
+              style={{
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                border: 'none',
+                borderRadius: '12px',
+                color: 'white'
+              }}
+            >
+              <div className="flex items-center">
+                <div className="mr-3">
+                  <Iconify icon="mdi:file-question-outline" size={24} />
                 </div>
+                <div>
+                  <div className="font-semibold text-base mb-1">QA问答导入</div>
+                  <div className="text-sm opacity-90">上传符合模板格式的QA文件，系统将自动处理问答数据</div>
+                </div>
+              </div>
+            </Card>
+
+            {/* 导入步骤和模板下载 */}
+            <Row gutter={24} className="mb-6">
+              <Col span={14}>
+                <Card 
+                  title={<span className="text-base font-medium">📋 导入步骤</span>} 
+                  size="small"
+                  className="h-full"
+                  style={{ borderRadius: '8px' }}
+                >
+                  <QAImportGuide />
+                </Card>
               </Col>
-              <Col xs={24} md={14}>
-                <Card className="qa-import-content-panel" bordered={false}>
-                  <TemplateDownloadSection />
-                  <Divider />
-                  <Title level={5}>上传QA文件</Title>
-                  <Form.Item
-                    name="qaFiles"
-                    className="mt-6" // 增加上边距
-                    rules={[{ required: true, message: "请上传QA文件" }]}
-                  >
-                    <Dragger
-                      {...uploadProps}
-                      className="qa-file-uploader"
-                      listType="picture"
-                    >
-                      <p className="ant-upload-drag-icon">
-                        <Iconify
-                          icon="mdi:cloud-upload-outline"
-                          width={48}
-                          height={48}
-                        />
-                      </p>
-                      <p className="ant-upload-text">
-                        点击或拖拽QA文件到此区域
-                      </p>
-                      <p className="ant-upload-hint">{renderUploadHint()}</p>
-                    </Dragger>
-                  </Form.Item>
+              <Col span={10}>
+                <Card 
+                  title={<span className="text-base font-medium">📥 模板下载</span>} 
+                  size="small"
+                  className="h-full"
+                  style={{ borderRadius: '8px' }}
+                >
+                  <div className="space-y-3">
+                    <div className="text-sm text-gray-600 mb-3">
+                      选择您熟悉的格式下载模板
+                    </div>
+                    <div className="grid grid-cols-1 gap-2">
+                      <Button
+                        icon={<DownloadOutlined />}
+                        href="/templates/qa-template.csv"
+                        download="qa-template.csv"
+                        type="default"
+                        size="small"
+                        className="text-left justify-start"
+                      >
+                        CSV 模板
+                      </Button>
+                      <Button
+                        icon={<DownloadOutlined />}
+                        href="/templates/qa-template.xlsx"
+                        download="qa-template.xlsx"
+                        type="default"
+                        size="small"
+                        className="text-left justify-start"
+                      >
+                        Excel 模板
+                      </Button>
+                      <Button
+                        icon={<DownloadOutlined />}
+                        href="/templates/qa-template.json"
+                        download="qa-template.json"
+                        type="default"
+                        size="small"
+                        className="text-left justify-start"
+                      >
+                        JSON 模板
+                      </Button>
+                    </div>
+                  </div>
                 </Card>
               </Col>
             </Row>
+
+            {/* 文件上传区域 */}
+            <Card 
+              title={<span className="text-base font-medium">📤 文件上传</span>} 
+              size="small"
+              style={{ borderRadius: '8px' }}
+            >
+              <Form.Item name="files" className="mb-0">
+                <Dragger 
+                  {...uploadProps}
+                  style={{
+                    background: '#fafafa',
+                    border: '2px dashed #d9d9d9',
+                    borderRadius: '8px',
+                    padding: '20px'
+                  }}
+                >
+                  <div className="flex flex-col items-center py-4">
+                    <div className="mb-3">
+                      <InboxOutlined style={{ fontSize: '48px', color: '#1890ff' }} />
+                    </div>
+                    <div className="text-lg font-medium mb-2">点击或拖拽QA文件到此区域</div>
+                    <div className="text-sm text-gray-500">{renderUploadHint()}</div>
+                  </div>
+                </Dragger>
+              </Form.Item>
+            </Card>
           </div>
         );
 
@@ -871,10 +862,10 @@ https://example.com/page1"
   useEffect(() => {
     if (importModalVisible) {
       form.setFieldsValue({
-        splitTypeOption: SplitType.DIRECT,
+        splitTypeOption: SplitType.QA,
       });
     }
-  }, [importModalVisible, form, importType]);
+  }, [importModalVisible, form]);
 
   function getImportModalTitle(): React.ReactNode {
     switch (importType) {
@@ -891,148 +882,318 @@ https://example.com/page1"
     }
   }
   return (
-    <Space direction="vertical" size="large" className="w-full">
-      <Card>
-        <div className="flex items-center mb-4">
-          <Button
-            icon={<Iconify icon="material-symbols:arrow-back" />}
-            onClick={onBackClick}
-          />
-          <Title level={4} className="ml-4 mb-0">
-            知识库详情
-          </Title>
-        </div>
-
-        {isLoadingKnowledge ? (
-          <div className="flex justify-center items-center p-8">
-            <Spin tip="加载中..." />
-          </div>
-        ) : !knowledge ? (
-          <Empty description="未找到知识库数据" />
-        ) : (
-          <Descriptions bordered column={{ xs: 1, sm: 2, md: 3 }}>
-            <Descriptions.Item label="名称">{knowledge.name}</Descriptions.Item>
-            <Descriptions.Item label="状态">
-              <Tag
-                color={
-                  knowledge.statusId === "DE546396-5B62-41E5-8814-4C072C74F26A"
-                    ? "success"
-                    : "error"
-                }
-              >
-                {knowledge.statusId === "DE546396-5B62-41E5-8814-4C072C74F26A"
-                  ? "Active"
-                  : "Inactive"}
-              </Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="OCR支持">
-              {knowledge.isOCR ? (
-                <Tag color="cyan">已启用</Tag>
-              ) : (
-                <Tag>未启用</Tag>
-              )}
-            </Descriptions.Item>
-            <Descriptions.Item label="聊天模型">
-              {knowledge.chatModel || "-"}
-            </Descriptions.Item>
-            <Descriptions.Item label="嵌入模型">
-              {knowledge.embeddingModel || "-"}
-            </Descriptions.Item>
-            <Descriptions.Item label="文件数">
-              {knowledge.fileCount || 0}
-            </Descriptions.Item>
-            <Descriptions.Item label="段落令牌">
-              {knowledge.maxTokensPerParagraph || "-"}
-            </Descriptions.Item>
-            <Descriptions.Item label="行令牌">
-              {knowledge.maxTokensPerLine || "-"}
-            </Descriptions.Item>
-            <Descriptions.Item label="重叠令牌">
-              {knowledge.overlappingTokens || "-"}
-            </Descriptions.Item>
-            <Descriptions.Item label="描述" span={3}>
-              {knowledge.description || "无描述"}
-            </Descriptions.Item>
-          </Descriptions>
-        )}
-      </Card>
-
-      <Card>
-        <Tabs activeKey={activeTab} onChange={setActiveTab}>
-          <Tabs.TabPane tab="知识项列表" key="1">
-            <div className="flex justify-end mb-4">
-              <Dropdown
-                menu={{ items: importItems, onClick: handleImportMenuClick }}
-              >
-                <Button type="primary">
-                  <Space>
-                    导入
-                    <Iconify icon="mdi:chevron-down" />
-                  </Space>
-                </Button>
-              </Dropdown>
-            </div>
-            <Table
-              columns={columns}
-              dataSource={knowledgeItems}
-              loading={isLoadingKnowledge}
-              rowKey="id"
-              pagination={{
-                pageSize: 10,
-                showSizeChanger: true,
-                showQuickJumper: true,
-                showTotal: (total, range) =>
-                  `第 ${range[0]}-${range[1]} 条，共 ${total} 条数据`,
-              }}
-              scroll={{ x: 1300 }}
-              size="middle"
-              className="knowledge-items-table"
-              locale={{
-                emptyText: (
-                  <div className="knowledge-items-empty">
-                    <Empty
-                      description="暂无知识项数据"
-                      image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    />
-                  </div>
-                ),
-              }}
-            />
-          </Tabs.TabPane>
-          <Tabs.TabPane tab="搜索测试" key="2">
-            <div className="mb-4">
-              <Search
-                placeholder="输入搜索关键词"
-                allowClear
-                enterButton="搜索"
-                size="large"
-                onSearch={onSearch}
-                loading={isSearching}
-              />
-            </div>
-            {searchQuery && !isSearching && (
-              <div>
-                {searchResults?.data?.length ? (
-                  <div>
-                    {/* 搜索结果展示区域 */}
-                    <div className="mb-2 text-gray-500">
-                      找到 {searchResults.data.length} 条结果
-                    </div>
-                    {searchResults.data.map((item, index) => (
-                      <Card key={index} className="mb-4">
-                        {/* 搜索结果内容 */}
-                        <div>搜索结果展示</div>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <Empty description="没有找到相关结果" />
+    <div className="knowledge-detail-container">
+      {/* 页面头部 */}
+      <div className="knowledge-detail-header">
+        {/* 返回按钮 */}
+        <Button
+          type="text"
+          icon={<Iconify icon="material-symbols:arrow-back" size={18} />}
+          onClick={onBackClick}
+          className="knowledge-back-btn"
+        >
+          返回
+        </Button>
+        
+        {/* 知识库信息卡片 */}
+        {!isLoadingKnowledge && knowledge && (
+          <Card className="knowledge-header-card">
+            <div className="knowledge-header-content">
+              <div className="knowledge-title-section">
+                <Title level={2} className="knowledge-title">
+                  <Iconify icon="mdi:database-outline" className="knowledge-title-icon" />
+                  {knowledge.name}
+                </Title>
+              </div>
+              <div className="knowledge-status-badges">
+                <Tag
+                  className="knowledge-status-tag"
+                  color={
+                    knowledge.statusId === "DE546396-5B62-41E5-8814-4C072C74F26A"
+                      ? "success"
+                      : "error"
+                  }
+                >
+                  {knowledge.statusId === "DE546396-5B62-41E5-8814-4C072C74F26A"
+                    ? "运行中"
+                    : "已停用"}
+                </Tag>
+                {knowledge.isOCR && (
+                  <Tag color="processing" className="knowledge-feature-tag">
+                    <Iconify icon="mdi:eye-outline" size={14} />
+                    OCR识别
+                  </Tag>
                 )}
               </div>
-            )}
-          </Tabs.TabPane>
-        </Tabs>
-      </Card>
+              {knowledge.description && (
+                <Paragraph className="knowledge-description">
+                  {knowledge.description}
+                </Paragraph>
+              )}
+            </div>
+          </Card>
+        )}
+      </div>
+
+      {/* 知识库信息概览 */}
+      <div className="knowledge-overview-section">
+        {isLoadingKnowledge ? (
+          <Card className="knowledge-loading-card">
+            <div className="knowledge-loading-content">
+              <Spin size="large" tip="加载知识库信息..." />
+            </div>
+          </Card>
+        ) : !knowledge ? (
+          <Card className="knowledge-error-card">
+            <Empty 
+              description="未找到知识库数据" 
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+            />
+          </Card>
+        ) : (
+          <Card className="knowledge-info-card" title="基础信息">
+            <Row gutter={[16, 12]} className="knowledge-info-grid">
+              <Col xs={24} sm={8} md={8} lg={8}>
+                <div className="knowledge-info-item">
+                  <div className="knowledge-info-label">
+                    <Iconify icon="mdi:chat-outline" className="knowledge-info-icon" />
+                    聊天模型
+                  </div>
+                  <div className="knowledge-info-value">
+                    {knowledge.chatModel || "未配置"}
+                  </div>
+                </div>
+              </Col>
+              <Col xs={24} sm={8} md={8} lg={8}>
+                <div className="knowledge-info-item">
+                  <div className="knowledge-info-label">
+                    <Iconify icon="mdi:vector-triangle" className="knowledge-info-icon" />
+                    嵌入模型
+                  </div>
+                  <div className="knowledge-info-value">
+                    {knowledge.embeddingModel || "未配置"}
+                  </div>
+                </div>
+              </Col>
+              <Col xs={24} sm={8} md={8} lg={8}>
+                <div className="knowledge-info-item">
+                  <div className="knowledge-info-label">
+                    <Iconify icon="mdi:file-multiple-outline" className="knowledge-info-icon" />
+                    文件数量
+                  </div>
+                  <div className="knowledge-info-value">
+                    {knowledge.fileCount || 0} 个
+                  </div>
+                </div>
+              </Col>
+              <Col xs={24} sm={12} lg={8}>
+                <div className="knowledge-info-item">
+                  <div className="knowledge-info-label">
+                    <Iconify icon="mdi:text-box-outline" className="knowledge-info-icon" />
+                    段落令牌
+                  </div>
+                  <div className="knowledge-info-value">
+                    {knowledge.maxTokensPerParagraph || "未设置"}
+                  </div>
+                </div>
+              </Col>
+              <Col xs={24} sm={12} lg={8}>
+                <div className="knowledge-info-item">
+                  <div className="knowledge-info-label">
+                    <Iconify icon="mdi:format-line-spacing" className="knowledge-info-icon" />
+                    行令牌
+                  </div>
+                  <div className="knowledge-info-value">
+                    {knowledge.maxTokensPerLine || "未设置"}
+                  </div>
+                </div>
+              </Col>
+              <Col xs={24} sm={12} lg={8}>
+                <div className="knowledge-info-item">
+                  <div className="knowledge-info-label">
+                    <Iconify icon="mdi:layers-outline" className="knowledge-info-icon" />
+                    重叠令牌
+                  </div>
+                  <div className="knowledge-info-value">
+                    {knowledge.overlappingTokens || "未设置"}
+                  </div>
+                </div>
+              </Col>
+            </Row>
+          </Card>
+        )}
+      </div>
+
+      {/* 主要内容区域 */}
+      <div className="knowledge-content-section">
+        <Card className="knowledge-content-card">
+          <Tabs 
+            activeKey={activeTab} 
+            onChange={setActiveTab}
+            className="knowledge-tabs"
+            size="large"
+            tabBarStyle={{ marginBottom: '24px' }}
+          >
+            <Tabs.TabPane 
+              tab={
+                <span className="knowledge-tab-label">
+                  <Iconify icon="mdi:format-list-bulleted" className="knowledge-tab-icon" />
+                  知识项列表
+                </span>
+              } 
+              key="1"
+            >
+              <div className="knowledge-items-section">
+                <div className="knowledge-items-header">
+                  <div className="knowledge-items-title">
+                    <Title level={5} className="knowledge-section-title">
+                      <Iconify icon="mdi:database-search" className="knowledge-section-icon" />
+                      知识项管理
+                    </Title>
+                    <Paragraph className="knowledge-section-desc">
+                      管理和查看知识库中的所有知识项内容
+                    </Paragraph>
+                  </div>
+                  <div className="knowledge-items-actions">
+                    <Dropdown
+                      menu={{ items: importItems, onClick: handleImportMenuClick }}
+                      placement="bottomRight"
+                    >
+                      <Button type="primary" size="large" className="knowledge-import-btn">
+                        <Space>
+                          <Iconify icon="mdi:upload" size={16} />
+                          导入数据
+                          <Iconify icon="mdi:chevron-down" size={16} />
+                        </Space>
+                      </Button>
+                    </Dropdown>
+                  </div>
+                </div>
+                
+                <div className="knowledge-items-table-container">
+                  <Table
+                    columns={columns}
+                    dataSource={knowledgeItems}
+                    loading={isLoadingKnowledge}
+                    rowKey="id"
+                    pagination={{
+                      pageSize: 10,
+                      showSizeChanger: true,
+                      showQuickJumper: true,
+                      showTotal: (total, range) =>
+                        `第 ${range[0]}-${range[1]} 条，共 ${total} 条数据`,
+                      className: 'knowledge-pagination'
+                    }}
+                    scroll={{ x: 1300 }}
+                    size="middle"
+                    className="knowledge-items-table"
+                    locale={{
+                      emptyText: (
+                        <div className="knowledge-items-empty">
+                          <Empty
+                            description="暂无知识项数据"
+                            image={Empty.PRESENTED_IMAGE_SIMPLE}
+                          >
+                            <Button type="primary" onClick={() => setImportModalVisible(true)}>
+                              <Iconify icon="mdi:plus" className="mr-1" />
+                              导入第一个知识项
+                            </Button>
+                          </Empty>
+                        </div>
+                      ),
+                    }}
+                  />
+                </div>
+              </div>
+            </Tabs.TabPane>
+            
+            <Tabs.TabPane 
+              tab={
+                <span className="knowledge-tab-label">
+                  <Iconify icon="mdi:magnify" className="knowledge-tab-icon" />
+                  搜索测试
+                </span>
+              } 
+              key="2"
+            >
+              <div className="knowledge-search-section">
+                <div className="knowledge-search-header">
+                  <Title level={5} className="knowledge-section-title">
+                    <Iconify icon="mdi:search-web" className="knowledge-section-icon" />
+                    智能搜索
+                  </Title>
+                  <Paragraph className="knowledge-section-desc">
+                    测试知识库的搜索功能和相关性
+                  </Paragraph>
+                </div>
+                
+                <div className="knowledge-search-input">
+                  <Search
+                    placeholder="输入搜索关键词，测试知识库检索效果"
+                    allowClear
+                    enterButton={
+                      <Button type="primary" size="large">
+                        <Iconify icon="mdi:magnify" size={16} />
+                        搜索
+                      </Button>
+                    }
+                    size="large"
+                    onSearch={onSearch}
+                    loading={isSearching}
+                    className="knowledge-search-bar"
+                  />
+                </div>
+                
+                {searchQuery && (
+                  <div className="knowledge-search-results">
+                    {isSearching ? (
+                      <div className="knowledge-search-loading">
+                        <Spin size="large" tip="搜索中..." />
+                      </div>
+                    ) : searchResults?.data && searchResults.data.length > 0 ? (
+                      <div className="knowledge-search-results-list">
+                        <div className="knowledge-search-stats">
+                          <Tag color="blue" className="knowledge-search-count">
+                            找到 {searchResults?.data?.length || 0} 条相关结果
+                          </Tag>
+                        </div>
+                        {searchResults?.data?.map((item: any, index: number) => (
+                          <Card 
+                            key={`search-result-${index}`} 
+                            className="knowledge-search-result-card"
+                            hoverable
+                          >
+                            <div className="knowledge-search-result-content">
+                              <div className="knowledge-search-result-header">
+                                <Iconify icon="mdi:file-document-outline" className="knowledge-search-result-icon" />
+                                <span className="knowledge-search-result-title">搜索结果 {index + 1}</span>
+                              </div>
+                              <div className="knowledge-search-result-body">
+                                搜索结果内容展示区域
+                              </div>
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="knowledge-search-empty">
+                        <Empty 
+                          description="没有找到相关结果" 
+                          image={Empty.PRESENTED_IMAGE_SIMPLE}
+                        >
+                          <Paragraph className="knowledge-search-empty-tip">
+                            尝试使用不同的关键词或检查知识库是否包含相关内容
+                          </Paragraph>
+                        </Empty>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </Tabs.TabPane>
+          </Tabs>
+        </Card>
+      </div>
 
       {/* 导入模态框 */}
       <Modal
@@ -1047,6 +1208,6 @@ https://example.com/page1"
           {renderImportModalContent()}
         </Form>
       </Modal>
-    </Space>
+    </div>
   );
 }

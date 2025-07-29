@@ -56,6 +56,9 @@ export enum KnowledgeApi {
 	ReprocessKnowledgeItem = "/knowledge/item/{id}/reprocess", // 重新执行知识项
 	GetKnowledgeItem = "/knowledge/item/{id}", // 获取知识项详情
 	GetKnowledgeItemPoint = "/knowledge/{itemid}/knowledgeItemPoint/{id}", // 获取知识项详情
+	DeleteKnowledgeItem = "/knowledge/item", // 删除知识项	
+	DeleteKnowledgeItemQa = "/knowledge/item/qa", // 删除知识项
+
 }
 
 /**
@@ -90,6 +93,19 @@ const knowledgeService = {
 		return apiClient.put<Knowledge>({
 			url: KnowledgeApi.UpdateModel,
 			data,
+		});
+	},
+
+	//删除知识库详情item
+	deleteKnowledgeItem: (id: string) => {
+		return apiClient.delete<void>({
+			url: `${KnowledgeApi.DeleteKnowledgeItem}/${id}`,
+		});
+	},
+
+	deleteKnowledgeItemQa: (id: string) => {
+		return apiClient.delete<void>({
+			url: `${KnowledgeApi.DeleteKnowledgeItemQa}/${id}`,
 		});
 	},
 
