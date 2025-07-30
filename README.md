@@ -195,19 +195,6 @@ src/
 
 ## 🔧 Configuration
 
-### Model Configuration
-
-Configure AI models in the system:
-
-```typescript
-// Model type IDs
-const MODEL_TYPE_IDS = {
-  CHAT: "0D826A41-45CE-4870-8893-A8D4FAECD3A4",
-  EMBEDDING: "F37AF2F3-37A1-418B-8EEE-3675A5A36784", 
-  RERANK: "F8AC00C2-F4E7-4FC3-8677-CF8AE86CE23F"
-}
-```
-
 ### Permission System
 
 The system uses a comprehensive RBAC (Role-Based Access Control) model:
@@ -298,6 +285,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [React](https://reactjs.org/) for the powerful frontend framework
 - [Vite](https://vitejs.dev/) for the blazing fast build tool
 - All contributors who help make this project better
+
+## Star History
+
+![Star History Chart](https://api.star-history.com/svg?repos=Austin-Patrician/LuminaBrain-Frontend&type=Date)
 
 ---
 

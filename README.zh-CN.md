@@ -197,18 +197,6 @@ src/
 
 ## 🔧 配置说明
 
-### 模型配置
-
-在系统中配置AI模型：
-
-```typescript
-// 模型类型ID
-const MODEL_TYPE_IDS = {
-  CHAT: "0D826A41-45CE-4870-8893-A8D4FAECD3A4",
-  EMBEDDING: "F37AF2F3-37A1-418B-8EEE-3675A5A36784", 
-  RERANK: "F8AC00C2-F4E7-4FC3-8677-CF8AE86CE23F"
-}
-```
 
 ### 权限系统
 
@@ -322,6 +310,10 @@ VITE_APP_ENV=production
 - **缓存优化**：智能缓存策略提升性能
 - **响应式设计**：完美适配各种设备
 - **SEO友好**：服务端渲染支持
+
+## Star 历史
+
+![Star History Chart](https://api.star-history.com/svg?repos=Austin-Patrician/LuminaBrain-Frontend&type=Date)
 
 ---
 
