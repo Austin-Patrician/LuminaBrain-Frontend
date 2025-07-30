@@ -1,28 +1,28 @@
+import knowledgeService from "@/api/services/knowledgeService";
+import { Iconify } from "@/components/icon";
 import { useParams } from "@/router/hooks";
-import { useNavigate } from "react-router";
+import { usePathname, useRouter } from "@/router/hooks";
+import { useQuery } from "@tanstack/react-query";
 import {
-  Card,
-  Typography,
-  Button,
-  Space,
-  List,
-  Tag,
-  Divider,
   Alert,
+  Button,
+  Card,
+  Divider,
   Empty,
-  Spin,
-  Modal,
   Form,
   Input,
-  message,
+  List,
+  Modal,
   Popconfirm,
+  Space,
+  Spin,
+  Tag,
+  Typography,
+  message,
 } from "antd";
-import { Iconify } from "@/components/icon";
-import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
 import type { QAItem } from "#/entity";
-import knowledgeService from "@/api/services/knowledgeService";
-import { usePathname, useRouter } from "@/router/hooks";
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -35,6 +35,23 @@ export default function KnowledgeItemDetail() {
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [form] = Form.useForm();
 
+  // 使用 useQuery 获取知识库详情
+  const {
+    data: knowledge,
+    isLoading: isKnowledgeLoading,
+    error: knowledgeError,
+  } = useQuery({
+    queryKey: ["knowledge", knowledgeId],
+    queryFn: async () => {
+      if (!knowledgeId) {
+        throw new Error("缺少知识库ID");
+      }
+      const response = await knowledgeService.getKnowledge(knowledgeId);
+      return response;
+    },
+    enabled: !!knowledgeId,
+  });
+
   // 使用 useQuery 获取知识项详情
   const {
     data: fetchedData,
@@ -44,8 +61,8 @@ export default function KnowledgeItemDetail() {
   } = useQuery({
     queryKey: ["knowledgeItemDetails", itemId],
     queryFn: async (): Promise<QAItem[]> => {
-      if (!itemId) {
-        throw new Error("缺少知识项ID");
+      if (!itemId || !knowledgeId) {
+        throw new Error("缺少知识项ID或知识库ID");
       }
 
       const response = await knowledgeService.getKnowledgeItemPoint(
@@ -60,10 +77,10 @@ export default function KnowledgeItemDetail() {
         answer: item.answer || "暂无答案",
         timestamp: new Date(item.timestamp).toLocaleString("zh-CN"),
       }));
-
       return qaItems;
+
     },
-    enabled: !!itemId, // 只有当 itemId 存在时才执行查询
+    enabled: !!itemId && !!knowledgeId, // 只有当 itemId 和 knowledgeId 都存在时才执行查询
   });
 
   // 使用 useEffect 来处理数据更新
@@ -75,31 +92,37 @@ export default function KnowledgeItemDetail() {
 
   useEffect(() => {
     if (error) {
-      console.error("获取知识项详情失败:", error);
       setQaData([]);
     }
   }, [error]);
 
   // 添加新的QA对
-  const handleAddQA = () => {
-    form
-      .validateFields()
-      .then((values) => {
-        const newQA: QAItem = {
-          id: (qaData.length + 1).toString(),
-          question: values.question,
-          answer: values.answer,
-          timestamp: new Date().toLocaleString("zh-CN"),
-        };
+  const handleAddQA = async () => {
+    try {
+      const values = await form.validateFields();
 
-        setQaData([...qaData, newQA]);
-        setAddModalVisible(false);
-        form.resetFields();
-        message.success("QA对添加成功");
-      })
-      .catch((errorInfo) => {
-        console.log("表单验证失败:", errorInfo);
+      if (!knowledgeId || !itemId || !knowledge?.embeddingModelID) {
+        message.error("缺少必要参数，无法添加QA对");
+        return;
+      }
+
+      await knowledgeService.addQaPoint({
+        question: values.question,
+        answer: values.answer,
+        knowledgeItemId: itemId,
+        knowledgeId: knowledgeId,
+        embeddingAiModelId: knowledge.embeddingModelID,
       });
+
+      setAddModalVisible(false);
+      form.resetFields();
+      message.success("QA对添加成功");
+
+      // 刷新数据
+      refetch();
+    } catch (error) {
+      message.error("添加失败，请重试");
+    }
   };
 
   // 删除QA对
@@ -110,7 +133,6 @@ export default function KnowledgeItemDetail() {
       // 删除成功后刷新页面数据
       refetch();
     } catch (error) {
-      console.error("删除QA对失败:", error);
       message.error("删除失败，请重试");
     }
   };
@@ -121,22 +143,24 @@ export default function KnowledgeItemDetail() {
     form.resetFields();
   };
 
-  if (isLoading) {
+  if (isLoading || isKnowledgeLoading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <Spin size="large" tip="加载知识项详情中..." />
+        <Spin size="large" tip="加载数据中..." />
       </div>
     );
   }
 
-  if (error) {
+  if (error || knowledgeError) {
     return (
       <Space direction="vertical" size="large" className="w-full">
         <Card>
           <div className="flex items-center">
             <Button
               icon={<Iconify icon="material-symbols:arrow-back" />}
-              onClick={() => push(`/knowledgemanagement/${knowledgeId}`)}
+              onClick={() => {
+                navigate(`/knowledgemanagement/knowledge/${knowledgeId}`)
+              }}
             />
             <Title level={4} className="ml-4 mb-0">
               知识项详情
@@ -147,7 +171,9 @@ export default function KnowledgeItemDetail() {
           <Alert
             message="加载失败"
             description={
-              error instanceof Error ? error.message : "获取数据失败"
+              (error instanceof Error ? error.message : "") ||
+              (knowledgeError instanceof Error ? knowledgeError.message : "") ||
+              "获取数据失败"
             }
             type="error"
             showIcon
@@ -165,7 +191,7 @@ export default function KnowledgeItemDetail() {
           <div className="flex items-center">
             <Button
               icon={<Iconify icon="material-symbols:arrow-back" />}
-              onClick={() => navigate(`/knowledgemanagement/${knowledgeId}`)}
+              onClick={() => navigate(`/knowledgemanagement/knowledge/${knowledgeId}`)}
             />
             <Title level={4} className="ml-4 mb-0">
               知识项详情
@@ -191,7 +217,10 @@ export default function KnowledgeItemDetail() {
                 type="primary"
                 size="small"
                 icon={<Iconify icon="material-symbols:add" />}
-                onClick={() => setAddModalVisible(true)}
+                onClick={(e) => {
+                  e.currentTarget.blur();
+                  setAddModalVisible(true);
+                }}
               >
                 新增QA对
               </Button>

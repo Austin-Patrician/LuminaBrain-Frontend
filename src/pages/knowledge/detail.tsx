@@ -39,7 +39,6 @@ import { Iconify } from "@/components/icon";
 
 // 导入样式文件
 import "./index.css";
-import { V } from "node_modules/react-router/dist/development/fog-of-war-D2zsXvum.d.mts";
 
 
 const { Title, Paragraph } = Typography;
@@ -114,10 +113,12 @@ const URL_REGEX =
 export default function KnowledgeDetail() {
   const { push } = useRouter();
   const pathname = usePathname();
-  const { id } = useParams();
+  const { knowledgeId } = useParams();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("1");
   const [searchQuery, setSearchQuery] = useState("");
+  const [hasSearched, setHasSearched] = useState(false);
+  const [searchTriggered, setSearchTriggered] = useState(false);
   const [importModalVisible, setImportModalVisible] = useState(false);
   const [importType, setImportType] = useState<ImportType>(ImportType.FILE);
   const [splitType, setSplitType] = useState<SplitType>(SplitType.QA); // 默认QA切分
@@ -126,32 +127,61 @@ export default function KnowledgeDetail() {
 
   // 获取知识库详情
   const { data: knowledgeResponse, isLoading: isLoadingKnowledge } = useQuery({
-    queryKey: ["knowledge", id],
-    queryFn: () => knowledgeService.getKnowledge(id as string),
-    enabled: !!id,
+    queryKey: ["knowledge", knowledgeId],
+    queryFn: () => knowledgeService.getKnowledge(knowledgeId as string),
+    enabled: !!knowledgeId,
   });
 
   // 从返回数据中提取知识库详情和知识项列表
   const knowledge = knowledgeResponse;
   const knowledgeItems = knowledge?.knowledgeItems || [];
 
-  // 搜索测试功能
+  // 搜索功能
   const { data: searchResults, isLoading: isSearching } = useQuery({
-    queryKey: ["knowledgeSearch", id, searchQuery],
-    queryFn: () => {
-      // 实际搜索API调用
-      return Promise.resolve({ data: [] });
+    queryKey: ["knowledgeSearch", knowledgeId, searchQuery, hasSearched],
+    queryFn: async () => {
+      if (!searchQuery || !knowledgeId || !knowledge?.embeddingModelID) {
+        return { data: "" };
+      }
+
+      const response = await knowledgeService.search({
+        questin: searchQuery,
+        knowledgeId: knowledgeId,
+        embeddingAiModelId: knowledge.embeddingModelID
+      });
+
+      return response;
     },
-    enabled: !!id && !!searchQuery && activeTab === "2",
+    enabled: !!knowledgeId && !!searchQuery && activeTab === "2" && !!knowledge?.embeddingModelID && searchTriggered,
   });
 
   const onSearch = (value: string) => {
-    console.log(value);
     setSearchQuery(value);
+    if (value.trim()) {
+      setSearchTriggered(true); // 触发搜索
+      setHasSearched(true); // 标记已搜索
+    }
   };
 
+  // 监听搜索框清空
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setHasSearched(false);
+      setSearchTriggered(false);
+    }
+  }, [searchQuery]);
+
+  // 监听搜索完成，重置触发状态
+  useEffect(() => {
+    if (searchResults !== undefined && !isSearching && searchTriggered) {
+      setSearchTriggered(false);
+    }
+  }, [searchResults, isSearching, searchTriggered]);
+
+
+
   const onBackClick = () => {
-    navigate(-1);
+    navigate('/knowledgemanagement/knowledge');
   };
 
   // 重置导入表单和状态
@@ -205,12 +235,6 @@ export default function KnowledgeDetail() {
         } else if (data) {
           // 链接或文本导入类型，将数据添加到data字段
           formData.append("data", data);
-          console.log(
-            "准备导入数据类型:",
-            importType,
-            "数据长度:",
-            data.length
-          );
         }
 
         // 添加共通字段
@@ -235,7 +259,7 @@ export default function KnowledgeDetail() {
     },
     onSuccess: () => {
       message.success("导入成功");
-      queryClient.invalidateQueries({ queryKey: ["knowledge", id] }); // 刷新知识库详情
+      queryClient.invalidateQueries({ queryKey: ["knowledge", knowledgeId] }); // 刷新知识库详情
     },
     onError: (error) => {
       message.error(`导入失败: ${error}`);
@@ -253,7 +277,7 @@ export default function KnowledgeDetail() {
       // 调用上传mutation
       const result = await uploadFileMutation.mutateAsync({
         file,
-        knowledgeId: id as string,
+        knowledgeId: knowledgeId as string,
         splitType: SplitType.QA, // 固定使用QA切分
         importType: ImportType.FILE, // 这里是文件上传，固定为FILE类型
         data: undefined,
@@ -263,7 +287,6 @@ export default function KnowledgeDetail() {
       onProgress({ percent: 100 });
       onSuccess();
     } catch (error: any) {
-      console.error("上传失败:", error);
       // 提供更详细的错误信息
       const errorMessage = error.response
         ? `错误 ${error.response.status}: ${error.response.statusText}`
@@ -325,7 +348,7 @@ export default function KnowledgeDetail() {
 
         if (values.links.length > 0) {
           uploadFileMutation.mutate({
-            knowledgeId: id as string,
+            knowledgeId: knowledgeId as string,
             splitType: SplitType.QA, // 固定使用QA切分
             importType: ImportType.LINK,
             data: values.links, // 将链接数组转为JSON字符串
@@ -338,7 +361,7 @@ export default function KnowledgeDetail() {
         // 处理文本导入
         if (values.content) {
           uploadFileMutation.mutate({
-            knowledgeId: id as string,
+            knowledgeId: knowledgeId as string,
             splitType: SplitType.QA, // 固定使用QA切分
             importType: ImportType.TEXT,
             data: values.content,
@@ -568,7 +591,7 @@ export default function KnowledgeDetail() {
     mutationFn: knowledgeService.reprocessKnowledgeItem,
     onSuccess: () => {
       message.success("重新执行成功");
-      queryClient.invalidateQueries({ queryKey: ["knowledge", id] }); // 刷新知识库详情
+      queryClient.invalidateQueries({ queryKey: ["knowledge", knowledgeId] }); // 刷新知识库详情
     },
     onError: (error) => {
       message.error(`重新执行失败: ${error}`);
@@ -586,7 +609,9 @@ export default function KnowledgeDetail() {
 
   // 处理查看详情
   const handleView = (record: any) => {
-    push(`${pathname}/item/${record.id}`);
+    // 使用绝对路径，确保knowledgeId正确传递
+    const targetUrl = `/knowledgemanagement/knowledge/${knowledgeId}/item/${record.id}`;
+    push(targetUrl);
   };
 
   // 删除知识项
@@ -595,7 +620,7 @@ export default function KnowledgeDetail() {
       // 这里需要添加删除知识项的API调用
       await knowledgeService.deleteKnowledgeItem(itemId);
       message.success("删除成功");
-      queryClient.invalidateQueries({ queryKey: ["knowledge", id] }); // 刷新知识库详情
+      queryClient.invalidateQueries({ queryKey: ["knowledge", knowledgeId] }); // 刷新知识库详情
     } catch (error) {
       message.error(`删除失败: ${error}`);
     }
@@ -1146,36 +1171,35 @@ https://example.com/page1"
                   />
                 </div>
 
-                {searchQuery && (
+                {(hasSearched || isSearching) && searchQuery && (
                   <div className="knowledge-search-results">
                     {isSearching ? (
                       <div className="knowledge-search-loading">
                         <Spin size="large" tip="搜索中..." />
                       </div>
-                    ) : searchResults?.data && searchResults.data.length > 0 ? (
+                    ) : searchResults && searchResults.trim() ? (
                       <div className="knowledge-search-results-list">
                         <div className="knowledge-search-stats">
                           <Tag color="blue" className="knowledge-search-count">
-                            找到 {searchResults?.data?.length || 0} 条相关结果
+                            搜索结果
                           </Tag>
                         </div>
-                        {searchResults?.data?.map((item: any, index: number) => (
-                          <Card
-                            key={`search-result-${index}`}
-                            className="knowledge-search-result-card"
-                            hoverable
-                          >
-                            <div className="knowledge-search-result-content">
-                              <div className="knowledge-search-result-header">
-                                <Iconify icon="mdi:file-document-outline" className="knowledge-search-result-icon" />
-                                <span className="knowledge-search-result-title">搜索结果 {index + 1}</span>
-                              </div>
-                              <div className="knowledge-search-result-body">
-                                搜索结果内容展示区域
-                              </div>
+                        <Card
+                          className="knowledge-search-result-card"
+                          hoverable
+                        >
+                          <div className="knowledge-search-result-content">
+                            <div className="knowledge-search-result-header">
+                              <Iconify icon="mdi:file-document-outline" className="knowledge-search-result-icon" />
+                              <span className="knowledge-search-result-title">搜索结果</span>
                             </div>
-                          </Card>
-                        ))}
+                            <div className="knowledge-search-result-body">
+                              <Paragraph className="knowledge-search-result-text">
+                                {searchResults}
+                              </Paragraph>
+                            </div>
+                          </div>
+                        </Card>
                       </div>
                     ) : (
                       <div className="knowledge-search-empty">

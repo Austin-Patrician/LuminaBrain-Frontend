@@ -1,6 +1,6 @@
 // aimodelService.ts
 import apiClient from "@/api/apiClient";
-import type { Knowledge, AiModelItem, AiModelListResponse } from "#/entity";
+import type { AiModelItem, AiModelListResponse, Knowledge } from "#/entity";
 
 interface KnowledgeQueryParams {
 	name?: string;
@@ -12,16 +12,16 @@ interface KnowledgeQueryParams {
 
 // 新增创建知识库的DTO
 interface CreateKnowledgeDto {
-name: string;
-description: string;
-chatModelID: string | null;
-embeddingModelID: string | null;
-rerankModelID: string | null;
-maxTokensPerParagraph: number;
-avatar: string;
-maxTokensPerLine: number;
-overlappingTokens: number;
-isOCR: boolean;
+	name: string;
+	description: string;
+	chatModelID: string | null;
+	embeddingModelID: string | null;
+	rerankModelID: string | null;
+	maxTokensPerParagraph: number;
+	avatar: string;
+	maxTokensPerLine: number;
+	overlappingTokens: number;
+	isOCR: boolean;
 }
 
 // 定义响应类型
@@ -43,6 +43,30 @@ interface KnowledgeResponse {
 	data: Knowledge;
 }
 
+// 新增搜索请求DTO
+interface KnowledgeSearchDto {
+	questin: string;
+	knowledgeId: string;
+	embeddingAiModelId: string;
+}
+
+// 新增搜索响应类型
+interface KnowledgeSearchResponse {
+	success: boolean;
+	statusCode: number;
+	message: string;
+	data: string;
+}
+
+// 新增QA点请求DTO
+interface AddQaPointDto {
+	question: string;
+	answer: string;
+	knowledgeItemId: string;
+	knowledgeId: string;
+	embeddingAiModelId: string;
+}
+
 // 定义API端点
 export enum KnowledgeApi {
 	PagedKnowledge = "/knowledge/paged",
@@ -56,9 +80,10 @@ export enum KnowledgeApi {
 	ReprocessKnowledgeItem = "/knowledge/item/{id}/reprocess", // 重新执行知识项
 	GetKnowledgeItem = "/knowledge/item/{id}", // 获取知识项详情
 	GetKnowledgeItemPoint = "/knowledge/{itemid}/knowledgeItemPoint/{id}", // 获取知识项详情
-	DeleteKnowledgeItem = "/knowledge/item", // 删除知识项	
+	DeleteKnowledgeItem = "/knowledge/item", // 删除知识项
 	DeleteKnowledgeItemQa = "/knowledge/item/qa", // 删除知识项
-
+	Search = "/knowledge/search", // 知识库搜索
+	AddQaPoint = "/knowledge/addQaPoint", // 新增QA点
 }
 
 /**
@@ -192,6 +217,26 @@ const knowledgeService = {
 	getKnowledgeItem: (id: string) => {
 		return apiClient.get<KnowledgeResponse>({
 			url: KnowledgeApi.GetKnowledgeItem.replace("{id}", id),
+		});
+	},
+
+	/**
+	 * 知识库搜索
+	 */
+	search: (data: KnowledgeSearchDto) => {
+		return apiClient.post<KnowledgeSearchResponse>({
+			url: KnowledgeApi.Search,
+			data,
+		});
+	},
+
+	/**
+	 * 新增QA点
+	 */
+	addQaPoint: (data: AddQaPointDto) => {
+		return apiClient.post<void>({
+			url: KnowledgeApi.AddQaPoint,
+			data,
 		});
 	},
 };

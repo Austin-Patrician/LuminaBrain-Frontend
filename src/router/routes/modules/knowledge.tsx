@@ -33,22 +33,24 @@ const knowledge: AppRouteObject[] = [
         element: <Knowledge />,
       },
       {
-        path: ":id",
+        path: ":knowledgeId",
         element: <KnowledgeDetail />,
         meta: {
           label: "sys.menu.knowledgedetail",
-          key: "/knowledgemanagement/:id",
-          hideMenu: true, // 隐藏菜单
+          key: "/knowledgemanagement/:knowledgeId",
+          hideMenu: true,
         },
-      },
-      {
-        path: ":knowledgeId/item/:itemId",
-        element: <KnowledgeItemDetail />,
-        meta: {
-          label: "sys.menu.knowledgeitemdetail",
-          key: "/knowledgemanagement/:knowledgeId/item/:itemId",
-          hideMenu: true, // 隐藏菜单
-        },
+        children: [
+          {
+            path: "item/:itemId",
+            element: <KnowledgeItemDetail />,
+            meta: {
+              label: "sys.menu.knowledgeitemdetail",
+              key: "/knowledgemanagement/:knowledgeId/item/:itemId",
+              hideMenu: true,
+            },
+          },
+        ],
       },
     ],
   },
