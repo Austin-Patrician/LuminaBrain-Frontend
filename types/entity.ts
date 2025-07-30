@@ -165,124 +165,124 @@ export interface Knowledge {
 }
 
 export interface Agent {
-  id: string;
-  name: string;
-  instructions: string;
-  serviceId: string;
+	id: string;
+	name: string;
+	instructions: string;
+	serviceId: string;
 	serviceName: string;
-  statusId: string;
-  extensionData?: string;
-  temperature?: number | null;
-  topP?: number | null;
-  frequencyPenalty?: number | null;
-  presencePenalty?: number | null;
-  maxTokens?: number | null;
-  functionChoiceBehaviorId?: string;
+	description: string;
+	statusId: string;
+	extensionData?: string;
+	temperature?: number | null;
+	topP?: number | null;
+	frequencyPenalty?: number | null;
+	presencePenalty?: number | null;
+	maxTokens?: number | null;
+	functionChoiceBehaviorId?: string;
 	functionChoiceBehaviorName?: string;
-  createdAt?: string;
-  updatedAt?: string;
+	createdAt?: string;
+	updatedAt?: string;
 }
 
 // 单个AI模型数据结构
 export interface AiModelItem {
-  aiModelId: string;
-  aiModelName: string;
+	aiModelId: string;
+	aiModelName: string;
 }
 
 // AI模型列表响应类型
 export interface AiModelListResponse {
-  success: boolean;
-  statusCode: number;
-  message: string;
-  data: AiModelItem[];
+	success: boolean;
+	statusCode: number;
+	message: string;
+	data: AiModelItem[];
 }
 
 // AI模型和知识库项
 export interface AiModelAndKnowledgeItem {
-  id: string;
-  label: string;
-  type: "AI Model" | "Knowledge" | "Agent";
+	id: string;
+	label: string;
+	type: "AI Model" | "Knowledge" | "Agent";
 	isThink: boolean;
 	isStream: boolean;
 }
 
 // AI模型和知识库列表响应类型
 export interface AiModelsAndKnowledgesResponse {
-  success: boolean;
-  statusCode: number;
-  message: string;
-  data: AiModelAndKnowledgeItem[];
+	success: boolean;
+	statusCode: number;
+	message: string;
+	data: AiModelAndKnowledgeItem[];
 }
 
 // 数据字典基础实体
 export interface AuditEntity {
-  id: string;
-  creationTime?: Date;
-  creator?: string;
-  modificationTime?: Date;
-  modifier?: string;
+	id: string;
+	creationTime?: Date;
+	creator?: string;
+	modificationTime?: Date;
+	modifier?: string;
 }
 
 // 字典实体
 export interface Dictionary extends AuditEntity {
-  name: string;
-  description?: string;
-  sort: number;
-  enabled: boolean;
+	name: string;
+	description?: string;
+	sort: number;
+	enabled: boolean;
 }
 
 // 字典项实体
 export interface DictionaryItem extends AuditEntity {
-  dictionaryId: string;
-  value: string;
-  label: string;
-  description?: string;
-  sort: number;
-  enabled: boolean;
-  parentId?: string;
-  // 辅助字段
-  dictionaryName?: string;
-  children?: DictionaryItem[];
+	dictionaryId: string;
+	value: string;
+	label: string;
+	description?: string;
+	sort: number;
+	enabled: boolean;
+	parentId?: string;
+	// 辅助字段
+	dictionaryName?: string;
+	children?: DictionaryItem[];
 }
 
 // 字典列表响应类型
 export interface DictionaryListResponse {
-  success: boolean;
-  statusCode: number;
-  message: string;
-  data: {
-    total: number;
-    data: Dictionary[];
-  };
+	success: boolean;
+	statusCode: number;
+	message: string;
+	data: {
+		total: number;
+		data: Dictionary[];
+	};
 }
 
 // 字典项列表响应类型
 export interface DictionaryItemListResponse {
-  success: boolean;
-  statusCode: number;
-  message: string;
-  data: {
-    total: number;
-    data: DictionaryItem[];
-  };
+	success: boolean;
+	statusCode: number;
+	message: string;
+	data: {
+		total: number;
+		data: DictionaryItem[];
+	};
 }
 
 // Role列表响应类型
 export interface RoleListResponse {
-  success: boolean;
-  statusCode: number;
-  message: string;
-  data: {
-    total: number;
-    data: Role[];
-  };
+	success: boolean;
+	statusCode: number;
+	message: string;
+	data: {
+		total: number;
+		data: Role[];
+	};
 }
-
 
 // Q&A 数据类型定义
 export interface QAItem {
-  id: string;
-  question: string;
-  answer: string;
-  timestamp: string;
+	id: string;
+	question: string;
+	answer: string;
+	timestamp: string;
 }

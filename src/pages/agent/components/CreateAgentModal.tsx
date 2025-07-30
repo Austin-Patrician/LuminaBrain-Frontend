@@ -1,19 +1,20 @@
-import React, { useState, useEffect } from "react";
+import agentService from "@/api/services/agentService";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import {
-  Modal,
+  Button,
   Form,
   Input,
-  Select,
   InputNumber,
-  Button,
-  message,
-  Switch,
+  Modal,
+  Select,
   Spin,
+  Switch,
+  message,
 } from "antd";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import type React from "react";
+import { useEffect, useState } from "react";
 import type { CreateAgentDto } from "#/dto/agent";
 import type { AiModelItem } from "#/entity";
-import agentService from "@/api/services/agentService";
 
 // 函数选择行为选项
 const FUNCTION_CHOICE_BEHAVIORS = [
@@ -75,6 +76,7 @@ const CreateAgentModal: React.FC<CreateAgentModalProps> = ({
       const values = await form.validateFields();
       const agentData: CreateAgentDto = {
         name: values.name,
+        description: values.description,
         instructions: values.instructions,
         serviceId: values.serviceId,
         statusId: values.statusId,
@@ -141,9 +143,23 @@ const CreateAgentModal: React.FC<CreateAgentModalProps> = ({
         </Form.Item>
 
         <Form.Item
+          name="description"
+          label="描述"
+          rules={[{ required: true, message: "请输入清晰的描述说明，这在后续规划执行非常重要" }]}
+          tooltip={{
+            title: "供后续规划执行做参考"
+          }}
+        >
+          <Input.TextArea rows={2} placeholder="请输入Agent的描述信息" />
+        </Form.Item>
+
+        <Form.Item
           name="instructions"
           label="指令说明"
           rules={[{ required: true, message: "请输入指令说明" }]}
+          tooltip={{
+            title: "Agent行为说明，用于指导Agent的行为"
+          }}
         >
           <Input.TextArea rows={4} placeholder="请输入Agent的指令说明" />
         </Form.Item>

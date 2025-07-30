@@ -275,6 +275,14 @@ export default function AgentPage() {
                     </div>
                   </div>
 
+                  {/* 描述 */}
+                  {agent.description && (
+                    <div className="text-sm mb-2 text-gray-600">
+                      <span className="font-medium">描述: </span>
+                      {agent.description}
+                    </div>
+                  )}
+
                   {/* 服务 */}
                   <div className="text-sm mb-1">
                     <span className="font-medium">服务: </span>

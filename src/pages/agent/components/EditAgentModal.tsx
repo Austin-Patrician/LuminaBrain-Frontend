@@ -1,19 +1,20 @@
-import React, { useEffect, useState } from "react";
+import agentService from "@/api/services/agentService";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import {
-  Modal,
+  Button,
   Form,
   Input,
-  Select,
   InputNumber,
-  Button,
-  message,
+  Modal,
+  Select,
   Spin,
+  message,
 } from "antd";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import type { Agent } from "#/entity";
+import type React from "react";
+import { useEffect, useState } from "react";
 import type { UpdateAgentDto } from "#/dto/agent";
+import type { Agent } from "#/entity";
 import type { AiModelItem } from "#/entity";
-import agentService from "@/api/services/agentService";
 
 // 函数选择行为选项
 
@@ -60,6 +61,7 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
     if (visible && agent) {
       form.setFieldsValue({
         name: agent.name,
+        description: agent.description,
         instructions: agent.instructions,
         serviceId: agent.serviceId,
         statusId: agent.statusId,
@@ -97,6 +99,7 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
       const agentData: UpdateAgentDto = {
         id: agent.id,
         name: values.name,
+        description: values.description,
         instructions: values.instructions,
         serviceId: values.serviceId,
         statusId: values.statusId,
@@ -144,6 +147,17 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
           rules={[{ required: true, message: "请输入Agent名称" }]}
         >
           <Input placeholder="请输入Agent名称" />
+        </Form.Item>
+
+        <Form.Item
+          name="description"
+          label="描述"
+          rules={[{ required: true, message: "请输入清晰的描述说明，这在后续规划执行非常重要" }]}
+          tooltip={{
+            title: "供后续规划执行做参考"
+          }}
+        >
+          <Input.TextArea rows={2} placeholder="请输入Agent的描述信息" />
         </Form.Item>
 
         <Form.Item

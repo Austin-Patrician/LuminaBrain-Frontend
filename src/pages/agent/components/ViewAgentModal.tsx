@@ -55,6 +55,7 @@ const ViewAgentModal: React.FC<ViewAgentModalProps> = ({
     >
       <Descriptions column={1} bordered>
         <Descriptions.Item label="名称">{agent.name}</Descriptions.Item>
+        <Descriptions.Item label="描述">{agent.description ?? "无"}</Descriptions.Item>
         <Descriptions.Item label="指令说明">{agent.instructions ?? "无"}</Descriptions.Item>
         <Descriptions.Item label="服务">{agent.serviceName}</Descriptions.Item>
         <Descriptions.Item label="状态">
