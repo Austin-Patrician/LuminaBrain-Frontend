@@ -8,7 +8,7 @@
 ![Ant Design](https://img.shields.io/badge/Ant%20Design-5.22.1-blue)
 ![Vite](https://img.shields.io/badge/Vite-5.4.11-green)
 
-[English](./README.md) | 简体中文
+[English](./README.md) | 中文
 
 ## ✨ 功能特性
 
@@ -319,5 +319,5 @@ VITE_APP_ENV=production
 
 **由 LuminaBrain 团队用 ❤️ 制作**
 
-[![在GitHub上关注我们](https://img.shields.io/github/followers/d3george?style=social&label=关注)](https://github.com/d3george)
-[![为此仓库点星](https://img.shields.io/github/stars/d3george/slash-admin?style=social&label=点星)](https://github.com/d3george/slash-admin/stargazers)
+[![在GitHub上关注我们](https://img.shields.io/github/followers/Austin-Patrician?style=social&label=关注)](https://github.com/Austin-Patrician)
+[![为此仓库点星](https://img.shields.io/github/stars/Austin-Patrician/LuminaBrain-Frontend?style=social&label=点星)](https://github.com/Austin-Patrician/LuminaBrain-Frontend/stargazers)

@@ -8,6 +8,9 @@ An intelligent AI platform built with modern web technologies, providing compreh
 ![Ant Design](https://img.shields.io/badge/Ant%20Design-5.22.1-blue)
 ![Vite](https://img.shields.io/badge/Vite-5.4.11-green)
 
+[中文](./README.zh-CN.md) | English
+
+
 ## ✨ Features
 
 ### 🤖 AI Chat & Conversation
