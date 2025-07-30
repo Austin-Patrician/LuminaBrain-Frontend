@@ -294,5 +294,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Made with ❤️ by the LuminaBrain Team**
 
-[![Follow us on GitHub](https://img.shields.io/github/followers/d3george?style=social)](https://github.com/d3george)
-[![Star this repo](https://img.shields.io/github/stars/d3george/slash-admin?style=social)](https://github.com/d3george/slash-admin/stargazers)
+[![Follow us on GitHub](https://img.shields.io/github/followers/Austin-Patrician?style=social)](https://github.com/Austin-Patrician)
+[![Star this repo](https://img.shields.io/github/stars/Austin-Patrician/LuminaBrain-Frontend?style=social)](https://github.com/Austin-Patrician/LuminaBrain-Frontend/stargazers)
