@@ -287,6 +287,9 @@ VITE_APP_ENV=production
 - [Ant Design](https://ant.design/) 提供出色的UI组件
 - [React](https://reactjs.org/) 提供强大的前端框架
 - [Vite](https://vitejs.dev/) 提供极速构建工具
+- [AntSK](https://github.com/AIDotNet/AntSK) Blazor版本知识库
+- [Slash-Admin](https://github.com/d3george/slash-admin) 前端脚手架
+- [auto-promt](https://github.com/AIDotNet/auto-prompt) Ai prompt 优化平台
 - 所有帮助改进项目的贡献者
 
 ## 📱 截图

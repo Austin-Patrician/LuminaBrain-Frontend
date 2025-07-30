@@ -287,6 +287,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Ant Design](https://ant.design/) for the excellent UI components
 - [React](https://reactjs.org/) for the powerful frontend framework
 - [Vite](https://vitejs.dev/) for the blazing fast build tool
+- [AntSK](https://github.com/AIDotNet/AntSK) Blazor version AI platform
+- [Slash-Admin](https://github.com/d3george/slash-admin) A Modern React Admin Template
+- [auto-promt](https://github.com/AIDotNet/auto-prompt) AI Prompt Optimization Platform
 - All contributors who help make this project better
 
 ## Star History
