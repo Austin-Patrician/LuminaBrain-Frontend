@@ -23,6 +23,8 @@ import {
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import type { QAItem } from "#/entity";
+import type { Knowledge } from "#/entity";
+
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;

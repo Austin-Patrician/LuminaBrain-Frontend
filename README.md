@@ -210,6 +210,12 @@ The system uses a comprehensive RBAC (Role-Based Access Control) model:
 
 ### Build for Production
 
+- AI Model Provider Recommendation: https://api.token-ai.cn as a model provider platform, cost-effective and stable, with support for multiple models.
+
+- Qdrant: Supports Docker deployment, recommended to try Qdrant Cloud for a free basic server trial, completely free.
+
+</br>
+
 ```bash
 # Build the application
 pnpm build

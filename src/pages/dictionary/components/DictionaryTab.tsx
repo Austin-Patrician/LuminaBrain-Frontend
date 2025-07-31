@@ -1,25 +1,25 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { PlusOutlined } from "@ant-design/icons";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   Button,
   Card,
   Col,
   Form,
   Input,
+  InputNumber,
   Modal,
+  Pagination,
   Popconfirm,
   Row,
+  Select,
   Space,
   Switch,
   Table,
   Tag,
   message,
-  Pagination,
-  Select,
-  InputNumber,
 } from "antd";
-import { useState } from "react";
-import { PlusOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
+import { useState } from "react";
 
 import dictionaryService from "@/api/services/dictionaryService";
 import { IconButton, Iconify } from "@/components/icon";
@@ -27,8 +27,8 @@ import type { Dictionary } from "#/entity";
 import type {
 
   DictionaryItem,
-  DictionaryListResponse,
-  DictionaryItemListResponse
+  DictionaryItemListResponse,
+  DictionaryListResponse
 } from "#/entity";
 interface DictionaryTabProps {
   onDictionarySelect: (dictionaryId: string) => void;
@@ -102,7 +102,7 @@ export default function DictionaryTab({ onDictionarySelect }: DictionaryTabProps
   });
 
   const dictionaries = data?.data || [];
-  const totalCount = data?.data?.total || 0;
+  const totalCount = data?.total || 0;
 
   const columns: ColumnsType<Dictionary> = [
     {

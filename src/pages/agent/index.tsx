@@ -1,4 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { PlusOutlined } from "@ant-design/icons";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Button,
   Card,
@@ -6,26 +7,25 @@ import {
   Form,
   Input,
   Modal,
+  Pagination,
   Row,
   Select,
   Space,
   Tag,
   Typography,
   message,
-  Pagination,
 } from "antd";
 import { useEffect, useState } from "react";
-import { PlusOutlined } from "@ant-design/icons";
 import { useTranslation } from "react-i18next";
 
+import agentService from "@/api/services/agentService"; // 导入真实的agentService
 import { IconButton, Iconify } from "@/components/icon";
+import type { AgentListResponse, AgentSearchParams } from "#/dto/agent";
+import type { Agent } from "#/entity";
+import type { AiModelListResponse } from "#/entity";
 import CreateAgentModal from "./components/CreateAgentModal";
 import EditAgentModal from "./components/EditAgentModal";
 import ViewAgentModal from "./components/ViewAgentModal";
-import agentService from "@/api/services/agentService"; // 导入真实的agentService
-import type { Agent } from "#/entity";
-import type { AiModelListResponse } from "#/entity";
-import type { AgentListResponse, AgentSearchParams } from "#/dto/agent";
 
 // 函数选择行为选项
 const FUNCTION_CHOICE_BEHAVIORS = [
@@ -48,7 +48,7 @@ type SearchFormFieldType = {
   serviceId: string;
 };
 
-const { Title, Paragraph } = Typography;
+const { Title } = Typography;
 
 export default function AgentPage() {
   const [searchForm] = Form.useForm();
@@ -85,12 +85,11 @@ export default function AgentPage() {
       agentService.getAiModelsByTypeId("0D826A41-45CE-4870-8893-A8D4FAECD3A4"),
   });
 
-  const serviceOptions = aiModelData?.data ?? [];
+  const serviceOptions = aiModelData ?? [];
 
   // 从查询结果中提取数据
   const agents: Agent[] = data?.data ?? [];
   const totalCount = data?.total ?? 0;
-
   const deleteAgent = useMutation({
     mutationFn: agentService.deleteAgent,
     onSuccess: () => {
@@ -213,7 +212,7 @@ export default function AgentPage() {
                   className="!mb-0"
                 >
                   <Select allowClear placeholder="选择服务">
-                    {Array.isArray(serviceOptions) && serviceOptions.map((service: any) => (
+                    {serviceOptions.map((service: any) => (
                       <Select.Option
                         key={service.aiModelId}
                         value={service.aiModelId}
@@ -337,6 +336,10 @@ export default function AgentPage() {
                 total={totalCount}
                 onChange={onPageChange}
                 showSizeChanger
+                showQuickJumper
+                showTotal={(total, range) => 
+                  `第 ${range[0]}-${range[1]} 条，共 ${total} 条记录`
+                }
               />
             </div>
           )}

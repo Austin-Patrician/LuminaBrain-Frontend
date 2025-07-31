@@ -1,24 +1,23 @@
-import { useState } from "react";
-import {
-  Modal,
-  Form,
-  Input,
-  Button,
-  Space,
-  Typography,
-  Avatar,
-  message,
-  Upload,
-  UploadProps,
-  Popover,
-  Tabs,
-} from "antd";
+import applicationService from "@/api/services/applicationService";
+import { EMOJI_ICONS, SHARED_ICON_OPTIONS } from "@/constant/icons";
 import {
   UploadOutlined
 } from "@ant-design/icons";
 import { useMutation } from "@tanstack/react-query";
-import applicationService from "@/api/services/applicationService";
-import { SHARED_ICON_OPTIONS, EMOJI_ICONS } from "@/constant/icons";
+import {
+  Avatar,
+  Button,
+  Form,
+  Input,
+  Modal,
+  Popover,
+  Tabs,
+  Typography,
+  Upload,
+  type UploadProps,
+  message,
+} from "antd";
+import { useState } from "react";
 import type { Application } from "#/entity";
 
 const { Title, Text } = Typography;
@@ -165,17 +164,17 @@ export default function PublishApplicationModal({
                   <div className="text-sm text-gray-600 mb-3">常用图标</div>
                   <div className="grid grid-cols-6 gap-2">
                     {SHARED_ICON_OPTIONS.map((option) => (
-                      <button
+                      <Button
                         key={option.key}
                         className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg transition-all ${selectedEmoji === option.key
-                            ? 'bg-blue-100 border-2 border-blue-500'
-                            : 'bg-gray-100 hover:bg-gray-200 border-2 border-transparent'
+                          ? 'bg-blue-100 border-2 border-blue-500'
+                          : 'bg-gray-100 hover:bg-gray-200 border-2 border-transparent'
                           }`}
                         onClick={() => handleEmojiSelect(option.key)}
                         title={option.label}
                       >
                         {option.key}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 </div>
@@ -183,16 +182,16 @@ export default function PublishApplicationModal({
                   <div className="text-sm text-gray-600 mb-3">表情图标</div>
                   <div className="grid grid-cols-8 gap-2">
                     {EMOJI_ICONS.map((emoji, index) => (
-                      <button
-                        key={index}
+                      <Button
+                        key={emoji}
                         className={`w-8 h-8 flex items-center justify-center text-lg transition-colors ${selectedEmoji === emoji
-                            ? 'bg-blue-100 border-2 border-blue-500 rounded'
-                            : 'hover:bg-gray-100 rounded'
+                          ? 'bg-blue-100 border-2 border-blue-500 rounded'
+                          : 'hover:bg-gray-100 rounded'
                           }`}
                         onClick={() => handleEmojiSelect(emoji)}
                       >
                         {emoji}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 </div>

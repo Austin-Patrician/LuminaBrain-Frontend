@@ -1,6 +1,6 @@
 // aimodelService.ts
 import apiClient from "@/api/apiClient";
-import type { AIModel, AIProvider, UpdateProviderModel, AiModelsAndKnowledgesResponse } from "#/entity";
+import type { AIModel, AIProvider, AiModelsAndKnowledgesResponse, UpdateProviderModel } from "#/entity";
 
 // 定义API端点
 enum AIModelApi {
@@ -15,7 +15,7 @@ enum AIModelApi {
 // 服务定义
 export const aimodelService = {
 	updateModel: (model: UpdateProviderModel) => {
-		return apiClient.post<{
+		return apiClient.put<{
 			success: boolean;
 			data: AIModel;
 		}>({
@@ -55,12 +55,12 @@ export const aimodelService = {
 				resolve({
 					success: true,
 					data: {
-						shareUrl: `https://lumina-brain.app/share/model/${modelId}?token=mock-token-${Date.now()}`
-					}
+						shareUrl: `https://lumina-brain.app/share/model/${modelId}?token=mock-token-${Date.now()}`,
+					},
 				});
 			}, 300); // Small delay to simulate API call
 		});
-		
+
 		// Uncomment below and comment out the mock above when ready to use the real API
 		// return apiClient.post<{
 		//	success: boolean;

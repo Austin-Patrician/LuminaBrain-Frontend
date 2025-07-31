@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from "react";
-import { Modal, Form, Button, message, Typography, theme } from "antd";
 import applicationService from "@/api/services/applicationService";
-import { Application } from "#/entity";
+import { Button, Form, Modal, Typography, message, theme } from "antd";
+import type React from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { AgentConfig, CreateApplicationDto } from "#/dto/application";
+import { AgentConfig, type CreateApplicationDto } from "#/dto/application";
+import type { Application } from "#/entity";
 
+import AgentApplicationForm from "./types/AgentApplicationForm";
 import ChatApplicationForm from "./types/ChatApplicationForm";
 import KnowledgeApplicationForm from "./types/KnowledgeApplicationForm";
-import AgentApplicationForm from "./types/AgentApplicationForm";
 import Text2SqlApplicationForm from "./types/Text2SqlApplicationForm";
 
 const { Title } = Typography;

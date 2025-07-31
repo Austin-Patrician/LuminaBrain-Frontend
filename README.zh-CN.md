@@ -210,6 +210,14 @@ src/
 
 ### 生产构建
 
+
+- AI 模型提供商推荐：https://api.token-ai.cn 作为模型提供商平台，便宜稳定，支持模型多
+
+
+- Qdrant： 支持Docker 部署，推荐到Qdrant cloud（https://cloud.qdrant.io） 白嫖基础server试用，完全免费
+
+</br>
+
 ```bash
 # 构建应用程序
 pnpm build

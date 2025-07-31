@@ -1,36 +1,37 @@
-import React, { useState, useEffect } from 'react';
 import {
-  Card,
-  Table,
-  Button,
-  Input,
-  Select,
-  Space,
-  Popconfirm,
-  message,
-  Tag,
-  Tooltip,
-  Modal,
-  Typography,
-  Row,
-  Col,
-  Pagination,
-  Empty,
-} from 'antd';
-import {
-  SearchOutlined,
+  CopyOutlined,
   DeleteOutlined,
   EyeOutlined,
-  ReloadOutlined,
-  HistoryOutlined,
-  CopyOutlined,
   FilterOutlined,
+  HistoryOutlined,
+  ReloadOutlined,
+  SearchOutlined,
 } from '@ant-design/icons';
-import { useNavigate } from 'react-router';
+import {
+  Button,
+  Card,
+  Col,
+  Empty,
+  Input,
+  Modal,
+  Pagination,
+  Popconfirm,
+  Row,
+  Select,
+  Space,
+  Table,
+  Tag,
+  Tooltip,
+  Typography,
+  message,
+} from 'antd';
 import type { ColumnType } from 'antd/es/table';
+import type React from 'react';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router';
 
+import { deletePromptHistory, deletePromptHistoryBatch, getPromptHistory } from '@/api/services/promptService';
 import ModalMarkdown from '@/components/markdown/modal-markdown';
-import { getPromptHistory, deletePromptHistory, deletePromptHistoryBatch } from '@/api/services/promptService';
 import type { PromptHistory, PromptHistoryQuery } from '../types';
 import styles from './index.module.css';
 
@@ -63,8 +64,6 @@ export default function PromptHistoryPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-
-      console.log('查询参数:');
       const response = await getPromptHistory(query);
       setData(response.data);
       setTotal(response.total);
@@ -151,7 +150,7 @@ export default function PromptHistoryPage() {
     }
   };
 
-  // 截取文本
+  // 截取文本 
   const truncateText = (text: string, maxLength: number = 100) => {
     if (!text) return '暂无';
     return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;

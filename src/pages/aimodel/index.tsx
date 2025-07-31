@@ -1,30 +1,31 @@
-import React, { useState } from "react";
+import { aimodelService } from "@/api/services/aimodelService";
+import LLMIcon from "@/components/icon/llmIcon";
 import {
-  Collapse,
-  Card,
+  CaretRightOutlined,
+  CopyOutlined,
+  EditOutlined,
+  PlusOutlined,
+  ShareAltOutlined,
+} from "@ant-design/icons";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
   Button,
-  Typography,
-  Space,
-  Modal,
+  Card,
+  Col,
+  Collapse,
+  Divider,
   Form,
   Input,
-  Tag,
-  Divider,
+  Modal,
   Row,
-  Col,
+  Space,
+  Tag,
+  Typography,
   message,
 } from "antd";
-import {
-  EditOutlined,
-  ShareAltOutlined,
-  PlusOutlined,
-  CopyOutlined,
-  CaretRightOutlined,
-} from "@ant-design/icons";
-import { aimodelService } from "@/api/services/aimodelService";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import type React from "react";
+import { useState } from "react";
 import type { AIModel, AIProvider, UpdateProviderModel } from "#/entity";
-import LLMIcon from "@/components/icon/llmIcon";
 import "./index.css";
 
 const { Panel } = Collapse;
@@ -70,12 +71,11 @@ const ModelManagementPage: React.FC = () => {
   // 使用 React Query 更新模型配置
   const updateModelMutation = useMutation({
     mutationFn: aimodelService.updateModel,
-    onSuccess: (response) => {
-      if (response.success) {
-        message.success("模型配置已更新");
-        queryClient.invalidateQueries({ queryKey: ["models"] });
-        setIsModalVisible(false);
-      }
+    onSuccess: () => {
+      message.success("模型配置已更新");
+      queryClient.invalidateQueries({ queryKey: ["models"] });
+      setIsModalVisible(false);
+
     },
     onError: () => {
       message.error("更新模型配置失败");

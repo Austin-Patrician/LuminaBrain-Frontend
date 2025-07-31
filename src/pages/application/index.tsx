@@ -1,4 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { PlusOutlined } from "@ant-design/icons";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Button,
   Card,
@@ -6,6 +7,7 @@ import {
   Form,
   Input,
   Modal,
+  Pagination,
   Popconfirm,
   Row,
   Select,
@@ -13,10 +15,8 @@ import {
   Tag,
   Typography,
   message,
-  Pagination,
 } from "antd";
 import { useEffect, useState } from "react";
-import { PlusOutlined } from "@ant-design/icons";
 import { useTranslation } from "react-i18next";
 
 import applicationService from "@/api/services/applicationService";
@@ -220,15 +220,13 @@ export default function ApplicationPage() {
         <Card
           title="Application List"
           extra={
-            <>
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={() => setCreateModalVisible(true)}
-              >
-                {t("新增应用")}
-              </Button>
-            </>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setCreateModalVisible(true)}
+            >
+              {t("新增应用")}
+            </Button>
           }
           loading={isLoading}
         >
@@ -418,6 +416,10 @@ export default function ApplicationPage() {
                 total={totalCount}
                 onChange={onPageChange}
                 showSizeChanger
+                showQuickJumper
+                showTotal={(total, range) =>
+                  `第 ${range[0]}-${range[1]} 条，共 ${total} 条记录`
+                }
               />
             </div>
           )}
