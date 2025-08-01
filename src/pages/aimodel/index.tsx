@@ -149,18 +149,68 @@ const ModelManagementPage: React.FC = () => {
       });
   };
 
+  // URL 验证函数
+  const validateApiUrl = (_: any, value: string) => {
+    if (!value) {
+      return Promise.reject(new Error('请输入API URL'));
+    }
+    
+    // 检查是否为有效的URL格式
+    try {
+      const url = new URL(value);
+      if (!['http:', 'https:'].includes(url.protocol)) {
+        return Promise.reject(new Error('API URL必须使用http或https协议'));
+      }
+      return Promise.resolve();
+    } catch {
+      return Promise.reject(new Error('请输入有效的API URL格式'));
+    }
+  };
+
+  // API Key 验证函数
+  const validateApiKey = (_: any, value: string) => {
+    if (!value) {
+      return Promise.reject(new Error('请输入API Key'));
+    }
+    
+    // 检查API Key长度和格式
+    if (value.length < 10) {
+      return Promise.reject(new Error('API Key长度不能少于10个字符'));
+    }
+    
+    // 检查是否包含空格
+    if (value.includes(' ')) {
+      return Promise.reject(new Error('API Key不能包含空格'));
+    }
+    
+    return Promise.resolve();
+  };
+
   // 保存设置
   const handleSaveSettings = () => {
     console.log("执行UpdatreModelMutation");
     form.validateFields().then((values) => {
       if (currentModel) {
+        // 显示验证中的消息
+        message.loading({
+          content: "正在验证配置...",
+          key: "modelUpdate",
+          duration: 0,
+        });
+
         const updatedModel: UpdateProviderModel = {
           id: currentModel.id,
           endpoint: values.apiUrl,
           modelKey: values.apiKey,
         };
+        
+        // 关闭验证消息
+        message.destroy("modelUpdate");
         updateModelMutation.mutate(updatedModel);
       }
+    }).catch((errorInfo) => {
+      console.error('表单验证失败:', errorInfo);
+      message.error('请检查输入的配置信息');
     });
   };
 
@@ -179,7 +229,7 @@ const ModelManagementPage: React.FC = () => {
         if (currentProvider) {
           // 显示加载中状态，设置duration为0表示不自动关闭
           message.loading({
-            content: "正在更新提供商配置...",
+            content: "正在验证并更新提供商配置...",
             key: "providerUpdate",
             duration: 0,
           });
@@ -197,6 +247,7 @@ const ModelManagementPage: React.FC = () => {
       })
       .catch((errorInfo) => {
         console.error("表单验证失败:", errorInfo);
+        message.error('请检查输入的配置信息');
       });
   };
 
@@ -402,13 +453,13 @@ const ModelManagementPage: React.FC = () => {
                     {/* 标签居中显示 */}
                     <div className="available-provider-tags-section">
                       <div className="available-provider-tags-container">
-                        {provider.tag.split(",").map((tag, index) => (
+                        {provider.tag.split(",").map((tag) => (
                           <Tag
-                            key={index}
+                            key={`${provider.id}-${tag.trim()}`}
                             color="default"
                             className="available-provider-tag"
                           >
-                            {tag}
+                            {tag.trim()}
                           </Tag>
                         ))}
                       </div>
@@ -451,14 +502,22 @@ const ModelManagementPage: React.FC = () => {
           <Form.Item
             name="apiUrl"
             label="API URL"
-            rules={[{ required: true, message: "请输入API URL" }]}
+            rules={[
+              { required: true, message: "请输入API URL" },
+              { validator: validateApiUrl }
+            ]}
+            hasFeedback
           >
             <Input placeholder="https://api.example.com/v1" />
           </Form.Item>
           <Form.Item
             name="apiKey"
             label="API Key"
-            rules={[{ required: true, message: "请输入API Key" }]}
+            rules={[
+              { required: true, message: "请输入API Key" },
+              { validator: validateApiKey }
+            ]}
+            hasFeedback
           >
             <Input.Password placeholder="您的API密钥" />
           </Form.Item>
@@ -638,14 +697,22 @@ const ModelManagementPage: React.FC = () => {
           <Form.Item
             name="apiEndpoint"
             label="API 端点"
-            rules={[{ required: true, message: "请输入API端点" }]}
+            rules={[
+              { required: true, message: "请输入API端点" },
+              { validator: validateApiUrl }
+            ]}
+            hasFeedback
           >
             <Input placeholder="https://api.provider.com/v1" />
           </Form.Item>
           <Form.Item
             name="apiKey"
             label="API Key"
-            rules={[{ required: true, message: "请输入API Key" }]}
+            rules={[
+              { required: true, message: "请输入API Key" },
+              { validator: validateApiKey }
+            ]}
+            hasFeedback
           >
             <Input.Password placeholder="您的API密钥" />
           </Form.Item>

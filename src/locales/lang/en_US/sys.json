@@ -51,6 +51,8 @@
 
       "loginSuccessTitle": "Login successful",
       "loginSuccessDesc": "Welcome back",
+      "registerSuccess": "Registration successful",
+      "registerFailed": "Registration failed",
 
       "accountPlaceholder": "Please input username",
       "passwordPlaceholder": "Please input password",

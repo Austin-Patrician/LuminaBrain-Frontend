@@ -1,10 +1,11 @@
-import { Button, Checkbox, Col, Divider, Form, Input, Row } from "antd";
+import { Button, Checkbox, Col, Divider, Form, Input, Row, message } from "antd";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AiFillGithub, AiFillGoogleCircle, AiFillWechat } from "react-icons/ai";
 
 import type { SignInReq } from "@/api/services/userService";
 import { useSignIn } from "@/store/userStore";
+import { initiateGitHubLogin } from "@/utils/github-auth";
 
 import {
   LoginStateEnum,
@@ -26,6 +27,49 @@ function LoginForm() {
       await signIn({ username, password });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGitHubLogin = () => {
+    try {
+      // 检查GitHub OAuth配置
+      const clientId = import.meta.env.VITE_GITHUB_CLIENT_ID;
+      const redirectUri = import.meta.env.VITE_GITHUB_REDIRECT_URI;
+      
+      if (!clientId || clientId === 'your_github_client_id') {
+        message.error('GitHub OAuth未配置，请联系管理员');
+        return;
+      }
+      
+      if (!redirectUri) {
+        message.error('GitHub OAuth回调地址未配置');
+        return;
+      }
+      
+      // 保存当前页面，登录成功后跳转回来
+      sessionStorage.setItem('redirect_after_login', window.location.pathname);
+      
+      // 启动GitHub登录流程
+      initiateGitHubLogin();
+    } catch (error) {
+      console.error('GitHub登录启动失败:', error);
+      message.error('GitHub登录启动失败，请稍后重试');
+    }
+  };
+
+  const handleSocialLogin = (provider: string) => {
+    switch (provider) {
+      case 'github':
+        handleGitHubLogin();
+        break;
+      case 'wechat':
+        message.info('微信登录功能开发中...');
+        break;
+      case 'google':
+        message.info('Google登录功能开发中...');
+        break;
+      default:
+        message.info('该登录方式暂未支持');
     }
   };
   return (
@@ -121,9 +165,27 @@ function LoginForm() {
         <Divider className="!text-xs">{t("sys.login.otherSignIn")}</Divider>
 
         <div className="flex cursor-pointer justify-around text-2xl">
-          <AiFillGithub />
-          <AiFillWechat />
-          <AiFillGoogleCircle />
+          <div 
+            className="p-2 rounded-full hover:bg-gray-100 transition-colors duration-200"
+            onClick={() => handleSocialLogin('github')}
+            title="使用GitHub登录"
+          >
+            <AiFillGithub className="text-gray-700 hover:text-black" />
+          </div>
+          <div 
+            className="p-2 rounded-full hover:bg-gray-100 transition-colors duration-200"
+            onClick={() => handleSocialLogin('wechat')}
+            title="使用微信登录"
+          >
+            <AiFillWechat className="text-green-500 hover:text-green-600" />
+          </div>
+          <div 
+            className="p-2 rounded-full hover:bg-gray-100 transition-colors duration-200"
+            onClick={() => handleSocialLogin('google')}
+            title="使用Google登录"
+          >
+            <AiFillGoogleCircle className="text-red-500 hover:text-red-600" />
+          </div>
         </div>
       </Form>
     </>

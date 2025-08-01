@@ -153,6 +153,11 @@ export default function PermissionPage() {
         pagination={false}
         columns={columns}
         dataSource={permissions}
+        expandable={{
+          childrenColumnName: 'children',
+          defaultExpandAllRows: true,
+          indentSize: 20
+        }}
       />
 
       <PermissionModal {...permissionModalProps} />

@@ -11,6 +11,11 @@ export interface SignUpReq extends SignInReq {
 	email: string;
 }
 
+export interface GitHubAuthReq {
+	code: string;
+	state?: string;
+}
+
 export interface UserPageReq {
 	userName?: string | null;
 	pageNumber: number;
@@ -32,6 +37,7 @@ export enum UserApi {
 	User = "/user",
 	Users = "/users",
 	UsersPage = "/users/page",
+	GitHubAuth = "/auth/github",
 }
 
 const signin = (data: SignInReq) =>
@@ -45,6 +51,8 @@ const getUsers = () =>
 	apiClient.get<UserInfo[]>({ url: UserApi.Users });
 const getUsersPage = (params: UserPageReq) =>
 	apiClient.post<UserPageRes>({ url: UserApi.UsersPage, data: params });
+const githubAuth = (data: GitHubAuthReq) =>
+	apiClient.post<SignInRes>({ url: UserApi.GitHubAuth, data });
 
 export default {
 	signin,
@@ -53,4 +61,5 @@ export default {
 	getUsers,
 	getUsersPage,
 	logout,
+	githubAuth,
 };

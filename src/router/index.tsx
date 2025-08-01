@@ -1,6 +1,7 @@
 import DashboardLayout from "@/layouts/dashboard";
 import PageError from "@/pages/sys/error/PageError";
 import Login from "@/pages/sys/login/Login";
+import GitHubCallback from "@/pages/sys/login/GitHubCallback";
 import DocsPage from "@/pages/docs";
 import ProtectedRoute from "@/router/components/protected-route";
 import { usePermissionRoutes } from "@/router/hooks";
@@ -17,6 +18,15 @@ const PUBLIC_ROUTE: AppRouteObject = {
 	element: (
 		<ErrorBoundary FallbackComponent={PageError}>
 			<Login />
+		</ErrorBoundary>
+	),
+};
+
+const GITHUB_CALLBACK_ROUTE: AppRouteObject = {
+	path: "/auth/github/callback",
+	element: (
+		<ErrorBoundary FallbackComponent={PageError}>
+			<GitHubCallback />
 		</ErrorBoundary>
 	),
 };
@@ -48,7 +58,7 @@ export default function Router() {
 		children: [{ index: true, element: <Navigate to={HOMEPAGE} replace /> }, ...permissionRoutes],
 	};
 
-	const routes = [PUBLIC_ROUTE, DOCS_ROUTE, PROTECTED_ROUTE, ERROR_ROUTE, NO_MATCHED_ROUTE] as RouteObject[];
+	const routes = [PUBLIC_ROUTE, GITHUB_CALLBACK_ROUTE, DOCS_ROUTE, PROTECTED_ROUTE, ERROR_ROUTE, NO_MATCHED_ROUTE] as RouteObject[];
 
 	const router = createHashRouter(routes);
 

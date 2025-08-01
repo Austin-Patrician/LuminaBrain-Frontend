@@ -1,6 +1,7 @@
-import { Modal, Button, message, Spin, Checkbox } from "antd";
+import { Modal, Button, message, Spin, Tree } from "antd";
 import { useState, useEffect, useMemo } from "react";
 import { Iconify } from "@/components/icon";
+import type { TreeDataNode } from "antd/es/tree";
 
 import type { Permission, Role } from "#/entity";
 import { PermissionType } from "#/enum";
@@ -28,16 +29,22 @@ export default function PermissionModal({
   const fetchRolePermissions = async () => {
     try {
       const response = await roleService.getRolePermissions(role.id);
-      // 提取权限ID列表
-      const rolePermissionIds = response.map((p: any) => p.id);
-      setCheckedKeys(rolePermissionIds);
+      // 确保response是数组且包含有效数据
+      if (Array.isArray(response) && response.length > 0) {
+        // 提取权限ID列表，确保ID存在且有效
+        const rolePermissionIds = response
+          .filter((p: any) => p && p.id)
+          .map((p: any) => p.id);
+        setCheckedKeys(rolePermissionIds);
+      } else {
+        // 如果没有权限数据，设置为空数组
+        setCheckedKeys([]);
+      }
     } catch (error) {
       console.error("Failed to fetch role permissions:", error);
-      // 如果获取失败，保持原有逻辑作为备用
-      if (role.permission && role.permission.length > 0) {
-        const rolePermissionIds = role.permission.map((p) => p.id);
-        setCheckedKeys(rolePermissionIds);
-      }
+      // 获取失败时设置为空数组，不使用备用逻辑
+      setCheckedKeys([]);
+      message.error("获取角色权限失败");
     }
   };
 
@@ -60,24 +67,18 @@ export default function PermissionModal({
         }
       };
 
-      // 递归转换嵌套的权限数据，保持原有的嵌套结构
-      const convertPermissionsRecursively = (
-        permissionList: any[]
-      ): Permission[] => {
+      // 递归转换嵌套的权限数据结构
+      const convertPermissions = (permissionList: any[]): Permission[] => {
         return permissionList.map(
           (permission: any): Permission => ({
             ...permission,
             type: convertPermissionType(permission.type),
-            children: permission.children
-              ? convertPermissionsRecursively(permission.children)
-              : [],
+            children: permission.children ? convertPermissions(permission.children) : undefined,
           })
         );
       };
 
-      const convertedPermissions = convertPermissionsRecursively(
-        response || []
-      );
+      const convertedPermissions = convertPermissions(response || []);
 
       setPermissions(convertedPermissions);
     } catch (error) {
@@ -87,210 +88,147 @@ export default function PermissionModal({
     }
   };
 
-  // 初始化已选中的权限（备用逻辑，主要通过API获取）
-  useEffect(() => {
-    if (!show && role.permission && role.permission.length > 0) {
-      const rolePermissionIds = role.permission.map((p) => p.id);
-      setCheckedKeys(rolePermissionIds);
-    }
-  }, [role, show]);
-
   // 加载权限数据
   useEffect(() => {
     if (show) {
+      // 先清空已选中的权限
+      setCheckedKeys([]);
       fetchPermissions();
       fetchRolePermissions();
+    } else {
+      // 模态框关闭时清空状态
+      setCheckedKeys([]);
+      setPermissions([]);
     }
   }, [show]);
 
-  // 构建权限树结构（直接使用API返回的嵌套结构）
-  const permissionTree = useMemo(() => {
-    // 如果权限数据已经包含children，直接使用顶级权限
-    const rootPermissions = permissions.filter(
-      (p) => !p.parentId || p.parentId === ""
-    );
+  // 当role变化时，重新获取权限数据
+  useEffect(() => {
+    if (show && role.id) {
+      setCheckedKeys([]);
+      fetchRolePermissions();
+    }
+  }, [role.id, show]);
 
-    return rootPermissions;
+  // 权限树结构（API已返回嵌套结构）
+  const permissionTree = useMemo(() => {
+    return permissions || [];
   }, [permissions]);
 
-  // 按目录分组的菜单权限（支持多层嵌套CATALOGUE -> CATALOGUE -> MENU）
-  const menusByCategory = useMemo(() => {
-    const result: Record<
-      string,
-      { catalogue: Permission; menus: Permission[] }
-    > = {};
+  // 将权限数据转换为Tree组件需要的数据结构
+  const treeData = useMemo(() => {
+    const convertToTreeData = (permissions: Permission[]): TreeDataNode[] => {
+      return permissions.map((permission) => {
+        const getIcon = () => {
+          if (permission.type === PermissionType.CATALOGUE) {
+            return <Iconify icon={permission.icon || "folder"} className="mr-1" />;
+          } else if (permission.type === PermissionType.MENU) {
+            return <Iconify icon={permission.icon || "menu"} className="mr-1" />;
+          } else {
+            return <Iconify icon="button" className="mr-1" />;
+          }
+        };
 
-    // 递归收集菜单，将所有MENU都归属到根CATALOGUE
-    const collectMenusForCatalogue = (catalogue: Permission): Permission[] => {
-      const menus: Permission[] = [];
+        const getTypeTag = () => {
+          const typeColors = {
+            [PermissionType.CATALOGUE]: "#1890ff",
+            [PermissionType.MENU]: "#52c41a",
+            [PermissionType.BUTTON]: "#fa8c16",
+          };
+          const typeNames = {
+            [PermissionType.CATALOGUE]: "目录",
+            [PermissionType.MENU]: "菜单",
+            [PermissionType.BUTTON]: "按钮",
+          };
+          return (
+            <span
+              style={{
+                color: typeColors[permission.type],
+                fontSize: "12px",
+                marginLeft: "8px",
+              }}
+            >
+              [{typeNames[permission.type]}]
+            </span>
+          );
+        };
 
-      // 递归查找此CATALOGUE下的所有MENU（包括嵌套CATALOGUE下的MENU）
-      const findMenusRecursively = (currentPermission: Permission) => {
-        if (
-          currentPermission.children &&
-          currentPermission.children.length > 0
-        ) {
-          currentPermission.children.forEach((child) => {
-            if (child.type === PermissionType.MENU) {
-              menus.push(child);
-            } else if (child.type === PermissionType.CATALOGUE) {
-              // 如果是嵌套的CATALOGUE，继续递归查找其下的MENU
-              findMenusRecursively(child);
-            } else {
-              // 其他类型权限，继续递归
-              findMenusRecursively(child);
-            }
-          });
-        }
-      };
-
-      findMenusRecursively(catalogue);
-      return menus;
+        return {
+          key: permission.id,
+          title: (
+            <span className="flex items-center">
+              {getIcon()}
+              <span>{permission.name}</span>
+              {getTypeTag()}
+            </span>
+          ),
+          children: permission.children ? convertToTreeData(permission.children) : undefined,
+        };
+      });
     };
 
-    // 只处理顶级CATALOGUE权限，子CATALOGUE的MENU会被包含在父CATALOGUE中
-    permissionTree.forEach((permission) => {
-      if (permission.type === PermissionType.CATALOGUE) {
-        const menus = collectMenusForCatalogue(permission);
-        result[permission.id] = {
-          catalogue: permission,
-          menus,
-        };
-        console.log(
-          `Top-level Catalogue "${permission.name}" contains ${menus.length} menus:`,
-          menus.map((m) => m.name)
-        ); // 调试信息
-      }
-    });
-
-    // 处理顶级MENU权限（没有CATALOGUE父节点的菜单）
-    const topLevelMenus = permissionTree.filter(
-      (p) => p.type === PermissionType.MENU
-    );
-    if (topLevelMenus.length > 0) {
-      result["_TOP_LEVEL_MENUS_"] = {
-        catalogue: {
-          id: "_TOP_LEVEL_MENUS_",
-          parentId: "",
-          name: "独立菜单",
-          label: "standalone.menus",
-          type: PermissionType.CATALOGUE,
-          route: "",
-          icon: "menu-fold",
-        } as Permission,
-        menus: topLevelMenus,
-      };
-    }
-
-    console.log("MenusByCategory result:", result); // 调试信息
-    return result;
-  }, [permissionTree, permissions]);
-
-  // 获取所有顶级目录权限（只包含顶级CATALOGUE和独立菜单组）
-  const cataloguePermissions = useMemo(() => {
-    const catalogues = permissionTree.filter(
-      (p) => p.type === PermissionType.CATALOGUE
-    );
-    const topLevelMenus = permissionTree.filter(
-      (p) => p.type === PermissionType.MENU
-    );
-
-    // 如果有顶级菜单，添加一个虚拟的目录节点
-    if (topLevelMenus.length > 0) {
-      catalogues.push({
-        id: "_TOP_LEVEL_MENUS_",
-        parentId: "",
-        name: "独立菜单",
-        label: "standalone.menus",
-        type: PermissionType.CATALOGUE,
-        route: "",
-        icon: "menu-fold",
-      } as Permission);
-    }
-
-    console.log("Catalogue Permissions (Top-level only):", catalogues); // 调试信息
-    return catalogues;
+    return convertToTreeData(permissionTree);
   }, [permissionTree]);
 
-  // 检查目录是否被选中（递归考虑所有嵌套层级）
-  const getCatalogueCheckState = (catalogueId: string) => {
-    // 递归获取目录下所有子权限ID（包括嵌套CATALOGUE和其下的MENU、BUTTON等）
-    const getAllChildrenIds = (permission: Permission): string[] => {
+  // 获取所有权限ID的扁平列表（用于权限选择处理）
+  const allPermissionIds = useMemo(() => {
+    const collectIds = (permissions: Permission[]): string[] => {
       let ids: string[] = [];
-      if (permission.children && permission.children.length > 0) {
-        permission.children.forEach((child) => {
-          ids.push(child.id);
-          ids = ids.concat(getAllChildrenIds(child));
-        });
-      }
-      return ids;
-    };
-    const catalogue = cataloguePermissions.find(
-      (cat) => cat.id === catalogueId
-    );
-    if (!catalogue) return { checked: false, indeterminate: false };
-    const allChildrenIds = getAllChildrenIds(catalogue);
-    if (allChildrenIds.length === 0)
-      return {
-        checked: checkedKeys.includes(catalogueId),
-        indeterminate: false,
-      };
-    const checkedChildrenCount = allChildrenIds.filter((id) =>
-      checkedKeys.includes(id)
-    ).length;
-    const catalogueChecked = checkedKeys.includes(catalogueId);
-    if (catalogueChecked || checkedChildrenCount === allChildrenIds.length) {
-      return { checked: true, indeterminate: false };
-    } else if (checkedChildrenCount > 0) {
-      return { checked: false, indeterminate: true };
-    } else {
-      return { checked: false, indeterminate: false };
-    }
-  };
-
-  // 处理目录权限选择（完整支持多层嵌套）
-  const handleCatalogueCheck = (catalogueId: string, checked: boolean) => {
-    const newCheckedKeys = new Set(checkedKeys);
-    // 递归查找权限及其所有子权限
-    const findPermissionAndChildren = (
-      permission: Permission
-    ): Permission[] => {
-      let result = [permission];
-      if (permission.children && permission.children.length > 0) {
-        permission.children.forEach((child) => {
-          result = result.concat(findPermissionAndChildren(child));
-        });
-      }
-      return result;
-    };
-    const catalogue = cataloguePermissions.find(
-      (cat) => cat.id === catalogueId
-    );
-    if (catalogue) {
-      const allPermissions = findPermissionAndChildren(catalogue);
-      allPermissions.forEach((permission) => {
-        if (checked) {
-          newCheckedKeys.add(permission.id);
-        } else {
-          newCheckedKeys.delete(permission.id);
+      permissions.forEach((permission) => {
+        ids.push(permission.id);
+        if (permission.children) {
+          ids = ids.concat(collectIds(permission.children));
         }
       });
-    }
-    setCheckedKeys(Array.from(newCheckedKeys));
-  };
+      return ids;
+    };
+    return collectIds(permissionTree);
+  }, [permissionTree]);
 
-  // 处理菜单权限选择
-  const handleMenuCheck = (menuId: string, checked: boolean) => {
-    const newCheckedKeys = new Set(checkedKeys);
-
-    if (checked) {
-      newCheckedKeys.add(menuId);
+  // 处理Tree组件的权限选择
+  const handleTreeCheck = (checkedKeysValue: React.Key[] | { checked: React.Key[]; halfChecked: React.Key[] }) => {
+    // 处理checkStrictly模式下的返回值
+    if (Array.isArray(checkedKeysValue)) {
+      setCheckedKeys(checkedKeysValue as string[]);
     } else {
-      newCheckedKeys.delete(menuId);
+      // checkStrictly模式下，只使用checked数组
+      setCheckedKeys(checkedKeysValue.checked as string[]);
     }
-
-    setCheckedKeys(Array.from(newCheckedKeys));
   };
+
+  // 获取权限统计信息
+  const getPermissionStats = () => {
+    const allPermissions: Permission[] = [];
+    const collectAll = (perms: Permission[]) => {
+      perms.forEach((p) => {
+        allPermissions.push(p);
+        if (p.children) collectAll(p.children);
+      });
+    };
+    collectAll(permissionTree);
+
+    const catalogueCount = checkedKeys.filter((key) =>
+      allPermissions.some(
+        (p) => p.id === key && p.type === PermissionType.CATALOGUE
+      )
+    ).length;
+
+    const menuCount = checkedKeys.filter((key) =>
+      allPermissions.some(
+        (p) => p.id === key && p.type === PermissionType.MENU
+      )
+    ).length;
+
+    const buttonCount = checkedKeys.filter((key) =>
+      allPermissions.some(
+        (p) => p.id === key && p.type === PermissionType.BUTTON
+      )
+    ).length;
+
+    return { catalogueCount, menuCount, buttonCount };
+  };
+
+  const permissionStats = getPermissionStats();
 
   // 保存权限配置
   const handleSave = async () => {
@@ -311,383 +249,156 @@ export default function PermissionModal({
   };
 
   return (
-    <Modal
-      title={`配置角色权限 - ${role.name}`}
-      open={show}
-      onCancel={onCancel}
-      width={1000}
-      footer={[
-        <Button key="cancel" onClick={onCancel}>
-          取消
-        </Button>,
-        <Button
-          key="save"
-          type="primary"
-          loading={loading}
-          onClick={handleSave}
-        >
-          保存
-        </Button>,
-      ]}
-    >
+    <>
+      <style>{`
+        .permission-tree .ant-tree-node-content-wrapper {
+          padding: 6px 8px;
+          border-radius: 6px;
+          transition: all 0.2s ease;
+          display: flex;
+          align-items: center;
+        }
+        
+        .permission-tree .ant-tree-node-content-wrapper:hover {
+          background-color: #f0f9ff;
+          border: 1px solid #e0f2fe;
+        }
+        
+        .permission-tree .ant-tree-node-selected .ant-tree-node-content-wrapper {
+          background-color: #dbeafe;
+          border: 1px solid #93c5fd;
+        }
+        
+        .permission-tree .ant-tree-checkbox {
+          margin-right: 8px;
+        }
+        
+        .permission-tree .ant-tree-checkbox-checked .ant-tree-checkbox-inner {
+          background-color: #3b82f6;
+          border-color: #3b82f6;
+        }
+        
+        .permission-tree .ant-tree-switcher {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 20px;
+          height: 20px;
+          margin-right: 4px;
+        }
+        
+        .permission-tree .ant-tree-switcher-icon {
+          font-size: 12px;
+          color: #6b7280;
+        }
+        
+        .permission-tree .ant-tree-title {
+          font-size: 14px;
+          color: #374151;
+          font-weight: 500;
+        }
+        
+        .permission-tree .ant-tree-treenode {
+          margin-bottom: 2px;
+        }
+        
+        .permission-tree .ant-tree-indent-unit {
+          width: 20px;
+        }
+      `}</style>
+      <Modal
+        title={`配置角色权限 - ${role.name}`}
+        open={show}
+        onCancel={onCancel}
+        width={1200}
+        style={{ top: 20 }}
+        footer={[
+          <Button key="cancel" onClick={onCancel}>
+            取消
+          </Button>,
+          <Button
+            key="save"
+            type="primary"
+            loading={loading}
+            onClick={handleSave}
+          >
+            保存
+          </Button>,
+        ]}
+      >
       <Spin spinning={loading}>
-        <div className="mb-4 text-gray-600 text-sm">
-          <p className="mb-1">
-            🎯 勾选目录权限会自动选中其下所有菜单，也可以单独调整每个菜单权限
-          </p>
-        </div>
-
-        {/* 表格式权限配置 */}
-        <div
-          className="border rounded-lg overflow-hidden"
-          style={{ minHeight: 450 }}
-        >
-          {/* 表头 */}
-          <div className="bg-gray-50 border-b flex">
-            <div className="w-2/5 px-4 py-3 font-medium text-gray-700 border-r">
-              <Iconify icon="folder" className="mr-2 inline" />
-              目录权限 (CATALOGUE)
+        {/* 权限统计信息 */}
+        <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Iconify icon="mdi:chart-pie" className="text-blue-600 text-lg" />
+              <span className="font-medium text-gray-700">权限统计</span>
             </div>
-            <div className="flex-1 px-4 py-3 font-medium text-gray-700">
-              <Iconify icon="menu" className="mr-2 inline" />
-              菜单权限 (MENU)
+            <div className="flex items-center space-x-6 text-sm">
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                <span className="text-gray-600">目录: <span className="font-semibold text-blue-600">{permissionStats.catalogueCount}</span></span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                <span className="text-gray-600">菜单: <span className="font-semibold text-green-600">{permissionStats.menuCount}</span></span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                <span className="text-gray-600">按钮: <span className="font-semibold text-orange-600">{permissionStats.buttonCount}</span></span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Iconify icon="mdi:check-circle" className="text-indigo-600" />
+                <span className="text-gray-600">已选: <span className="font-semibold text-indigo-600">{checkedKeys.length}</span></span>
+              </div>
             </div>
           </div>
+        </div>
 
-          {/* 权限列表 */}
-          <div className="max-h-96 overflow-y-auto">
-            {cataloguePermissions.map((catalogue, index) => {
-              const categoryData = menusByCategory[catalogue.id];
-              const checkState = getCatalogueCheckState(catalogue.id);
-              const hasMenus = categoryData && categoryData.menus.length > 0;
-              const menuCount = hasMenus ? categoryData.menus.length : 0;
-
-              return (
-                <div
-                  key={catalogue.id}
-                  className={`flex border-b hover:bg-gray-25 ${
-                    index % 2 === 0 ? "bg-white" : "bg-gray-50/30"
-                  }`}
-                >
-                  {/* 左侧：目录权限 */}
-                  <div className="w-2/5 border-r">
-                    <div className="p-4">
-                      <div className="flex items-start">
-                        <Checkbox
-                          checked={checkState.checked}
-                          indeterminate={checkState.indeterminate}
-                          onChange={(e) =>
-                            handleCatalogueCheck(catalogue.id, e.target.checked)
-                          }
-                          className="mt-1"
-                        />
-                        <div className="ml-3 flex-1">
-                          <div className="flex items-center">
-                            {catalogue.icon && (
-                              <Iconify
-                                icon={catalogue.icon}
-                                size={18}
-                                className="mr-2 text-blue-600"
-                              />
-                            )}
-                            <span className="font-medium text-gray-800">
-                              {catalogue.name}
-                            </span>
-                          </div>
-                          <div className="text-xs text-gray-500 mt-1">
-                            {catalogue.label}
-                          </div>
-
-                          {/* 统计信息 */}
-                          <div className="mt-2 space-y-1">
-                            <div className="text-xs text-blue-600">
-                              {menuCount > 0
-                                ? `📋 ${menuCount} 个菜单`
-                                : "📋 暂无菜单"}
-                            </div>
-
-                            {/* 嵌套子目录统计 */}
-                            {(() => {
-                              const getNestedCatalogueCount = (
-                                permission: Permission
-                              ): number => {
-                                let count = 0;
-                                if (permission.children) {
-                                  permission.children.forEach((child) => {
-                                    if (
-                                      child.type === PermissionType.CATALOGUE
-                                    ) {
-                                      count++;
-                                      count += getNestedCatalogueCount(child);
-                                    }
-                                  });
-                                }
-                                return count;
-                              };
-
-                              const nestedCount =
-                                getNestedCatalogueCount(catalogue);
-                              return (
-                                nestedCount > 0 && (
-                                  <div className="text-xs text-purple-600">
-                                    📁 {nestedCount} 个子目录
-                                  </div>
-                                )
-                              );
-                            })()}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 右侧：菜单权限 */}
-                  <div className="flex-1">
-                    {hasMenus ? (
-                      <div className="p-4">
-                        <div className="grid gap-3">
-                          {categoryData.menus.map((menu) => {
-                            // 根据parentId判断菜单的层级深度
-                            const getMenuDepth = (
-                              menuItem: Permission,
-                              catalogue: Permission,
-                              depth = 0
-                            ): number => {
-                              // 如果菜单的父级是当前目录，深度为0
-                              if (menuItem.parentId === catalogue.id) {
-                                return depth;
-                              }
-
-                              // 递归查找父级目录
-                              const findParentInCatalogue = (
-                                current: Permission,
-                                targetParentId: string
-                              ): Permission | null => {
-                                if (current.id === targetParentId) {
-                                  return current;
-                                }
-                                if (current.children) {
-                                  for (const child of current.children) {
-                                    const found = findParentInCatalogue(
-                                      child,
-                                      targetParentId
-                                    );
-                                    if (found) return found;
-                                  }
-                                }
-                                return null;
-                              };
-
-                              const parent = findParentInCatalogue(
-                                catalogue,
-                                menuItem.parentId || ""
-                              );
-                              if (!parent) {
-                                return depth;
-                              }
-
-                              return getMenuDepth(parent, catalogue, depth + 1);
-                            };
-
-                            const menuDepth = getMenuDepth(menu, catalogue);
-                            const isNestedMenu = menuDepth > 0;
-
-                            // 获取菜单的完整路径用于显示
-                            const getMenuPath = (
-                              menuItem: Permission
-                            ): string => {
-                              const path: string[] = [];
-
-                              const findPath = (
-                                current: Permission,
-                                targetId: string
-                              ): boolean => {
-                                if (current.id === targetId) {
-                                  return true;
-                                }
-                                if (current.children) {
-                                  for (const child of current.children) {
-                                    if (findPath(child, targetId)) {
-                                      path.unshift(current.name);
-                                      return true;
-                                    }
-                                  }
-                                }
-                                return false;
-                              };
-
-                              findPath(catalogue, menuItem.id);
-                              return path.length > 0 ? path.join(" > ") : "";
-                            };
-
-                            const menuPath = getMenuPath(menu);
-
-                            return (
-                              <div
-                                key={menu.id}
-                                className={`relative flex items-start p-3 rounded-lg transition-all duration-200 ${
-                                  checkedKeys.includes(menu.id)
-                                    ? "bg-blue-50 border border-blue-200 shadow-sm"
-                                    : "hover:bg-gray-50 border border-gray-200"
-                                } ${
-                                  isNestedMenu
-                                    ? "ml-6 border-l-4 border-l-blue-300"
-                                    : ""
-                                }`}
-                              >
-                                {/* 层级指示器 */}
-                                {isNestedMenu && (
-                                  <div className="absolute -left-6 top-0 bottom-0 flex items-center">
-                                    <div className="w-6 h-px bg-blue-300"></div>
-                                  </div>
-                                )}
-
-                                <Checkbox
-                                  checked={checkedKeys.includes(menu.id)}
-                                  onChange={(e) =>
-                                    handleMenuCheck(menu.id, e.target.checked)
-                                  }
-                                  className="mt-1"
-                                />
-
-                                <div className="ml-3 flex-1 min-w-0">
-                                  <div className="flex items-center flex-wrap gap-2">
-                                    {menu.icon && (
-                                      <Iconify
-                                        icon={menu.icon}
-                                        size={16}
-                                        className="text-gray-600 flex-shrink-0"
-                                      />
-                                    )}
-                                    <span className="text-gray-800 font-medium truncate">
-                                      {menu.name}
-                                    </span>
-
-                                    {/* 标签区域 */}
-                                    <div className="flex items-center gap-1 flex-wrap">
-                                      <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-                                        {menu.label}
-                                      </span>
-
-                                      {isNestedMenu && (
-                                        <span className="text-xs text-white bg-gradient-to-r from-blue-500 to-purple-500 px-2 py-0.5 rounded-full font-medium">
-                                          L{menuDepth + 1}级菜单
-                                        </span>
-                                      )}
-
-                                      {menu.hide && (
-                                        <span className="text-xs text-white bg-red-500 px-2 py-0.5 rounded-full">
-                                          隐藏
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                  {/* 路由信息 */}
-                                  {menu.route && (
-                                    <div className="mt-1 text-xs text-blue-600 flex items-center">
-                                      <Iconify
-                                        icon="material-symbols:link"
-                                        className="mr-1"
-                                        size={12}
-                                      />
-                                      <span className="font-mono bg-blue-50 px-1 rounded text-blue-700">
-                                        /{menu.route}
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="p-4 flex items-center justify-center text-gray-400 text-sm">
-                        <Iconify icon="tabler:folder-x" className="mr-2" />
-                        暂无菜单权限
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-
-            {cataloguePermissions.length === 0 && (
-              <div className="p-8 text-center text-gray-500">
-                <Iconify
-                  icon="tabler:database-x"
-                  size={32}
-                  className="mx-auto mb-2 text-gray-300"
+        {/* 权限树 */}
+        <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
+          <div className="bg-gray-50 border-b border-gray-200 px-4 py-3">
+            <div className="flex items-center space-x-2">
+              <Iconify icon="mdi:file-tree" className="text-gray-600" />
+              <span className="font-medium text-gray-700">权限树形结构</span>
+              <span className="text-sm text-gray-500">({treeData.length} 个根权限)</span>
+            </div>
+          </div>
+          
+          <div className="p-4">
+            {treeData.length > 0 ? (
+              <div className="max-h-[450px] overflow-y-auto">
+                <Tree
+                  checkable
+                  checkStrictly
+                  checkedKeys={checkedKeys}
+                  onCheck={handleTreeCheck}
+                  treeData={treeData}
+                  defaultExpandAll
+                  showLine={{ showLeafIcon: false }}
+                  className="permission-tree"
+                  style={{
+                    fontSize: '14px',
+                    lineHeight: '2.2',
+                    width: '100%'
+                  }}
                 />
-                <p>暂无权限数据</p>
+              </div>
+            ) : (
+              <div className="py-12 text-center text-gray-500">
+                <Iconify
+                  icon="mdi:database-off"
+                  size={48}
+                  className="mx-auto mb-4 text-gray-300"
+                />
+                <p className="text-lg">暂无权限数据</p>
+                <p className="text-sm">请联系管理员配置系统权限</p>
               </div>
             )}
           </div>
         </div>
-
-        {/* 选中权限统计 */}
-        <div className="mt-4 p-3 bg-blue-50 rounded border border-blue-200">
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-gray-600">
-              已选择权限：
-              <span className="ml-2 font-medium text-blue-600">
-                {checkedKeys.length} 项
-              </span>
-            </div>
-            <div className="text-xs text-gray-500">
-              目录:{" "}
-              {(() => {
-                const allPermissions: Permission[] = [];
-                const collectAll = (perms: Permission[]) => {
-                  perms.forEach((p) => {
-                    allPermissions.push(p);
-                    if (p.children) collectAll(p.children);
-                  });
-                };
-                collectAll(permissions);
-                return checkedKeys.filter((key) =>
-                  allPermissions.some(
-                    (p) => p.id === key && p.type === PermissionType.CATALOGUE
-                  )
-                ).length;
-              })()}{" "}
-              项 | 菜单:{" "}
-              {(() => {
-                const allPermissions: Permission[] = [];
-                const collectAll = (perms: Permission[]) => {
-                  perms.forEach((p) => {
-                    allPermissions.push(p);
-                    if (p.children) collectAll(p.children);
-                  });
-                };
-                collectAll(permissions);
-                return checkedKeys.filter((key) =>
-                  allPermissions.some(
-                    (p) => p.id === key && p.type === PermissionType.MENU
-                  )
-                ).length;
-              })()}{" "}
-              项 | 按钮:{" "}
-              {(() => {
-                const allPermissions: Permission[] = [];
-                const collectAll = (perms: Permission[]) => {
-                  perms.forEach((p) => {
-                    allPermissions.push(p);
-                    if (p.children) collectAll(p.children);
-                  });
-                };
-                collectAll(permissions);
-                return checkedKeys.filter((key) =>
-                  allPermissions.some(
-                    (p) => p.id === key && p.type === PermissionType.BUTTON
-                  )
-                ).length;
-              })()}{" "}
-              项
-            </div>
-          </div>
-        </div>
-      </Spin>
-    </Modal>
-  );
+       </Spin>
+     </Modal>
+    </>
+    );
 }

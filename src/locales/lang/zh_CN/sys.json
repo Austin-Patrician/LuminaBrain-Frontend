@@ -50,6 +50,8 @@
 
       "loginSuccessTitle": "登录成功",
       "loginSuccessDesc": "欢迎回来",
+      "registerSuccess": "注册成功",
+      "registerFailed": "注册失败",
 
       "accountPlaceholder": "请输入账号",
       "passwordPlaceholder": "请输入密码",
