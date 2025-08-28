@@ -185,6 +185,9 @@ const EditApplicationModal: React.FC<EditApplicationModalProps> = ({
           values.kernelFunctionSelectionStrategy || "",
         maximumIterations: values.maximumIterations || 10,
         isInLine: values.isInLine !== undefined ? values.isInLine : false,
+
+        IsOutputAll: values.IsOutputAll !== undefined ? values.IsOutputAll : false,
+        AgentModeId: values.AgentMode || "773694F9-9C4D-928E-976C-0AB11C751373",
       };
 
       // 调用更新接口
