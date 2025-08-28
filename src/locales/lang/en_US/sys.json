@@ -93,6 +93,7 @@
         "index": "User",
         "profile": "Profile",
         "account": "Account",
+        "apiKey": "API Key",
         "role": "Role",
         "status": "Status"
       },

@@ -8,6 +8,7 @@ import type { AppRouteObject } from "#/router";
 
 const ProfilePage = lazy(() => import("@/pages/management/user/profile"));
 const AccountPage = lazy(() => import("@/pages/management/user/account"));
+const ApiKeyPage = lazy(() => import("@/pages/management/user/apiKey"));
 
 
 const PermissioPage = lazy(
@@ -59,6 +60,14 @@ const management: AppRouteObject = {
           meta: {
             label: "sys.menu.user.account",
             key: "/management/user/account",
+          },
+        },
+        {
+          path: "apiKey",
+          element: <ApiKeyPage />,
+          meta: {
+            label: "sys.menu.user.apiKey",
+            key: "/management/user/apiKey",
           },
         },
       ],

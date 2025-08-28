@@ -92,6 +92,7 @@
         "index": "用户",
         "profile": "个人资料",
         "account": "账户",
+        "apiKey": "API密钥",
         "role": "角色",
         "status": "状态"
       },
